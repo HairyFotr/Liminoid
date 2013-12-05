@@ -6,7 +6,8 @@ sealed trait Sequence[T] {
   def ext: String
   def delay: Int
   def bounce: Boolean
-  def active: Boolean
+  var active: Boolean
+  def stopAtEnd: Boolean
 
   //---//
 
@@ -31,11 +32,19 @@ sealed trait Sequence[T] {
       get()
     }
 
+  def rewind(): Unit = {
+    cursor = 0
+    direction = 1
+  }
+
   def moveCursor(): Unit = {
     val currCursor = cursor
     if(Utils.now - time > delay) {
       cursor = (cursor + direction) % frames.size
-      if(bounce) {
+      if(currCursor == frames.size - 1 && stopAtEnd) {
+        cursor = frames.size - 1
+        active = false
+      } else if(bounce) {
         if(currCursor == frames.size - 1 && cursor == 0) {
           cursor = frames.size - 2
           direction = -1
@@ -54,18 +63,18 @@ case class TexSequence(
     var active: Boolean = true,
     var delay: Int = 175,
     var bounce: Boolean = true,
+    var stopAtEnd: Boolean = false,
     val ext: String = ".png") extends Sequence[Int] { 
   override def get() = Texture(frames(cursor))
 }
 
 case class OBJSequence(
     val path: String,
-    var pos: OBJModel.Vec = OBJModel.Vec0,
-    var rot: OBJModel.Vec = OBJModel.Vec0,
-    var size: OBJModel.Vec = OBJModel.Vec1,
+    var transforms: OBJModel.Transform = OBJModel.Transform0,
     var active: Boolean = true,
-    var delay: Int = 15,
+    var delay: Int = 75,
     var bounce: Boolean = true,
+    var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends Sequence[OBJModel.Model] { 
   override def get() = OBJModel(frames(cursor))
 }

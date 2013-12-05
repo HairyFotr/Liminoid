@@ -39,8 +39,9 @@ object OBJModel {
   type Vertices = Vector[Vec]
   type Faces = Vector[Array[(Int, Int)]]
   type UVVertices = Vector[Vec2]
-  case class Vec(x: Double, y: Double, z: Double) {
+  case class Vec(var x: Double, var y: Double, var z: Double) {
     def +(v: Vec): Vec = Vec(x+v.x, y+v.y, z+v.z)
+    def +=(v: Vec): Unit = { x += v.x; y += v.y; z += v.z; }
     def /(f: Double): Vec = Vec(x/f, y/f, z/f)
     def *(f: Double): Vec = Vec(x*f, y*f, z*f)
     def minCoord(v: Vec): Vec = Vec(min(x,v.x), min(y,v.y), min(z,v.z))

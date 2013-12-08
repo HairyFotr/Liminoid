@@ -70,13 +70,18 @@ case class TexSequence(
 
 case class OBJSequence(
     val path: String,
-    var transforms: OBJModel.Transform = OBJModel.Transform0,
+    var transform: OBJModel.Transform = OBJModel.Transform001,
+    var transformVectors: OBJModel.Transform = OBJModel.Transform000,
     var active: Boolean = true,
     var delay: Int = 75,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends Sequence[OBJModel.Model] { 
-  override def get() = OBJModel(frames(cursor))
+  override def get() = {
+      val model = OBJModel(frames(cursor)) //TODO: possible optimization - set reference upon preload
+      model.transform = transform
+      model
+  }
 }
 
 

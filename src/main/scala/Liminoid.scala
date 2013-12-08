@@ -15,9 +15,7 @@ import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL11._
 import hardware.{RiftTracker,Rotation}
 
-import OBJModel.{Transform, Vec, Vec0, Vec1, Vec2}
-// 
-
+import OBJModel.{Transform, Vec, Vec0, Vec1}
 
 final object Liminoid {
   val project = "Liminoid"
@@ -235,8 +233,8 @@ final object Liminoid {
       OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true),
       OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true)
     )
-    radiolarians(0).transforms = Transform(pos = Vec(0,0,200), rot = Vec(90,0,0))
-    radiolarians(1).transforms = Transform(pos = Vec(20,8,210), rot = Vec(120,11,33))
+    radiolarians(0).transform = Transform(pos = Vec(0,0,200), rot = Vec(90,0,0))
+    radiolarians(1).transform = Transform(pos = Vec(20,8,210), rot = Vec(120,11,33))
 
     radiolarians
   }
@@ -277,11 +275,12 @@ final object Liminoid {
     // w = 2 pi f / Fs 
     // phi = initial phase
     // y = ouput array containing the oscillator signal
-    // def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
+    //def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
 
     val osc1 = sin(Utils.now*0.002 + 0)
-    val osc2 = sin(Utils.now*0.002 + Pi/4)
-    val osc3 = sin(Utils.now*0.002 + Pi/2)
+    val osc2 = sin(Utils.now*0.002 + 1*Pi/4)
+    val osc3 = sin(Utils.now*0.002 + 2*Pi/4)
+    val osc4 = sin(Utils.now*0.002 + 3*Pi/4)
 
     // Get camera frame
     if(camtexFuture.isSet) {
@@ -290,8 +289,6 @@ final object Liminoid {
       camtexFuture = future { cam.captureFrameImg() }
     }
 
-    Util.checkGLError();
-    
     val (mw, mh) = (200-osc1*100-osc3*30, 160-osc2*50-osc3*20)
     val (cx, cy) = (winWidth/2 - mw/2, winHeight/2 - mh/2)
     val ratio = mw/mh.toFloat
@@ -358,7 +355,7 @@ final object Liminoid {
 
     phase match {
       case Setup => 
-        phase = Radiolarians
+        phase = CircleSpace//Radiolarians
 
         // Preload everything
         for(radio <- radiolarians) {
@@ -387,9 +384,9 @@ final object Liminoid {
         glClear(1,1,1)
 
         // When radiolarian is close enough, change phase
-        if(radiolarians.exists { _.transforms.pos.z < -18 }) phase = Mandalas
+        if(radiolarians.exists { _.transform.pos.z < -18 }) phase = Mandalas
         // Activate radiolarian shell open animation
-        radiolarians.find { _.transforms.pos.z < 10 }.map { _.active = true }
+        radiolarians.find { _.transform.pos.z < 10 }.map { _.active = true }
 
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
@@ -416,18 +413,19 @@ final object Liminoid {
         // Draw radiolarians
         val oscDiv = 15
         for(radio <- radiolarians) {
-          radio.transforms.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
-          radio.transforms.pos += radioPosVec
-          radio.transforms.rot += Vec(osc1,osc2,osc3)
-          radio().render(t = radio.transforms)
+          radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
+          radio.transform.pos += radioPosVec
+          radio.transform.rot += Vec(osc1,osc2,osc3)
+          radio().render()
           
-          core.render(t = radio.transforms.copy(size = radio.transforms.size * 5), c = Vec0)
+          core.transform = radio.transform.copy(size = radio.transform.size * 5)
+          core.render()
         }
 
-        rock1.render(t = rockTransform1, c = Vec1)
-        rockTransform1.pos += radioPosVec
-        rock2.render(t = rockTransform2, c = Vec1)
-        rockTransform2.pos += radioPosVec
+        rock1.transform.pos += radioPosVec
+        rock2.transform.pos += radioPosVec
+        rock1.render()
+        rock2.render()
 
       case Mandalas =>
         glClear(0,0,0)
@@ -438,15 +436,15 @@ final object Liminoid {
       case CircleSpace =>
         glClear(1,1,1)
 
-        phase = BackSpace
+        //phase = BackSpace
         //sphereTex.render(p = radio.pos, s = radio.size * 5, c = OBJModel.Vec0)
 
       case BackSpace =>
         Thread.sleep(5000)
         glClear(1,1,1)
 
-        //if(radiolarians.exists { _.transforms.pos.z < -18 }) phase += 1
-        //radiolarians.find { _.transforms.pos.z < 0 }.map { _.active = true }
+        //if(radiolarians.exists { _.transform.pos.z < -18 }) phase += 1
+        //radiolarians.find { _.transform.pos.z < 0 }.map { _.active = true }
 
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)

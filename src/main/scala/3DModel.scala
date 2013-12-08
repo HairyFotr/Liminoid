@@ -26,7 +26,7 @@ object OBJModel {
       case vReg(x,y,z) => vertices :+= Vec(x.toDouble, y.toDouble, z.toDouble)
       case fReg(f)     => faces :+= f.split(" ").map { case fcReg(v, vt) => (v.toInt - 1, vt.toInt -1); case v => (v.toInt - 1, -1) }
 
-      case vtReg(u,v)  => uvVertices :+= Vec2(u.toDouble, v.toDouble)
+      case vtReg(u,v)  => uvVertices :+= UV(u.toDouble, v.toDouble)
 
       //case oReg(n) => name = n
       case _ => // nop
@@ -38,7 +38,7 @@ object OBJModel {
 
   type Vertices = Vector[Vec]
   type Faces = Vector[Array[(Int, Int)]]
-  type UVVertices = Vector[Vec2]
+  type UVVertices = Vector[UV]
   case class Vec(var x: Double, var y: Double, var z: Double) {
     def +(v: Vec): Vec = Vec(x+v.x, y+v.y, z+v.z)
     def +=(v: Vec): Unit = { x += v.x; y += v.y; z += v.z; }
@@ -52,9 +52,15 @@ object OBJModel {
   final val Vec1 = Vec(1,1,1)
 
   case class Transform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec1)
-  final val Transform0 = Transform(Vec0, Vec0, Vec1)
+  final val Transform001 = Transform(Vec0, Vec0, Vec1)
+  final val Transform000 = Transform(Vec0, Vec0, Vec0)
 
-  case class Vec2(u: Double, v: Double)
+  case class UV(u: Double, v: Double)
+
+  case class Color(r: Double, g: Double, b: Double)
+  final val white = Color(0,0,0)
+  final val gray = Color(0.5,0.5,0.5)
+  final val black = Color(0,0,0)
 
   //case class Color(r: Float, g: Float, b: Float, a: Float = 1)
   //final val white = Color(1,1,1)
@@ -66,8 +72,13 @@ object OBJModel {
   cam.setPerspective(90, (winWidth)/winHeight.toFloat, 1f, 1600f)
   cam.setPosition(0,0,-20);
   
-  case class Model(vertices: Vertices, faces: Faces, uvVertices: UVVertices, name: String = "") {
-    var cnt = 0
+  case class Model(
+      vertices: Vertices,
+      faces: Faces,
+      uvVertices: UVVertices,
+      var transform: Transform = Transform001,
+      var tex: Int = -1,
+      var color: Color = gray) {
 
     /*lazy val (center, size) = {
       var (center, min, max) = (Vec0, Vec0, Vec0)
@@ -95,10 +106,9 @@ object OBJModel {
       displayList
     }
 
-    def render(mode: RenderMode = renderMode, t: Transform = Transform0, tex: Int = -1, c: Vec = Vec1) = {
-      cnt += 1
+    def render(mode: RenderMode = renderMode, transform: Transform = transform, tex: Int = tex, color: Color = color) {
       def render0() {
-        import t._
+        import transform._
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         
@@ -117,13 +127,8 @@ object OBJModel {
           glRotated(rot.x, 1,0,0)
           glRotated(rot.y, 0,1,0)
           glRotated(rot.z, 0,0,1)
-          //glTranslated(0, -center.y, 0)
-          //glTranslated(-size.x/2, -size.y/2, -size.z/2)
-          //glRotatef((cnt)%360,0,1,0)
-          //glTranslated(+size.x/2, +size.y/2, +size.z/2)
-          //glTranslated(0, center.y, 0)
           glScaled(size.x, size.y, size.z)
-          glColor4d(c.x,c.y,c.z,1)
+          glColor4d(color.r,color.g,color.b,1)
           glCallList(displayList)
         glPopMatrix()
 

@@ -4,7 +4,7 @@ import java.io.FileInputStream
 import java.io.BufferedInputStream
 import javazoom.jl.player.Player
 import Utils.{thread, getFile}
-
+import scala.collection.mutable.{Map, SynchronizedMap}
 object Sound {
   val folder = "snd/"
   val soundMap = getFile(folder + "list.txt") map { line => 
@@ -20,9 +20,23 @@ object Sound {
     }
   }
   
+  var players = Set.empty[Player]
+  def stopAll() = this.synchronized { 
+    players.foreach(_.close)
+    players = Set.empty
+  }
+
   def play(sound: String): Unit = thread {
     val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
+    this.synchronized { 
+      players += player
+    }
+
     player.play
-    player.close
+
+    this.synchronized {
+      players -= player
+      player.close
+    }
   }
 }

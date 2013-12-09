@@ -7,14 +7,22 @@ import scala.collection.mutable
 import java.io.File
 import util.Random._
 
-package object Model {
+object Model {
   private[this] val rawcache = mutable.HashMap[String, RawModel]()
+
+  type Vertices = Vector[Vec]
+  type Faces = Vector[Array[(Int, Int, Int)]] //Array of indices vertex,tex,normal
+  type UVVertices = Vector[UV]
+  type Normals = Vector[Vec]
 
   object OBJModel {
     private[this] val vReg = "v (.*?) (.*?) (.*?)".r // vertices
     private[this] val fReg = "f (.*)".r              // faces
-    private[this] val fcReg = "(.*?)/(.*?)".r        // face coord, vertex/uvvertex 
+    private[this] val fcReg1 = "([0-9]+)/([0-9]+)".r         // face coord, vertex/uvvertex 
+    private[this] val fcReg2 = "([0-9]+)//([0-9]+)".r        // face coord, vertex//normal
+    private[this] val fcReg3 = "([0-9]+)/([0-9]+)/([0-9]+)".r   // face coord, vertex/uvvertex/normal
     
+    private[this] val vnReg = "vn (.*?) (.*?) (.*?)".r // vertices
     private[this] val vtReg = "vt (.*?) (.*?)".r     // uv vertices
 
     def apply(fileStr: String): RawModel = rawcache.getOrElseUpdate(fileStr, {
@@ -23,17 +31,23 @@ package object Model {
       var vertices: Vertices = Vector.empty
       var faces: Faces = Vector.empty
       var uvVertices: UVVertices = Vector.empty
-      file.getLines foreach {
-        case vReg(x,y,z) => vertices :+= Vec(x.toDouble, y.toDouble, z.toDouble)
-        case fReg(f)     => faces :+= f.split(" ").map { case fcReg(v, vt) => (v.toInt - 1, vt.toInt -1); case v => (v.toInt - 1, -1) }
+      var normals: Normals = Vector.empty
 
-        case vtReg(u,v)  => uvVertices :+= UV(u.toDouble, v.toDouble)
+      file.getLines foreach {
+        case vReg(x,y,z)  => vertices :+= Vec(x.toDouble, y.toDouble, z.toDouble)
+        case vnReg(x,y,z) => normals :+= Vec(x.toDouble, y.toDouble, z.toDouble)
+        case vtReg(u,v)   => uvVertices :+= UV(u.toDouble, v.toDouble)
+        case fReg(f)      => faces :+= f.split(" ").map { 
+            case fcReg1(v, vt)     => (v.toInt-1, vt.toInt-1, -1)
+            case fcReg2(v, vn)     => (v.toInt-1,         -1, vn.toInt-1)
+            case fcReg3(v, vt, vn) => (v.toInt-1, vt.toInt-1, vn.toInt-1)
+            case v                 => (v.toInt-1,         -1, -1) }
 
         case _ => // nop
       }
       file.close
 
-      RawModel(vertices, faces, uvVertices)
+      RawModel(vertices, uvVertices, normals, faces)
     })
 
     def preload(files: Array[File]) {
@@ -50,10 +64,6 @@ package object Model {
     }
   }
 
-  type Vertices = Vector[Vec]
-  type Faces = Vector[Array[(Int, Int)]]
-  type UVVertices = Vector[UV]
-  
   trait VecLike {
     def x: Double
     def y: Double
@@ -74,6 +84,7 @@ package object Model {
   implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x,it.y,it.z)
   case class MutableVec(var x: Double, var y: Double, var z: Double) extends VecLike {
     def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
+    def *=(f: Double): Unit = { x *= f; y *= f; z *= f; }
   }
   final val Vec0 = Vec(0,0,0)
   final val Vec1 = Vec(1,1,1)
@@ -83,9 +94,9 @@ package object Model {
     def rot: Vec
     def size: Vec
   }
-  case class Transform(val pos: Vec = Vec0, val rot: Vec = Vec0, val size: Vec = Vec1) extends TransformLike
+  case class Transform(val pos: Vec = Vec0, val rot: Vec = Vec0, val size: Vec = Vec0) extends TransformLike
   implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos,it.rot,it.size) //meh
-  case class MutableTransform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec1) extends TransformLike {
+  case class MutableTransform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec0) extends TransformLike {
     def +=(vector: TransformLike) {
       pos = pos + vector.pos
       rot = rot + vector.rot
@@ -97,25 +108,26 @@ package object Model {
 
   case class UV(u: Double, v: Double)
 
-  case class Color(r: Double, g: Double, b: Double)
-  final val white = Color(0,0,0)
-  final val gray = Color(0.5,0.5,0.5)
-  final val black = Color(0,0,0)
+  case class Color(var r: Double, var g: Double, var b: Double) {
+    def -=(f: Double) { r -= f; g -= f; b -= f; }
+  }
 
   val cam = new Camera
   cam.setViewPort(0,0,winWidth,winHeight)
   cam.setOrtho(0,winHeight,winWidth,0,1f,-1f)
-  cam.setPerspective(90, (winWidth)/winHeight.toFloat, 1f, 1600f)
-  cam.setPosition(0,0,-20);
+  cam.setPerspective(90, (winWidth)/winHeight.toFloat, 1f, 500f)
+  cam.setPosition(0,0,0);
+  cam.lookAt(Vec3(0,0,200))
   
-  case class RawModel(vertices: Vertices, faces: Faces, uvVertices: UVVertices) {
+  case class RawModel(vertices: Vertices, uvVertices: UVVertices, normals: Normals, faces: Faces) {
     // Compile model to display list for faster drawing
     lazy val displayList = {
       val displayList = glGenLists(1)
       glNewList(displayList, GL_COMPILE)
       for(f <- faces) {
         glBegin(GL_POLYGON)
-        for((vi, vti) <- f) {
+        for((vi, vti, vni) <- f) {
+          if(vni != -1) glNormal3d(normals(vni).x, normals(vni).y, normals(vni).z)
           if(vti != -1) glTexCoord2d(uvVertices(vti).u, uvVertices(vti).v)
           glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
         }
@@ -131,7 +143,7 @@ package object Model {
         transformVector: MutableTransform = Transform000,
         oscillatorPhase: Double = 0,
         tex: Int = -1,
-        color: Color = gray,
+        color: Color = Color(0.5,0.5,0.5),
         alpha: Double = 1d) = Model(displayList, transform, transformVector, oscillatorPhase, tex, color, alpha)
   }
 

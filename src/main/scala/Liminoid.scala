@@ -44,6 +44,7 @@ final object Liminoid {
     mainLoop()
     
     // Cleanup
+    Sound.stopAll()
     RiftTracker.destroy()
     Display.destroy()
   }
@@ -239,13 +240,12 @@ final object Liminoid {
   // Radiolarians phase objects
   lazy val room = Texture("img/wall.png")
   var radioBasePosVec = Vec(0,0,-0.5)
-  setSeed(0)
   lazy val radiolarians = {
-    val radiolarians = Array.fill(4)(OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true))
-    radiolarians(0).transform += Transform(pos = Vec(0,0,190),    rot = Vec(90,0,0))
-    radiolarians(1).transform += Transform(pos = Vec(30,8,213),   rot = Vec(120,11,33))
-    radiolarians(2).transform += Transform(pos = Vec(-53,13,277), rot = Vec(223,45,143))
-    radiolarians(3).transform += Transform(pos = Vec(84,-31,223), rot = Vec(321,92,234))
+    val radiolarians = Array.fill(4)(OBJSequence("obj/Radiolarian_normale", active = false, stopAtEnd = true))
+    radiolarians(0).transform += Transform(pos = Vec(0,0,220),    rot = Vec(90,0,0))
+    radiolarians(1).transform += Transform(pos = Vec(30,8,233),   rot = Vec(120,11,33))
+    radiolarians(2).transform += Transform(pos = Vec(-53,13,307), rot = Vec(223,45,143))
+    radiolarians(3).transform += Transform(pos = Vec(84,-31,253), rot = Vec(321,92,234))
 
     radiolarians(0).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
     radiolarians(1).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
@@ -254,32 +254,42 @@ final object Liminoid {
 
     radiolarians
   }
-  lazy val core = OBJModel("obj/Prihod iz stene/Prihod iz stene_I_catclark.obj").toModel(color = Color(0,0,0))
+  lazy val core = OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(color = Color(0.2,0.2,0.2))
 
   lazy val rocks = Array(
-    OBJModel("obj/Prihod iz stene/Prihod iz stene_II_catclark.obj").toModel(
-      transform = Transform(pos = Vec(40,14,180), rot = Vec(120,71,77), size = Vec(2,2,2)),
+    OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
+      transform = Transform(pos = Vec(40,14,210), rot = Vec(120,71,77), size = Vec(2,2,2)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
-      color = Color(0.6,0.4,0.3)),
-    OBJModel("obj/Prihod iz stene/Prihod iz stene_III_catclark.obj").toModel(
+      color = Color(0.9,0.9,0.9)),
+    /*OBJModel("obj/Prihod iz stene/Prihod iz stene_II_catclark.obj").toModel(
+      transform = Transform(pos = Vec(40,14,210), rot = Vec(120,71,77), size = Vec(2,2,2)),
+      transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
+      color = Color(0.6,0.4,0.3)),*/
+    OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
+    //OBJModel("obj/Prihod iz stene/Prihod iz stene_III_catclark.obj").toModel(
       transform = Transform(pos = Vec(-32,-4,232), rot = Vec(144,11,13), size = Vec(3,3,3)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
-      color = Color(0.4,0.1,0.2)),
-    OBJModel("obj/Prihod iz stene/Prihod iz stene_IV_catclark.obj").toModel(
+      color = Color(0.9,0.9,0.9)),
+    OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
+    //OBJModel("obj/Prihod iz stene/Prihod iz stene_IV_catclark.obj").toModel(
       transform = Transform(pos = Vec(77,-22,272), rot = Vec(112,43,95), size = Vec(4,4,4)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
-      color = Color(0.2,0.1,0.2)),
-    OBJModel("obj/Prihod iz stene/Prihod iz stene_V_catclark.obj").toModel(
-      transform = Transform(pos = Vec(-92,15,220), rot = Vec(231,28,42), size = Vec(2,2,2)),
+      color = Color(0.9,0.9,0.9)),
+      OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
+    //OBJModel("obj/Prihod iz stene/Prihod iz stene_V_catclark.obj").toModel(
+      transform = Transform(pos = Vec(-92,15,280), rot = Vec(231,28,42), size = Vec(2,2,2)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
-      color = Color(0.6,0.5,0.3))
+      color = Color(0.9,0.9,0.9))
   )
 
   // Mandalas phase objects
   val mainMandala = new TexSequence("seq/00/", delay = 75, stopAtEnd = true)
 
   // CircleSpace phase objects
-  lazy val sphereTex = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel()
+  lazy val sphereTex = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
+    transform = Transform(pos = Vec(0,0,100), rot = Vec(0,0,0), size = Vec(2,2,2)),
+    transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
+    color =  Color(0.9,0.9,0.9))
   //val Particles
   
   //used for quick fadeins
@@ -390,7 +400,6 @@ final object Liminoid {
       case Setup => 
         glClear(0,0,0)
 
-        phase = Radiolarians
         
         // Preload everything
         println((
@@ -406,17 +415,22 @@ final object Liminoid {
         //G.quad(G.Coord(camx,camy,camw,camh) + testNum, camTex, alpha = osc1, flipy = true, flipx = false)
 
         System.gc()
+        phase = Radiolarians
+        //Sound.play("intro")
 
       case Radiolarians =>
         glClear(1,1,1)
 
         // When radiolarian is close enough, change phase
-        if(radiolarians.exists { _.transform.pos.z < -18 }) {
+        if(radiolarians.exists { _.transform.pos.z < 0 }) {
           phase = Mandalas
           fade = 0
         }
         // Activate radiolarian shell open animation
-        radiolarians.find { _.transform.pos.z < 10 }.map { _.active = true }
+        radiolarians.find { _.transform.pos.z < 100 }.map { r => 
+          r.transformVector.rot *= 0.8
+        }
+        radiolarians.find { _.transform.pos.z < 50 }.map { r => if(!r.active) { r.active = true; fade = 0 } }
 
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
@@ -432,21 +446,24 @@ final object Liminoid {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glColor4f(1,1,1,0)
         glBegin(GL_QUADS)
-          glVertex3d(-100, -100, 170)
-          glVertex3d(+100, -100, 170)
-          glVertex3d(+100, +100, 170)
-          glVertex3d(-100, +100, 170)
+          glVertex3d(-1000, -1000, 200)
+          glVertex3d(+1000, -1000, 200)
+          glVertex3d(+1000, +1000, 200)
+          glVertex3d(-1000, +1000, 200)
         glEnd()
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
 
         // Draw radiolarians
-        val oscDiv = 15
+        val oscDiv = 10
         for(radio <- radiolarians) {
-          radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
           radio.transform += radio.transformVector
+          radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
           //radio.transform.rot += Vec(osc1,osc2,osc3)
           radio().render()
+
+          // Make core go black
+          if(radio.active) core.color -= 0.0025
           
           core.render(transform = radio.transform.copy(size = radio.transform.size * 5))
         }
@@ -468,15 +485,44 @@ final object Liminoid {
       case CircleSpace =>
         glClear(fade*2,fade*2,fade*2)
 
-        //phase = BackSpace
+        Model.cam.lookAt(Vec3(0,0,0))
         Model.cam.render
-        sphereTex.render(tex = camTex, alpha = fade)
-        if(sphereTex.transform.pos.z > -17) {
-          sphereTex.transform += sphereTex.transformVector
-        } else {
-          sphereTex.transformVector.pos *= 0.9
-          sphereTex.transform += sphereTex.transformVector
+        for(i <- 1 to 10) {
+          val z = sin((frames+i*10)*0.01)*100
+          val y = cos((frames+i*10)*0.01)*100
+          val x = 0
+
+          //phase = BackSpace
+          if(sphereTex.transform.pos.z > 3) {
+            //sphereTex.transform += sphereTex.transformVector
+          }
+          sphereTex.transform.pos = Vec(x,y,z)
+          sphereTex.render(tex = camTex, alpha = fade)
+          sphereTex.transform.pos = Vec(x,z,y)
+          sphereTex.render(tex = camTex, alpha = fade)
+          sphereTex.transform.pos = Vec(y,x,z)
+          sphereTex.render(tex = camTex, alpha = fade)
+          sphereTex.transform.pos = Vec(y,z,x)
+          sphereTex.render(tex = camTex, alpha = fade)
+          sphereTex.transform.pos = Vec(z,x,y)
+          sphereTex.render(tex = camTex, alpha = fade)
+          sphereTex.transform.pos = Vec(z,y,x)
+          sphereTex.render(tex = camTex, alpha = fade)
         }
+
+        glBegin(GL_LINES)
+          glColor3f(1,0,0)
+          glVertex3d(-100,0,0)
+          glVertex3d(+100,0,0)
+          glColor3f(0,1,0)
+          glVertex3d(0,-100,0)
+          glVertex3d(0,+100,0)
+          glColor3f(0,0,1)
+          glVertex3d(0,0,-100)
+          glVertex3d(0,0,+100)
+        glEnd
+
+        core.render(transform = Model.Transform001)
 
 
       case BackSpace =>
@@ -503,6 +549,13 @@ final object Liminoid {
     if(isKeyDown(KEY_1)) testNum -= 1
     if(isKeyDown(KEY_2)) testNum += 1
     
+    if(isKeyDown(KEY_W)) Model.cam.pos.z += 1
+    if(isKeyDown(KEY_S)) Model.cam.pos.z -= 1
+    if(isKeyDown(KEY_D)) Model.cam.pos.x -= 1
+    if(isKeyDown(KEY_A)) Model.cam.pos.x += 1
+    if(isKeyDown(KEY_Q)) Model.cam.pos.y -= 1
+    if(isKeyDown(KEY_E)) Model.cam.pos.y += 1
+
     /*if(isKeyDown(KEY_SPACE)) println(modelSeq)
     if(isKeyDown(KEY_UP)) modelSeq.pos = modelSeq.pos.copy(z = modelSeq.pos.z + 1)
     if(isKeyDown(KEY_DOWN)) modelSeq.pos = modelSeq.pos.copy(z = modelSeq.pos.z - 1)

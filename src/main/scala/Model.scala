@@ -18,9 +18,9 @@ object Model {
   object OBJModel {
     private[this] val vReg = "v (.*?) (.*?) (.*?)".r // vertices
     private[this] val fReg = "f (.*)".r              // faces
-    private[this] val fcReg1 = "([0-9]+)/([0-9]+)".r         // face coord, vertex/uvvertex 
-    private[this] val fcReg2 = "([0-9]+)//([0-9]+)".r        // face coord, vertex//normal
-    private[this] val fcReg3 = "([0-9]+)/([0-9]+)/([0-9]+)".r   // face coord, vertex/uvvertex/normal
+    private[this] val fcReg1 = "([0-9]+)/([0-9]+)".r           // face coord, vertex/uvvertex 
+    private[this] val fcReg2 = "([0-9]+)//([0-9]+)".r          // face coord, vertex//normal
+    private[this] val fcReg3 = "([0-9]+)/([0-9]+)/([0-9]+)".r  // face coord, vertex/uvvertex/normal
     
     private[this] val vnReg = "vn (.*?) (.*?) (.*?)".r // vertices
     private[this] val vtReg = "vt (.*?) (.*?)".r     // uv vertices
@@ -38,10 +38,10 @@ object Model {
         case vnReg(x,y,z) => normals :+= Vec(x.toDouble, y.toDouble, z.toDouble)
         case vtReg(u,v)   => uvVertices :+= UV(u.toDouble, v.toDouble)
         case fReg(f)      => faces :+= f.split(" ").map { 
-            case fcReg1(v, vt)     => (v.toInt-1, vt.toInt-1, -1)
-            case fcReg2(v, vn)     => (v.toInt-1,         -1, vn.toInt-1)
-            case fcReg3(v, vt, vn) => (v.toInt-1, vt.toInt-1, vn.toInt-1)
-            case v                 => (v.toInt-1,         -1, -1) }
+          case fcReg1(v, vt)     => (v.toInt-1, vt.toInt-1, -1)
+          case fcReg2(v, vn)     => (v.toInt-1,         -1, vn.toInt-1)
+          case fcReg3(v, vt, vn) => (v.toInt-1, vt.toInt-1, vn.toInt-1)
+          case v                 => (v.toInt-1,         -1, -1) }
 
         case _ => // nop
       }
@@ -69,13 +69,13 @@ object Model {
     def y: Double
     def z: Double
 
-    def +(v: VecLike): Vec = Vec(x+v.x, y+v.y, z+v.z)
-    def *(f: Double): Vec = Vec(x*f, y*f, z*f)
-    def /(f: Double): Vec = Vec(x/f, y/f, z/f)
+    def +(v: VecLike) = Vec(x+v.x, y+v.y, z+v.z)
+    def *(f: Double) = Vec(x*f, y*f, z*f)
+    def /(f: Double) = Vec(x/f, y/f, z/f)
     def distance(v: Vec): Double = sqrt(pow(x-v.x, 2) + pow(y-v.y, 2) + pow(z-v.z, 2))
-    def minCoord(v: VecLike): Vec = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
-    def maxCoord(v: VecLike): Vec = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
-    def span(v: VecLike): Vec = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
+    def minCoord(v: VecLike) = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
+    def maxCoord(v: VecLike) = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
+    def span(v: VecLike) = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
   }
   object Vec {
     def random = Vec(nextDouble,nextDouble,nextDouble)

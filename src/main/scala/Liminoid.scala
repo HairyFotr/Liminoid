@@ -241,16 +241,11 @@ final object Liminoid {
   lazy val room = Texture("img/wall.png")
   var radioBasePosVec = Vec(0,0,-0.5)
   lazy val radiolarians = {
-    val radiolarians = Array.fill(4)(OBJSequence("obj/Radiolarian_normale", active = false, stopAtEnd = true))
+    val radiolarians = Array.fill(4)(OBJSequence("obj/Radiolarian_normale", active = false, stopAtEnd = true, transformVector = Transform(pos = radioBasePosVec, rot = Vec.random)))
     radiolarians(0).transform += Transform(pos = Vec(0,0,220),    rot = Vec(90,0,0))
     radiolarians(1).transform += Transform(pos = Vec(30,8,233),   rot = Vec(120,11,33))
     radiolarians(2).transform += Transform(pos = Vec(-53,13,307), rot = Vec(223,45,143))
     radiolarians(3).transform += Transform(pos = Vec(84,-31,253), rot = Vec(321,92,234))
-
-    radiolarians(0).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
-    radiolarians(1).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
-    radiolarians(2).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
-    radiolarians(3).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
 
     radiolarians
   }
@@ -261,22 +256,15 @@ final object Liminoid {
       transform = Transform(pos = Vec(40,14,210), rot = Vec(120,71,77), size = Vec(2,2,2)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.9,0.9,0.9)),
-    /*OBJModel("obj/Prihod iz stene/Prihod iz stene_II_catclark.obj").toModel(
-      transform = Transform(pos = Vec(40,14,210), rot = Vec(120,71,77), size = Vec(2,2,2)),
-      transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
-      color = Color(0.6,0.4,0.3)),*/
     OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
-    //OBJModel("obj/Prihod iz stene/Prihod iz stene_III_catclark.obj").toModel(
       transform = Transform(pos = Vec(-32,-4,232), rot = Vec(144,11,13), size = Vec(3,3,3)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.9,0.9,0.9)),
     OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
-    //OBJModel("obj/Prihod iz stene/Prihod iz stene_IV_catclark.obj").toModel(
       transform = Transform(pos = Vec(77,-22,272), rot = Vec(112,43,95), size = Vec(4,4,4)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.9,0.9,0.9)),
-      OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
-    //OBJModel("obj/Prihod iz stene/Prihod iz stene_V_catclark.obj").toModel(
+    OBJModel("obj/Prihod iz stene_normale/Prihod iz stene_normale_I.obj").toModel(
       transform = Transform(pos = Vec(-92,15,280), rot = Vec(231,28,42), size = Vec(2,2,2)),
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.9,0.9,0.9))
@@ -375,8 +363,19 @@ final object Liminoid {
       to white, mogoce ze prej vletavajo utrini "asteroid field effect"
 
       utriniki po kroznici gredo skozi ~5 tock + trail (2 kota sin cos?)
+        fake1 - if top change direction, +x... 
+          + all will pass through same point :P`
+          - you're adding energy to them, 
+          - probably glitches at top
+        proper?
+          draw on one view, transform to another
 
       kugla z uv mapo kamere, upocasnitev pogleda
+
+      kamera
+        two cameras - figure out the spacing, FOV, etc
+        one camera - move image for each eye
+
 
       OS support
         opencv je zaeenkrat treba rocno... obstaja sbt string?

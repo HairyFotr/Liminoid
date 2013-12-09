@@ -5,9 +5,10 @@ import math._
 import Liminoid.{winWidth, winHeight, renderMode, RenderMode, Normal, Split, eyeCorrection}
 import scala.collection.mutable
 import java.io.File
+import util.Random._
 
-object Model {
-  private[this] val cache = mutable.HashMap[String, RawModel]()
+package object Model {
+  private[this] val rawcache = mutable.HashMap[String, RawModel]()
 
   object OBJModel {
     private[this] val vReg = "v (.*?) (.*?) (.*?)".r // vertices
@@ -16,7 +17,7 @@ object Model {
     
     private[this] val vtReg = "vt (.*?) (.*?)".r     // uv vertices
 
-    def apply(fileStr: String): RawModel = cache.getOrElseUpdate(fileStr, {
+    def apply(fileStr: String): RawModel = rawcache.getOrElseUpdate(fileStr, {
       val file = io.Source.fromFile(fileStr)
 
       var vertices: Vertices = Vector.empty
@@ -37,10 +38,10 @@ object Model {
 
     def preload(files: Array[File]) {
       files
-        .filterNot { file => cache.contains(file.toString) }
+        .filterNot { file => rawcache.contains(file.toString) }
         .par.map { file => 
           val rawModel = apply(file.toString)
-          cache(file.toString) = rawModel
+          rawcache(file.toString) = rawModel
           rawModel
         }
         .seq.foreach { rawModel => 
@@ -53,20 +54,39 @@ object Model {
   type Faces = Vector[Array[(Int, Int)]]
   type UVVertices = Vector[UV]
   
-  case class Vec(var x: Double, var y: Double, var z: Double) {
-    def +(v: Vec): Vec = Vec(x+v.x, y+v.y, z+v.z)
-    def +=(v: Vec): Unit = { x += v.x; y += v.y; z += v.z; }
-    def /(f: Double): Vec = Vec(x/f, y/f, z/f)
+  trait VecLike {
+    def x: Double
+    def y: Double
+    def z: Double
+
+    def +(v: VecLike): Vec = Vec(x+v.x, y+v.y, z+v.z)
     def *(f: Double): Vec = Vec(x*f, y*f, z*f)
-    def minCoord(v: Vec): Vec = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
-    def maxCoord(v: Vec): Vec = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
-    def span(v: Vec): Vec = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
+    def /(f: Double): Vec = Vec(x/f, y/f, z/f)
+    def distance(v: Vec): Double = sqrt(pow(x-v.x, 2) + pow(y-v.y, 2) + pow(z-v.z, 2))
+    def minCoord(v: VecLike): Vec = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
+    def maxCoord(v: VecLike): Vec = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
+    def span(v: VecLike): Vec = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
+  }
+  object Vec {
+    def random = Vec(nextDouble,nextDouble,nextDouble)
+  }
+  case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
+  implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x,it.y,it.z)
+  case class MutableVec(var x: Double, var y: Double, var z: Double) extends VecLike {
+    def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
   }
   final val Vec0 = Vec(0,0,0)
   final val Vec1 = Vec(1,1,1)
 
-  case class Transform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec1) {
-    def +=(vector: Transform) {
+  trait TransformLike {
+    def pos: Vec
+    def rot: Vec
+    def size: Vec
+  }
+  case class Transform(val pos: Vec = Vec0, val rot: Vec = Vec0, val size: Vec = Vec1) extends TransformLike
+  implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos,it.rot,it.size) //meh
+  case class MutableTransform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec1) extends TransformLike {
+    def +=(vector: TransformLike) {
       pos = pos + vector.pos
       rot = rot + vector.rot
       size = size + vector.size
@@ -81,10 +101,6 @@ object Model {
   final val white = Color(0,0,0)
   final val gray = Color(0.5,0.5,0.5)
   final val black = Color(0,0,0)
-
-  //case class Color(r: Float, g: Float, b: Float, a: Float = 1)
-  //final val white = Color(1,1,1)
-  //final val black = Color(0,0,0)
 
   val cam = new Camera
   cam.setViewPort(0,0,winWidth,winHeight)
@@ -111,29 +127,24 @@ object Model {
     }
 
     def toModel( // TODO: Ouch, this sucks, but gets around mutability of the memoization cache
-        transform: Transform = Transform001,
-        transformVector: Transform = Transform000,
+        transform: MutableTransform = Transform001,
+        transformVector: MutableTransform = Transform000,
+        oscillatorPhase: Double = 0,
         tex: Int = -1,
         color: Color = gray,
-        alpha: Double = 1d) = Model(displayList, transform, transformVector, tex, color, alpha)
+        alpha: Double = 1d) = Model(displayList, transform, transformVector, oscillatorPhase, tex, color, alpha)
   }
 
   case class Model(
-      /*vertices: Vertices,
-      faces: Faces,
-      uvVertices: UVVertices,*/
-      var displayList: Int,
-      var transform: Transform = Transform001,
-      var transformVector: Transform = Transform000,
-      var tex: Int = -1,
-      var color: Color = gray,
-      var alpha: Double = 1d) {
+      val displayList: Int,
+      val transform: MutableTransform,
+      val transformVector: MutableTransform,
+      val oscillatorPhase: Double,
+      val tex: Int,
+      val color: Color,
+      val alpha: Double) {
 
-    def applyTransformVector() {
-      transform += transformVector
-    }
-
-    def render(mode: RenderMode = renderMode, transform: Transform = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
+    def render(mode: RenderMode = renderMode, transform: MutableTransform = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
       def render0() {
         import transform._
         glEnable(GL_DEPTH_TEST)

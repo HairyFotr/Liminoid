@@ -73,14 +73,17 @@ case class TexSequence(
 import Model._
 case class OBJSequence(
     val path: String,
-    var transform: Model.Transform = Model.Transform001,
-    var transformVectors: Model.Transform = Model.Transform000,
+    val transform: MutableTransform = Transform001,
+    val transformVector: MutableTransform = Transform000,
+    var oscillatorPhase: Double = 0,
     var active: Boolean = true,
     var delay: Int = 75,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends Sequence[Model] { 
-  override def get() = OBJModel(frames(cursor)).toModel(transform = transform)
+
+  val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform) }
+  override def get() = models(cursor)
   override def preload() { OBJModel.preload(files) }
 }
 

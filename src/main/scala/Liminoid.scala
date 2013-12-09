@@ -238,31 +238,40 @@ final object Liminoid {
 
   // Radiolarians phase objects
   lazy val room = Texture("img/wall.png")
+  var radioBasePosVec = Vec(0,0,-0.5)
+  setSeed(0)
   lazy val radiolarians = {
     val radiolarians = Array.fill(4)(OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true))
-    radiolarians(0).transform = Transform(pos = Vec(0,0,190),    rot = Vec(90,0,0))
-    radiolarians(1).transform = Transform(pos = Vec(30,8,213),   rot = Vec(120,11,33))
-    radiolarians(2).transform = Transform(pos = Vec(-53,13,277), rot = Vec(223,45,143))
-    radiolarians(3).transform = Transform(pos = Vec(84,-31,223), rot = Vec(321,92,234))
+    radiolarians(0).transform += Transform(pos = Vec(0,0,190),    rot = Vec(90,0,0))
+    radiolarians(1).transform += Transform(pos = Vec(30,8,213),   rot = Vec(120,11,33))
+    radiolarians(2).transform += Transform(pos = Vec(-53,13,277), rot = Vec(223,45,143))
+    radiolarians(3).transform += Transform(pos = Vec(84,-31,223), rot = Vec(321,92,234))
+
+    radiolarians(0).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
+    radiolarians(1).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
+    radiolarians(2).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
+    radiolarians(3).transformVector += Transform(pos = radioBasePosVec, rot = Vec.random)
 
     radiolarians
   }
-  var radioPosVec = Vec(0,0,-0.5)
-  var radioRotVec = Vec(0,0,0)
   lazy val core = OBJModel("obj/Prihod iz stene/Prihod iz stene_I_catclark.obj").toModel(color = Color(0,0,0))
 
   lazy val rocks = Array(
     OBJModel("obj/Prihod iz stene/Prihod iz stene_II_catclark.obj").toModel(
       transform = Transform(pos = Vec(40,14,180), rot = Vec(120,71,77), size = Vec(2,2,2)),
+      transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.6,0.4,0.3)),
     OBJModel("obj/Prihod iz stene/Prihod iz stene_III_catclark.obj").toModel(
       transform = Transform(pos = Vec(-32,-4,232), rot = Vec(144,11,13), size = Vec(3,3,3)),
+      transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.4,0.1,0.2)),
     OBJModel("obj/Prihod iz stene/Prihod iz stene_IV_catclark.obj").toModel(
-      transform =  Transform(pos = Vec(77,-22,272), rot = Vec(112,43,95), size = Vec(4,4,4)),
+      transform = Transform(pos = Vec(77,-22,272), rot = Vec(112,43,95), size = Vec(4,4,4)),
+      transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.2,0.1,0.2)),
     OBJModel("obj/Prihod iz stene/Prihod iz stene_V_catclark.obj").toModel(
-      transform =   Transform(pos = Vec(-92,15,220), rot = Vec(231,28,42), size = Vec(2,2,2)),
+      transform = Transform(pos = Vec(-92,15,220), rot = Vec(231,28,42), size = Vec(2,2,2)),
+      transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.6,0.5,0.3))
   )
 
@@ -297,6 +306,8 @@ final object Liminoid {
     // phi = initial phase
     // y = ouput array containing the oscillator signal
     //def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
+
+    def oscillator(i: Double, phi: Double) = sin(i + phi)
 
     val osc1 = sin(Utils.now*0.002 + 0)
     val osc2 = sin(Utils.now*0.002 + 1*Pi/4)
@@ -433,17 +444,15 @@ final object Liminoid {
         val oscDiv = 15
         for(radio <- radiolarians) {
           radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
-          radio.transform.pos += radioPosVec
-          radio.transform.rot += Vec(osc1,osc2,osc3)
+          radio.transform += radio.transformVector
+          //radio.transform.rot += Vec(osc1,osc2,osc3)
           radio().render()
           
-          core.transform = radio.transform.copy(size = radio.transform.size * 5)
-          core.render()
+          core.render(transform = radio.transform.copy(size = radio.transform.size * 5))
         }
 
         for(rock <- rocks) {
-          rock.applyTransformVector()
-          rock.transform.pos += radioPosVec
+          rock.transform += rock.transformVector
           rock.render()
         }
 
@@ -451,15 +460,25 @@ final object Liminoid {
         glClear(0,0,0)
         
         G.quad(G.Coord(0,0,winWidth,winHeight), mainMandala(), alpha = (0.5+(1-heart)*0.5)*fade)
-        if(!mainMandala.active) phase = CircleSpace
+        if(!mainMandala.active) {
+          phase = CircleSpace
+          fade = 0
+        }
 
       case CircleSpace =>
-        glClear(fade,fade,fade)
+        glClear(fade*2,fade*2,fade*2)
 
         //phase = BackSpace
         Model.cam.render
         sphereTex.render(tex = camTex, alpha = fade)
-        if(sphereTex.transform.pos.z > -17) sphereTex.transform.pos += radioPosVec/3
+        if(sphereTex.transform.pos.z > -17) {
+          sphereTex.transform += sphereTex.transformVector
+        } else {
+          sphereTex.transformVector.pos *= 0.9
+          sphereTex.transform += sphereTex.transformVector
+        }
+
+
       case BackSpace =>
         Thread.sleep(5000)
         glClear(1,1,1)

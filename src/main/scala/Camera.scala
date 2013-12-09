@@ -56,59 +56,28 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   }
 
   val pixels = Array.ofDim[Int](this.width * this.height)
-  def getColor(p:(Double,Double)):(Double,Double,Double) = {
-    val (x,y) = (p._1.toInt, p._2.toInt)
-    //val pixel = pixels((this.width*this.height - 1) -  (y * this.width + x))
-    val pixel = pixels((y * this.width + x))
-    
-    (
-      ((pixel >> 16) & 0xFF).toByte/255d,
-      ((pixel >> 8) & 0xFF).toByte/255d,
-      (pixel & 0xFF).toByte/255d
-    )
-  }
+
   import org.lwjgl.BufferUtils
   import org.lwjgl.opengl.GL11._
-  import org.lwjgl.opengl.GL12
+  import org.lwjgl.opengl.GL12._
   def captureFrameImg(): IplImage = cam.grab
   def captureFrameTex(img: IplImage): Int = {
     if(img == null) return -1
-    val image = img.getBufferedImage
-    val (w, h) = (image.getWidth, image.getHeight)
-    val size = w*h
     
-    image.getRGB(0, 0, w, h, pixels, 0, w)
-
-    val buffer = BufferUtils.createByteBuffer(size * 3) //4 for RGBA, 3 for RGB
-    
-    for(y <- 0 until h; x <- 0 until w) {
-      val pixel = pixels((size - 1) -  (y * w + x))
-      //buffer.put(((pixel >> 24) & 0xFF).toByte)    // Alpha component. Only for RGBA
-      buffer.put(((pixel >> 16) & 0xFF).toByte)     // Red component
-      buffer.put(((pixel >> 8) & 0xFF).toByte)      // Green component
-      buffer.put((pixel & 0xFF).toByte)           // Blue component
-    }
-    
-    buffer.flip //FOR THE LOVE OF GOD DO NOT FORGET THIS
-
-    // You now have a ByteBuffer filled with the color data of each pixel.
-    // Now just create a texture ID and bind it. Then you can load it using 
-    // whatever OpenGL method you want, for example:
-
     val textureID = glGenTextures //Generate texture ID
     glBindTexture(GL_TEXTURE_2D, textureID) //Bind texture ID
     
     //Setup wrap mode
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE)
-
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+    
     //Setup texture scaling filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
     
     //Send texel data to OpenGL
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer)
-
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img.width, img.height, 0, GL_BGR, GL_UNSIGNED_BYTE, img.getByteBuffer)
+    
     //Return the texture ID so we can bind it later again
     //println(textureID)
     textureID

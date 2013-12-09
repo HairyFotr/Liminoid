@@ -15,7 +15,7 @@ import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL11._
 import hardware.{RiftTracker,Rotation}
 
-import OBJModel.{Transform, Vec, Vec0, Vec1}
+import Model.{Transform, Vec, Vec0, Vec1, OBJModel, Color}
 
 final object Liminoid {
   val project = "Liminoid"
@@ -211,8 +211,17 @@ final object Liminoid {
   * Renders current frame
   */
   //val startZoom = -200
-  var camTex = -1
+  var camTex_ = -1
   var camtexFuture = future { cam.captureFrameImg() }
+  def camTex(): Int = { // Get camera frame
+    if(camtexFuture.isSet) {
+      glDeleteTextures(camTex_)
+      camTex_ = cam.captureFrameTex(camtexFuture())
+      camtexFuture = future { cam.captureFrameImg() }
+    }
+    camTex_
+  }
+
   
   // Liminoid phases
   val Setup = 0
@@ -221,39 +230,51 @@ final object Liminoid {
   val CircleSpace = 3
   val BackSpace = 4
 
-  var phase = Setup
+  var phase = Setup // Set initial phase
   
   val eyeCorrection = -64
   var testNum = 0;
+  var needCamera = false
 
   // Radiolarians phase objects
   lazy val room = Texture("img/wall.png")
   lazy val radiolarians = {
-    val radiolarians = Array(
-      OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true),
-      OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true)
-    )
-    radiolarians(0).transform = Transform(pos = Vec(0,0,200), rot = Vec(90,0,0))
-    radiolarians(1).transform = Transform(pos = Vec(20,8,210), rot = Vec(120,11,33))
+    val radiolarians = Array.fill(4)(OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true))
+    radiolarians(0).transform = Transform(pos = Vec(0,0,190),    rot = Vec(90,0,0))
+    radiolarians(1).transform = Transform(pos = Vec(30,8,213),   rot = Vec(120,11,33))
+    radiolarians(2).transform = Transform(pos = Vec(-53,13,277), rot = Vec(223,45,143))
+    radiolarians(3).transform = Transform(pos = Vec(84,-31,223), rot = Vec(321,92,234))
 
     radiolarians
   }
   var radioPosVec = Vec(0,0,-0.5)
   var radioRotVec = Vec(0,0,0)
-  lazy val core = OBJModel("obj/Prihod iz stene/Prihod iz stene_I_catclark.obj")
+  lazy val core = OBJModel("obj/Prihod iz stene/Prihod iz stene_I_catclark.obj").toModel(color = Color(0,0,0))
 
-  lazy val rock1 = OBJModel("obj/Prihod iz stene/Prihod iz stene_II_catclark.obj")
-  val rockTransform1 = Transform(pos = Vec(40,14,180), rot = Vec(120,11,33), size = Vec(2,2,2))
-  lazy val rock2 = OBJModel("obj/Prihod iz stene/Prihod iz stene_III_catclark.obj")
-  val rockTransform2 = Transform(pos = Vec(-32,-4,220), rot = Vec(120,11,33), size = Vec(3,3,3))
+  lazy val rocks = Array(
+    OBJModel("obj/Prihod iz stene/Prihod iz stene_II_catclark.obj").toModel(
+      transform = Transform(pos = Vec(40,14,180), rot = Vec(120,71,77), size = Vec(2,2,2)),
+      color = Color(0.6,0.4,0.3)),
+    OBJModel("obj/Prihod iz stene/Prihod iz stene_III_catclark.obj").toModel(
+      transform = Transform(pos = Vec(-32,-4,232), rot = Vec(144,11,13), size = Vec(3,3,3)),
+      color = Color(0.4,0.1,0.2)),
+    OBJModel("obj/Prihod iz stene/Prihod iz stene_IV_catclark.obj").toModel(
+      transform =  Transform(pos = Vec(77,-22,272), rot = Vec(112,43,95), size = Vec(4,4,4)),
+      color = Color(0.2,0.1,0.2)),
+    OBJModel("obj/Prihod iz stene/Prihod iz stene_V_catclark.obj").toModel(
+      transform =   Transform(pos = Vec(-92,15,220), rot = Vec(231,28,42), size = Vec(2,2,2)),
+      color = Color(0.6,0.5,0.3))
+  )
 
   // Mandalas phase objects
-  val mainMandala = new TexSequence("seq/00/", delay = 1, stopAtEnd = true)
+  val mainMandala = new TexSequence("seq/00/", delay = 75, stopAtEnd = true)
 
   // CircleSpace phase objects
-  lazy val sphereTex = OBJModel("obj/UV_sfera/UV_sfera_I.obj")
+  lazy val sphereTex = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel()
   //val Particles
   
+  //used for quick fadeins
+  var fade = 1d
 
   var lastRotation = Rotation(0,0,0)
   var rotation = Rotation(0,0,0)
@@ -281,13 +302,6 @@ final object Liminoid {
     val osc2 = sin(Utils.now*0.002 + 1*Pi/4)
     val osc3 = sin(Utils.now*0.002 + 2*Pi/4)
     val osc4 = sin(Utils.now*0.002 + 3*Pi/4)
-
-    // Get camera frame
-    if(camtexFuture.isSet) {
-      glDeleteTextures(camTex)
-      camTex = cam.captureFrameTex(camtexFuture())
-      camtexFuture = future { cam.captureFrameImg() }
-    }
 
     val (mw, mh) = (200-osc1*100-osc3*30, 160-osc2*50-osc3*20)
     val (cx, cy) = (winWidth/2 - mw/2, winHeight/2 - mh/2)
@@ -319,8 +333,13 @@ final object Liminoid {
       circlespace -> utrinek comes close and flashes ->
       backspace -> 
 
-      optimizations
+      reorganization
+        start opengl, then go onto app -> get rid of some lazy loading
+      optimizations,ideas,
         preload images while fps >= 60
+      details
+        call camtex when switching to a camera phase
+        faint rift tracking at mandalas
 
       realne koordinate stene
       senca na steni
@@ -342,40 +361,37 @@ final object Liminoid {
         opencv je zaeenkrat treba rocno... obstaja sbt string?
         lib rift sem sam scompilal da sploh ne zaznava Rifta
         PNGDecoder pride z lwjgl oz. kje je sbt string?
+        jlplayer
       
     */
       
     //G.quad(G.Coord(rotx + cx-frames*ratio/2d, roty + cy-frames/2d,mw+frames*ratio,mh+frames), (seqs.head)(), alpha = 1-abs(osc1)/4)
     //G.quad(G.Coord(0,0,1920,1080) + osc1*30, num(), alpha = 1)
     
-    def glClear(r: Float, g: Float, b: Float) {
-      GL11.glClearColor(r,g,b,1)
+    def glClear(r: Double, g: Double, b: Double) {
+      GL11.glClearColor(r.toFloat,g.toFloat,b.toFloat,1)
       GL11.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     }
 
+    if(fade < 1) fade += 0.002 else fade = 1
+
     phase match {
       case Setup => 
-        phase = CircleSpace//Radiolarians
+        glClear(0,0,0)
 
+        phase = Radiolarians
+        
         // Preload everything
-        for(radio <- radiolarians) {
-          radio.rewind
-          radio.active = true
-          while(radio.active) radio().displayList
-          radio.rewind
-          radio.active = false
-        }
-
-        mainMandala.rewind
-        mainMandala.active = true
-        while(mainMandala.active) mainMandala()
-        mainMandala.rewind
-        mainMandala.active = true
+        println((
+          Utils.time { for(radio <- radiolarians) { radio.preload } },
+          Utils.time { rocks }, // just triggers the lazy compute
+          Utils.time { mainMandala.preload }
+        ))
 
         //TODO
-        val (camw, camh) = (winHeight*4/3d, winHeight)
-        val (camx, camy) = (winWidth/2-camw/2, 0)
-        G.quad(G.Coord(camx,camy,camw,camh) + testNum, room, alpha = 1, flipx = true)
+        //val (camw, camh) = (winHeight*4/3d, winHeight)
+        //val (camx, camy) = (winWidth/2-camw/2, 0)
+        //G.quad(G.Coord(camx,camy,camw,camh) + testNum, room, alpha = 1, flipx = true)
         //G.quad(G.Coord(camx,camy,camw,camh) + testNum, camTex, alpha = osc1, flipy = true, flipx = false)
 
         System.gc()
@@ -384,17 +400,20 @@ final object Liminoid {
         glClear(1,1,1)
 
         // When radiolarian is close enough, change phase
-        if(radiolarians.exists { _.transform.pos.z < -18 }) phase = Mandalas
+        if(radiolarians.exists { _.transform.pos.z < -18 }) {
+          phase = Mandalas
+          fade = 0
+        }
         // Activate radiolarian shell open animation
         radiolarians.find { _.transform.pos.z < 10 }.map { _.active = true }
 
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
         G.quad(G.Coord(camx,camy,camw,camh) + testNum, room, alpha = 1, flipx = true)
-        //G.quad(G.Coord(camx,camy,camw,camh) + testNum, camTex, alpha = osc1, flipy = true, flipx = false)
+        //G.quad(G.Coord(camx,camy,camw,camh) + testNum, camTex, alpha = 1)
 
         // Render Camera
-        OBJModel.cam.render
+        Model.cam.render
 
         // Draw invisible wall
         glEnable(GL_DEPTH_TEST)
@@ -422,23 +441,25 @@ final object Liminoid {
           core.render()
         }
 
-        rock1.transform.pos += radioPosVec
-        rock2.transform.pos += radioPosVec
-        rock1.render()
-        rock2.render()
+        for(rock <- rocks) {
+          rock.applyTransformVector()
+          rock.transform.pos += radioPosVec
+          rock.render()
+        }
 
       case Mandalas =>
         glClear(0,0,0)
         
-        G.quad(G.Coord(0,0,winWidth,winHeight), mainMandala(), alpha = 0.5+(1-heart)*0.5)
+        G.quad(G.Coord(0,0,winWidth,winHeight), mainMandala(), alpha = (0.5+(1-heart)*0.5)*fade)
         if(!mainMandala.active) phase = CircleSpace
 
       case CircleSpace =>
-        glClear(1,1,1)
+        glClear(fade,fade,fade)
 
         //phase = BackSpace
-        //sphereTex.render(p = radio.pos, s = radio.size * 5, c = OBJModel.Vec0)
-
+        Model.cam.render
+        sphereTex.render(tex = camTex, alpha = fade)
+        if(sphereTex.transform.pos.z > -17) sphereTex.transform.pos += radioPosVec/3
       case BackSpace =>
         Thread.sleep(5000)
         glClear(1,1,1)

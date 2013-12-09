@@ -13,15 +13,16 @@ sealed trait Sequence[T] {
 
   var direction = 1
   var cursor = 0
-  val frames = 
+  val files = 
     (new File(path)).listFiles
-    .map { _.toString }
-    .filter { _ endsWith ext }
-    .toIndexedSeq
-    .sorted
+    .filter { _.isFile }
+    .filter { _.toString endsWith ext }
+
+  val frames = files.map { _.toString }.sorted
 
   private var time = 0
 
+  def preload(): Unit
   def get(): T
   def apply(): T = 
     if(active) {
@@ -39,7 +40,7 @@ sealed trait Sequence[T] {
 
   def moveCursor(): Unit = {
     val currCursor = cursor
-    if(Utils.now - time > delay) {
+    if(Utils.now - time >= delay) {
       cursor = (cursor + direction) % frames.size
       if(currCursor == frames.size - 1 && stopAtEnd) {
         cursor = frames.size - 1
@@ -54,7 +55,7 @@ sealed trait Sequence[T] {
         }
       }
       time = Utils.now
-    }    
+    }
   }
 }
 
@@ -66,25 +67,22 @@ case class TexSequence(
     var stopAtEnd: Boolean = false,
     val ext: String = ".png") extends Sequence[Int] { 
   override def get() = Texture(frames(cursor))
+  override def preload() { Texture.preload(files) }
 }
 
+import Model._
 case class OBJSequence(
     val path: String,
-    var transform: OBJModel.Transform = OBJModel.Transform001,
-    var transformVectors: OBJModel.Transform = OBJModel.Transform000,
+    var transform: Model.Transform = Model.Transform001,
+    var transformVectors: Model.Transform = Model.Transform000,
     var active: Boolean = true,
     var delay: Int = 75,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
-    val ext: String = ".obj") extends Sequence[OBJModel.Model] { 
-  override def get() = {
-      val model = OBJModel(frames(cursor)) //TODO: possible optimization - set reference upon preload
-      model.transform = transform
-      model
-  }
+    val ext: String = ".obj") extends Sequence[Model] { 
+  override def get() = OBJModel(frames(cursor)).toModel(transform = transform)
+  override def preload() { OBJModel.preload(files) }
 }
-
-
 
 
 

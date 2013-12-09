@@ -11,7 +11,7 @@ object Sound {
     val name :: file :: _ = line.split(" ").toList
     (name, folder + file)
   } toMap
-
+  
   def init(): Unit = {
     for((_, file) <- soundMap) {
       val player = new Player(new BufferedInputStream(new FileInputStream(file)))
@@ -19,7 +19,7 @@ object Sound {
       player.close()
     }
   }
-
+  
   def play(sound: String): Unit = thread {
     val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
     player.play

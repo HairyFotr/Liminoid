@@ -4,41 +4,55 @@ import org.lwjgl.opengl.GL11._
 import math._
 import Liminoid.{winWidth, winHeight, renderMode, RenderMode, Normal, Split, eyeCorrection}
 import scala.collection.mutable
+import java.io.File
 
-object OBJModel {
-  val cache = mutable.HashMap[String, Model]()
+object Model {
+  private[this] val cache = mutable.HashMap[String, RawModel]()
 
-  val oReg = "o (.*)".r              // object name, TODO: split models into objects if more than one
-  val vReg = "v (.*?) (.*?) (.*?)".r //vertices
-  val fReg = "f (.*)".r              //faces
-  val fcReg = "(.*?)/(.*?)".r          //face coord
-  
-  val vtReg = "vt (.*?) (.*?)".r            //uv vertices
+  object OBJModel {
+    private[this] val vReg = "v (.*?) (.*?) (.*?)".r // vertices
+    private[this] val fReg = "f (.*)".r              // faces
+    private[this] val fcReg = "(.*?)/(.*?)".r        // face coord, vertex/uvvertex 
+    
+    private[this] val vtReg = "vt (.*?) (.*?)".r     // uv vertices
 
-  def apply(fileStr: String): Model = cache.getOrElseUpdate(fileStr, {
-    val file = io.Source.fromFile(fileStr)
+    def apply(fileStr: String): RawModel = cache.getOrElseUpdate(fileStr, {
+      val file = io.Source.fromFile(fileStr)
 
-    var vertices: Vertices = Vector()
-    var faces: Faces = Vector()
-    var uvVertices: UVVertices = Vector()
-    //var name = ""
-    file.getLines foreach {
-      case vReg(x,y,z) => vertices :+= Vec(x.toDouble, y.toDouble, z.toDouble)
-      case fReg(f)     => faces :+= f.split(" ").map { case fcReg(v, vt) => (v.toInt - 1, vt.toInt -1); case v => (v.toInt - 1, -1) }
+      var vertices: Vertices = Vector.empty
+      var faces: Faces = Vector.empty
+      var uvVertices: UVVertices = Vector.empty
+      file.getLines foreach {
+        case vReg(x,y,z) => vertices :+= Vec(x.toDouble, y.toDouble, z.toDouble)
+        case fReg(f)     => faces :+= f.split(" ").map { case fcReg(v, vt) => (v.toInt - 1, vt.toInt -1); case v => (v.toInt - 1, -1) }
 
-      case vtReg(u,v)  => uvVertices :+= UV(u.toDouble, v.toDouble)
+        case vtReg(u,v)  => uvVertices :+= UV(u.toDouble, v.toDouble)
 
-      //case oReg(n) => name = n
-      case _ => // nop
+        case _ => // nop
+      }
+      file.close
+
+      RawModel(vertices, faces, uvVertices)
+    })
+
+    def preload(files: Array[File]) {
+      files
+        .filterNot { file => cache.contains(file.toString) }
+        .par.map { file => 
+          val rawModel = apply(file.toString)
+          cache(file.toString) = rawModel
+          rawModel
+        }
+        .seq.foreach { rawModel => 
+          rawModel.displayList
+        }
     }
-    file.close
-
-    Model(vertices, faces, uvVertices)
-  })
+  }
 
   type Vertices = Vector[Vec]
   type Faces = Vector[Array[(Int, Int)]]
   type UVVertices = Vector[UV]
+  
   case class Vec(var x: Double, var y: Double, var z: Double) {
     def +(v: Vec): Vec = Vec(x+v.x, y+v.y, z+v.z)
     def +=(v: Vec): Unit = { x += v.x; y += v.y; z += v.z; }
@@ -51,7 +65,13 @@ object OBJModel {
   final val Vec0 = Vec(0,0,0)
   final val Vec1 = Vec(1,1,1)
 
-  case class Transform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec1)
+  case class Transform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec1) {
+    def +=(vector: Transform) {
+      pos = pos + vector.pos
+      rot = rot + vector.rot
+      size = size + vector.size
+    }
+  }
   final val Transform001 = Transform(Vec0, Vec0, Vec1)
   final val Transform000 = Transform(Vec0, Vec0, Vec0)
 
@@ -72,24 +92,8 @@ object OBJModel {
   cam.setPerspective(90, (winWidth)/winHeight.toFloat, 1f, 1600f)
   cam.setPosition(0,0,-20);
   
-  case class Model(
-      vertices: Vertices,
-      faces: Faces,
-      uvVertices: UVVertices,
-      var transform: Transform = Transform001,
-      var tex: Int = -1,
-      var color: Color = gray) {
-
-    /*lazy val (center, size) = {
-      var (center, min, max) = (Vec0, Vec0, Vec0)
-      for(v <- vertices) {
-        center = center + v
-        min = min minCoord v
-        max = max maxCoord v
-      }
-      println((center /= vertices.size, min span max))
-      (center /= vertices.size, min span max)
-    }*/
+  case class RawModel(vertices: Vertices, faces: Faces, uvVertices: UVVertices) {
+    // Compile model to display list for faster drawing
     lazy val displayList = {
       val displayList = glGenLists(1)
       glNewList(displayList, GL_COMPILE)
@@ -106,7 +110,30 @@ object OBJModel {
       displayList
     }
 
-    def render(mode: RenderMode = renderMode, transform: Transform = transform, tex: Int = tex, color: Color = color) {
+    def toModel( // TODO: Ouch, this sucks, but gets around mutability of the memoization cache
+        transform: Transform = Transform001,
+        transformVector: Transform = Transform000,
+        tex: Int = -1,
+        color: Color = gray,
+        alpha: Double = 1d) = Model(displayList, transform, transformVector, tex, color, alpha)
+  }
+
+  case class Model(
+      /*vertices: Vertices,
+      faces: Faces,
+      uvVertices: UVVertices,*/
+      var displayList: Int,
+      var transform: Transform = Transform001,
+      var transformVector: Transform = Transform000,
+      var tex: Int = -1,
+      var color: Color = gray,
+      var alpha: Double = 1d) {
+
+    def applyTransformVector() {
+      transform += transformVector
+    }
+
+    def render(mode: RenderMode = renderMode, transform: Transform = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
       def render0() {
         import transform._
         glEnable(GL_DEPTH_TEST)
@@ -128,7 +155,7 @@ object OBJModel {
           glRotated(rot.y, 0,1,0)
           glRotated(rot.z, 0,0,1)
           glScaled(size.x, size.y, size.z)
-          glColor4d(color.r,color.g,color.b,1)
+          glColor4d(color.r,color.g,color.b,alpha)
           glCallList(displayList)
         glPopMatrix()
 

@@ -3,12 +3,13 @@ package org.ljudmila.liminoid.hardware
 import java.io.{BufferedReader, InputStreamReader, OutputStream}
 import gnu.io.{CommPortIdentifier, SerialPort, SerialPortEvent, SerialPortEventListener}
 // Adapted from http://playground.arduino.cc/Interfacing/Java via http://javatoscala.com/
+// TODO: Not tested with arduino or the pulse sensor yet, also put links here
 
 object Arduino {
-  private val PORT_NAMES = Array("/dev/tty.usbserial-A9007UX1", "/dev/ttyUSB0", "COM3")
-  private val TIME_OUT = 2000
-  private val DATA_RATE = 9600
-
+  private val PortNames = Set("/dev/tty.usbserial-A9007UX1", "/dev/ttyUSB0", "COM3")
+  private val TimeOut = 2000
+  private val DataRate = 9600
+  
   /*def main(args: Array[String]) {
     val main = new SerialTest()
     main.initialize()
@@ -26,29 +27,26 @@ object Arduino {
     t.start()
     println("Started")
   }*/
-
+  
   class SerialTest extends SerialPortEventListener {
     var serialPort: SerialPort = _
     private var input: BufferedReader = _
     private var output: OutputStream = _
-
+    
     def initialize() {
       var portId: CommPortIdentifier = null
       val portEnum = CommPortIdentifier.getPortIdentifiers
       while (portEnum.hasMoreElements()) {
         val currPortId = portEnum.nextElement().asInstanceOf[CommPortIdentifier]
-        for (_ <- PORT_NAMES find { portName => portName == currPortId.getName }) {
-          portId = currPortId
-          //break
-        }
+        if(PortNames(currPortId.getName)) portId = currPortId
       }
-      if (portId == null) {
+      if(portId == null) {
         println("Could not find COM port.")
         return
       }
       try {
-        serialPort = portId.open(this.getClass.getName, TIME_OUT).asInstanceOf[SerialPort]
-        serialPort.setSerialPortParams(DATA_RATE, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
+        serialPort = portId.open(this.getClass.getName, TimeOut).asInstanceOf[SerialPort]
+        serialPort.setSerialPortParams(DataRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
         input = new BufferedReader(new InputStreamReader(serialPort.getInputStream))
         output = serialPort.getOutputStream
         serialPort.addEventListener(this)
@@ -57,7 +55,7 @@ object Arduino {
         case e: Exception => System.err.println(e.toString)
       }
     }
-
+    
     def close() {
       synchronized {
         if (serialPort != null) {
@@ -66,7 +64,7 @@ object Arduino {
         }
       }
     }
-
+    
     def serialEvent(oEvent: SerialPortEvent) {
       synchronized {
         if (oEvent.getEventType == SerialPortEvent.DATA_AVAILABLE) {

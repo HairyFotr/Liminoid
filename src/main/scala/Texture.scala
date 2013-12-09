@@ -9,56 +9,64 @@ import de.matthiasmann.twl.utils.PNGDecoder
 import scala.collection.mutable
 
 object Texture {
-  val cache = mutable.HashMap[String, Int]()
-
-  def apply(filename: String, mode: Int = GL_NEAREST_MIPMAP_LINEAR): Int = cache.getOrElseUpdate(filename,
-    try {
-      // Open the PNG file as an InputStream
-      val in = new FileInputStream(filename)
-      // Link the PNG decoder to this stream
-      val decoder = new PNGDecoder(in)
-
-      // Color components (3 RGB, 4 RGBA)
-      val c = 4
+  private[this] val cache = mutable.HashMap[String, Int]()
   
-      // Get the width and height of the texture
-      val w = decoder.getWidth()
-      val h = decoder.getHeight()
+  case class Buffer(w: Int, h: Int, buffer: ByteBuffer)
   
-      // Decode the PNG file in a ByteBuffer
-      val buf = ByteBuffer.allocateDirect(c * w * h)
-      decoder.decode(buf, w * c, PNGDecoder.Format.RGBA)
-      buf.flip()
+  def loadBuffer(filename: String): Buffer = {
+    // Open the PNG file as an InputStream
+    val in = new FileInputStream(filename)
+    // Link the PNG decoder to this stream
+    val decoder = new PNGDecoder(in)
+    
+    // Color components (3 RGB, 4 RGBA)
+    val c = 4
+    
+    // Get the width and height of the texture
+    val w = decoder.getWidth()
+    val h = decoder.getHeight()
+    
+    // Decode the PNG file in a ByteBuffer
+    val buffer = ByteBuffer.allocateDirect(c * w * h) //allocate
+    decoder.decode(buffer, w * c, PNGDecoder.Format.RGBA)
+    buffer.flip()
 
-      in.close()
+    in.close()
+
+    Buffer(w, h, buffer)
+  }
   
-      val textureID = glGenTextures //Generate texture ID
-      glBindTexture(GL_TEXTURE_2D, textureID) //Bind texture ID
-      
-      //Setup wrap mode
-      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+  def makeTexture(buffer: Buffer): Int = {
+    val textureID = glGenTextures //Generate texture ID
+    glBindTexture(GL_TEXTURE_2D, textureID) //Bind texture ID
+    
+    //Setup wrap mode
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
 
-      //Setup texture scaling filtering
-      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mode)
-      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode)
-      
-      //Send texel data to OpenGL
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-      //gluBuild2DMipmaps(GL_TEXTURE_2D, c, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf)
-      GL30.glGenerateMipmap(GL_TEXTURE_2D);
+    //Setup texture scaling filtering
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode)
+    
+    //Send texel data to OpenGL
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    //gluBuild2DMipmaps(GL_TEXTURE_2D, c, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.w, buffer.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.buffer)
+    GL30.glGenerateMipmap(GL_TEXTURE_2D);
 
-      //Return the texture ID so we can bind it later again
-      //println(textureID)
+    //Return the texture ID so we can bind it later again
+    //println(textureID)
 
-      textureID
-    } catch {
-      case e: Exception => 
-        println(filename)
-        e.printStackTrace
-        -1
-    })
+    textureID
+  }
+  
+  def apply(filename: String): Int = cache.getOrElseUpdate(filename, makeTexture(loadBuffer(filename)))
+  def preload(files: Array[File]) {
+    files
+      .filterNot { file => cache.contains(file.toString) }
+      .par.map { file => (file.toString, loadBuffer(file.toString)) }
+      .seq.foreach { case (filename, buffer) => cache(filename) = makeTexture(buffer) }
+  }
 }

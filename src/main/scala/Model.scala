@@ -70,6 +70,8 @@ object Model {
     def z: Double
 
     def +(v: VecLike) = Vec(x+v.x, y+v.y, z+v.z)
+    def -(v: VecLike) = Vec(x-v.x, y-v.y, z-v.z)
+    def unary_-() = Vec(-x, -y, -z)
     def *(f: Double) = Vec(x*f, y*f, z*f)
     def /(f: Double) = Vec(x/f, y/f, z/f)
     def distance(v: Vec): Double = sqrt(pow(x-v.x, 2) + pow(y-v.y, 2) + pow(z-v.z, 2))
@@ -83,7 +85,7 @@ object Model {
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
   implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x,it.y,it.z)
   case class MutableVec(var x: Double, var y: Double, var z: Double) extends VecLike {
-    def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
+    //def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
     def *=(f: Double): Unit = { x *= f; y *= f; z *= f; }
   }
   final val Vec0 = Vec(0,0,0)
@@ -110,11 +112,15 @@ object Model {
 
   case class Color(var r: Double, var g: Double, var b: Double) {
     def -=(f: Double) { r -= f; g -= f; b -= f; }
+    def *=(f: Double) { r *= f; g *= f; b *= f; }
+  }
+  object Color {
+    def apply(d: Double): Color = Color(d,d,d)
   }
 
   val cam = new Camera
   cam.setViewPort(0,0,winWidth,winHeight)
-  cam.setOrtho(0,winHeight,winWidth,0,1f,-1f)
+  //cam.setOrtho(0,winHeight,winWidth,0,1f,-1f)
   cam.setPerspective(90, (winWidth)/winHeight.toFloat, 1f, 500f)
   cam.setPosition(0,0,0);
   cam.lookAt(Vec3(0,0,200))
@@ -141,20 +147,22 @@ object Model {
     def toModel( // TODO: Ouch, this sucks, but gets around mutability of the memoization cache
         transform: MutableTransform = Transform001,
         transformVector: MutableTransform = Transform000,
-        oscillatorPhase: Double = 0,
         tex: Int = -1,
         color: Color = Color(0.5,0.5,0.5),
-        alpha: Double = 1d) = Model(displayList, transform, transformVector, oscillatorPhase, tex, color, alpha)
+        alpha: Double = 1d,
+        phi: Double = 0,
+        theta: Double = 0) = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta)
   }
 
   case class Model(
       val displayList: Int,
       val transform: MutableTransform,
       val transformVector: MutableTransform,
-      val oscillatorPhase: Double,
       val tex: Int,
       val color: Color,
-      val alpha: Double) {
+      val alpha: Double,
+      var phi: Double,
+      var theta: Double) {
 
     def render(mode: RenderMode = renderMode, transform: MutableTransform = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
       def render0() {
@@ -222,4 +230,35 @@ object Model {
       }
     }
   }
+
+
+  case class Particle(transform: MutableTransform, transformVector: MutableTransform, color: Color, var dead: Boolean = false) {
+    val spread = 3d
+    transform.pos += (Vec.random * ((nextDouble-nextDouble)*spread))
+    val spread2 = 2d
+    transformVector.pos += (Vec.random * ((nextDouble-nextDouble)*spread2))
+
+    def render() {
+      if(!dead) {
+        transformVector.pos *= (0.9 - nextDouble*0.2)
+        color *= (1.1 + nextDouble*0.2)
+        val pos0 = transform.pos.copy()
+        transform += transformVector
+        if(color.r >= 1) dead = true
+
+
+        glColor3d(color.r, color.g, color.b)
+        import transform._
+        //glBegin(GL_POINTS)
+        val size = 0.01
+        glBegin(GL_QUADS)
+          glVertex3d(pos0.x, pos0.y, pos0.z)
+          glVertex3d(pos.x, pos.y, pos.z)
+          glVertex3d(pos.x+size, pos.y+size, pos.z+size)
+          glVertex3d(pos0.x+size, pos0.y+size, pos0.z+size)
+        glEnd()
+      }
+    }
+  }
+  
 }

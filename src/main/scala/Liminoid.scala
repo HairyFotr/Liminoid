@@ -15,7 +15,7 @@ import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL11._
 import hardware.{RiftTracker,Rotation}
 
-import Model.{Transform, Vec, Vec0, Vec1, OBJModel, Color}
+import Model.{Transform, Vec, Vec0, Vec1, OBJModel, Color, Particle}
 
 final object Liminoid {
   val project = "Liminoid"
@@ -28,9 +28,12 @@ final object Liminoid {
   var isMainLoopRunning = false
   var renderTime = 0f
   var lastFPS = 0f
+  var pause = false
 
   // Cameras
-  val cam = hardware.Camera(camId = 0)
+  val cams = Array(hardware.Camera(camId = 1), hardware.Camera(camId = 2), hardware.Camera(camId = 3))
+  val backCamera = cams.last
+  val stereoCameras = cams.take(2)
   //val camBack = hardware.Camera(camId = 1)
 
   /**
@@ -190,11 +193,6 @@ final object Liminoid {
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
     
     glViewport(0,0, winWidth,winHeight) // mapping from normalized to window coordinates
-     
-    //camView.setPerspective(50, winWidth/winHeight.toFloat, 1f, 600f)
-    //camView.setOrtho(0,0,1,1,-100f,100f)
-    //camView.setRotation(0,0,0)
-    //camView.setPosition(0,0,-1)
   }
   
   /**
@@ -211,18 +209,6 @@ final object Liminoid {
   /**
   * Renders current frame
   */
-  //val startZoom = -200
-  var camTex_ = -1
-  var camtexFuture = future { cam.captureFrameImg() }
-  def camTex(): Int = { // Get camera frame
-    if(camtexFuture.isSet) {
-      glDeleteTextures(camTex_)
-      camTex_ = cam.captureFrameTex(camtexFuture())
-      camtexFuture = future { cam.captureFrameImg() }
-    }
-    camTex_
-  }
-
   
   // Liminoid phases
   val Setup = 0
@@ -232,10 +218,19 @@ final object Liminoid {
   val BackSpace = 4
 
   var phase = Setup // Set initial phase
+  var phaseChange = true
   
+  def gotoPhase(i: Int) {
+    phase = i
+    phaseChange = true
+  }
+  def initPhase(f: => Unit): Unit = if(phaseChange) {
+    phaseChange = false
+    f
+  }
+
   val eyeCorrection = -64
   var testNum = 0;
-  var needCamera = false
 
   // Radiolarians phase objects
   lazy val room = Texture("img/wall.png")
@@ -269,15 +264,28 @@ final object Liminoid {
       transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
       color = Color(0.9,0.9,0.9))
   )
+  var particles = Vector.empty[Particle]
 
   // Mandalas phase objects
   val mainMandala = new TexSequence("seq/00/", delay = 75, stopAtEnd = true)
 
   // CircleSpace phase objects
-  lazy val sphereTex = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
-    transform = Transform(pos = Vec(0,0,100), rot = Vec(0,0,0), size = Vec(2,2,2)),
-    transformVector = Transform(pos = Vec(0,0,-0.5), rot = Vec.random),
-    color =  Color(0.9,0.9,0.9))
+  def newStar = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
+    transform = Transform(rot = Vec.random, size = (Vec1/2) + (Vec.random/3)),
+    transformVector = Transform(rot = Vec.random),
+    color =  Color(0.2,0.2,0.2),
+    phi = nextDouble*math.Pi*2, theta = nextDouble*math.Pi*2)
+  var stars = Vector.empty[Model.Model]
+
+  lazy val magnets =
+    Vector.fill(15)(
+      OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
+        transform = Transform(rot = Vec.random, size = Vec1*2),
+        transformVector = Transform(rot = Vec.random),
+        color =  Color(0.3,0.3,0.3),
+        phi = nextDouble*math.Pi*2, theta = nextDouble*math.Pi*2))
+  
+
   //val Particles
   
   //used for quick fadeins
@@ -349,6 +357,7 @@ final object Liminoid {
       details
         call camtex when switching to a camera phase
         faint rift tracking at mandalas
+        menger sponge feathered texture on radiolarians!!!
 
       realne koordinate stene
       senca na steni
@@ -360,7 +369,19 @@ final object Liminoid {
       mora bit posyncano
       pulz opacity layers
 
-      to white, mogoce ze prej vletavajo utrini "asteroid field effect"
+      cameras
+        2x Logitech c270 hacking  
+          Bus 003 Device 013: ID 046d:0825 Logitech, Inc. Webcam C270
+          Bus 003 Device 012: ID 046d:0825 Logitech, Inc. Webcam C270
+          Focus hacking http://www.youtube.com/watch?v=v-gYgBeiOVI
+
+        1x Logitech c615
+          Bus 003 Device 014: ID 046d:082c Logitech, Inc. 
+          http://www.linux-hardware-guide.com/2013-04-20-logitech-hd-webcam-c615
+
+        add timeout to camera to prevent old frames
+
+      to white, mogoce ze prej vletavajo utrinki "asteroid field effect"
 
       utriniki po kroznici gredo skozi ~5 tock + trail (2 kota sin cos?)
         fake1 - if top change direction, +x... 
@@ -375,6 +396,15 @@ final object Liminoid {
       kamera
         two cameras - figure out the spacing, FOV, etc
         one camera - move image for each eye
+
+      gl
+        glClear
+        glBegin(GL_SOMETHING) {
+  
+        }
+        glPush {
+  
+        }
 
 
       OS support
@@ -396,48 +426,40 @@ final object Liminoid {
     if(fade < 1) fade += 0.002 else fade = 1
 
     phase match {
-      case Setup => 
+      case Setup => /////////////////////////////////////////////////////////////////////////////////////////////
         glClear(0,0,0)
 
-        
         // Preload everything
         println((
-          Utils.time { for(radio <- radiolarians) { radio.preload } },
-          Utils.time { rocks }, // just triggers the lazy compute
-          Utils.time { mainMandala.preload }
+          //Utils.time { for(radio <- radiolarians) { radio.preload } },
+          //Utils.time { rocks }, // just triggers the lazy compute
+          //Utils.time { mainMandala.preload }
         ))
 
-        //TODO
-        //val (camw, camh) = (winHeight*4/3d, winHeight)
-        //val (camx, camy) = (winWidth/2-camw/2, 0)
-        //G.quad(G.Coord(camx,camy,camw,camh) + testNum, room, alpha = 1, flipx = true)
-        //G.quad(G.Coord(camx,camy,camw,camh) + testNum, camTex, alpha = osc1, flipy = true, flipx = false)
-
         System.gc()
-        phase = Radiolarians
-        //Sound.play("intro")
+        gotoPhase(CircleSpace)
 
-      case Radiolarians =>
+      case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
+        initPhase {
+          //Sound.play("intro")
+        }
         glClear(1,1,1)
 
         // When radiolarian is close enough, change phase
-        if(radiolarians.exists { _.transform.pos.z < 0 }) {
-          phase = Mandalas
-          fade = 0
-        }
+        if(radiolarians.exists { _.transform.pos.z < 0 }) { gotoPhase(Mandalas) }
         // Activate radiolarian shell open animation
-        radiolarians.find { _.transform.pos.z < 100 }.map { r => 
-          r.transformVector.rot *= 0.8
-        }
+        radiolarians.find { _.transform.pos.z < 100 }.map { r => r.transformVector.rot *= 0.8 }
         radiolarians.find { _.transform.pos.z < 50 }.map { r => if(!r.active) { r.active = true; fade = 0 } }
-
-        val (camw, camh) = (winHeight*4/3d, winHeight)
-        val (camx, camy) = (winWidth/2-camw/2, 0)
-        G.quad(G.Coord(camx,camy,camw,camh) + testNum, room, alpha = 1, flipx = true)
-        //G.quad(G.Coord(camx,camy,camw,camh) + testNum, camTex, alpha = 1)
 
         // Render Camera
         Model.cam.render
+
+        val (camw, camh) = (winHeight*4/3d, winHeight)
+        val (camx, camy) = (winWidth/2-camw/2, 0)
+        stereoCameras(0).getTextureID
+        stereoCameras(1).getTextureID
+
+        G.quad(G.Coord(camx,camy,camw,camh) + testNum, backCamera.getTextureID, alpha = 1)
 
         // Draw invisible wall
         glEnable(GL_DEPTH_TEST)
@@ -472,43 +494,101 @@ final object Liminoid {
           rock.render()
         }
 
-      case Mandalas =>
+      case Mandalas => /////////////////////////////////////////////////////////////////////////////////////////////
+        initPhase {}
+
         glClear(0,0,0)
         
         G.quad(G.Coord(0,0,winWidth,winHeight), mainMandala(), alpha = (0.5+(1-heart)*0.5)*fade)
-        if(!mainMandala.active) {
-          phase = CircleSpace
+
+        if(!mainMandala.active) gotoPhase(CircleSpace)
+
+      case CircleSpace => /////////////////////////////////////////////////////////////////////////////////////////////
+        initPhase {
           fade = 0
+          frames = 0
+          stars = Vector.fill(10)(newStar)
         }
+        val radius = 100
+        glClear(1,1,1)
 
-      case CircleSpace =>
-        glClear(fade*2,fade*2,fade*2)
-
-        Model.cam.lookAt(Vec3(0,0,0))
+        //Model.cam.lookAt(Vec3(testNum,0,0))
+        Model.cam.lookAt(Vec3(testNum,-20,1))
         Model.cam.render
-        for(i <- 1 to 10) {
-          val z = sin((frames+i*10)*0.01)*100
-          val y = cos((frames+i*10)*0.01)*100
-          val x = 0
 
-          //phase = BackSpace
-          if(sphereTex.transform.pos.z > 3) {
-            //sphereTex.transform += sphereTex.transformVector
-          }
-          sphereTex.transform.pos = Vec(x,y,z)
-          sphereTex.render(tex = camTex, alpha = fade)
-          sphereTex.transform.pos = Vec(x,z,y)
-          sphereTex.render(tex = camTex, alpha = fade)
-          sphereTex.transform.pos = Vec(y,x,z)
-          sphereTex.render(tex = camTex, alpha = fade)
-          sphereTex.transform.pos = Vec(y,z,x)
-          sphereTex.render(tex = camTex, alpha = fade)
-          sphereTex.transform.pos = Vec(z,x,y)
-          sphereTex.render(tex = camTex, alpha = fade)
-          sphereTex.transform.pos = Vec(z,y,x)
-          sphereTex.render(tex = camTex, alpha = fade)
+        def getVec(phi: Double, theta: Double) = {
+          Vec(
+            x = (cos(theta)*cos(phi)) * radius,
+            y = (cos(theta)*sin(phi)) * radius,
+            z = (sin(theta)) * radius)
+        }
+        def getDiff(phi: Double, theta0: Double, theta1: Double) = {
+          getVec(phi,theta1) - getVec(phi,theta0)
         }
 
+        for(magnet <- magnets) {
+          val phi = magnet.phi
+          val theta0 = magnet.theta
+          val theta1 = magnet.theta + 0.1
+
+          if(frames == 0) {
+            magnet.transform.pos = getVec(phi, theta1)
+          } else if(!pause) {
+
+          }
+
+          val zeroDist = magnet.transform.pos distance Vec(0,0,0)
+          if(abs(zeroDist - radius) > 0) {
+            magnet.transform.pos = magnet.transform.pos * (radius/zeroDist)
+          }
+
+          magnet.render(color = Color(0,0,0))
+        }
+
+        if(frames % 30 == 0) {
+          //stars :+= newStar
+        }
+
+        for(star <- stars) {
+          // Great circles: http://paulbourke.net/geometry/circlesphere/
+          val phi = star.phi
+          val theta0 = star.theta
+          val theta1 = star.theta + 0.1
+
+          if(frames == 0) {
+            star.transform.pos = getVec(phi, theta1)
+          } else if(!pause) {
+            val magnet = magnets.minBy { magnet => magnet.transform.pos distance star.transform.pos }
+            val magdist = magnet.transform.pos distance star.transform.pos
+
+            val diff = getDiff(phi, theta0, theta1)
+            val magthresh = 0
+            val ratio = 1//if(magdist < magthresh) math.pow((magthresh-magdist)/magthresh, 300) else 1
+            star.transform.pos += diff*ratio + magnet.transform.pos*(1 - ratio)
+            star.transformVector.pos = diff
+            if(magdist < 1 && nextDouble < 0.01) star.transform.pos = Vec.random
+            
+            val zeroDist = star.transform.pos distance Vec(0,0,0)
+            if(abs(zeroDist - radius) > 0) {
+              star.transform.pos = star.transform.pos * (radius/zeroDist)
+            }
+            star.theta = theta1
+            star.phi += nextDouble*0.005
+            particles ++= Vector.fill(100)(Particle(
+              transform = star.transform.copy(),
+              transformVector = star.transformVector.copy(pos = -star.transformVector.pos, rot = Vec.random),
+              //fade = nextDouble*2,
+              color = Color(0.01+nextDouble*0.3))
+            )
+          }
+
+          star.render(color = Color(0,0,0))
+        }
+
+        particles = particles.filterNot(_.dead)
+        particles.foreach { _.render }
+
+        //stars.head.render(color = Color(0.5, 0.5, 0.5), alpha = 0.25, transform = Transform(pos = Vec(0,0,0), size = Vec(radius,radius,radius)))
         glBegin(GL_LINES)
           glColor3f(1,0,0)
           glVertex3d(-100,0,0)
@@ -519,13 +599,24 @@ final object Liminoid {
           glColor3f(0,0,1)
           glVertex3d(0,0,-100)
           glVertex3d(0,0,+100)
+          glColor3f(0,0,0)
+          glVertex3d(-100,-100,-100)
+          glVertex3d(+100,+100,+100)
+          glVertex3d(0,0,-0)
+          glVertex3d(+100,+100,+100)
+          glVertex3d(0,0,0)
+          glVertex3d(-100,-100,-100)
         glEnd
 
-        core.render(transform = Model.Transform001)
+
+        //core.render(transform = Model.Transform001)
 
 
-      case BackSpace =>
-        Thread.sleep(5000)
+      case BackSpace => /////////////////////////////////////////////////////////////////////////////////////////////
+        initPhase {
+          Thread.sleep(5000)
+        }
+        
         glClear(1,1,1)
 
         //if(radiolarians.exists { _.transform.pos.z < -18 }) phase += 1
@@ -567,8 +658,10 @@ final object Liminoid {
     if(isKeyDown(KEY_D)) modelSeq.rot = modelSeq.rot.copy(y = modelSeq.rot.y - 2)
     if(isKeyDown(KEY_Q)) modelSeq.rot = modelSeq.rot.copy(x = modelSeq.rot.x + 2)
     if(isKeyDown(KEY_E)) modelSeq.rot = modelSeq.rot.copy(x = modelSeq.rot.x - 2)
+    */
 
-    if(isKeyDown(KEY_RETURN)) modelSeq.active = !modelSeq.active*/
+    if(isKeyDown(KEY_P)) pause = !pause
+    if(isKeyDown(KEY_0)) Model.cam.pos = Vec3(0,0,0)
 
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {
       isMainLoopRunning = false

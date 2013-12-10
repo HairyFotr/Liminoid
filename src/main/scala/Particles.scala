@@ -27,7 +27,7 @@ case class Quad(coord: Vec3, size: Size = Size(), angle: Angle = Angle(), alpha:
   }
 }
 
-case class Particle(var quad: Quad, deltaFunc: (Quad, Float) => Quad) {
+case class OldParticle(var quad: Quad, deltaFunc: (Quad, Float) => Quad) {
   def step(delta: Float) {
     this.quad = deltaFunc(quad, delta)
   }
@@ -36,7 +36,8 @@ case class Particle(var quad: Quad, deltaFunc: (Quad, Float) => Quad) {
   }
 }
 
-object Particles {
+object OldParticles {
+  type Particle = OldParticle
   import Liminoid.{winWidth, winHeight, renderMode, RenderMode, Normal, Split, eyeCorrection}
 
   private val cam = new Camera

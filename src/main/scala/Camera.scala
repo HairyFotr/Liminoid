@@ -3,6 +3,7 @@ package org.ljudmila.liminoid.hardware
 import com.googlecode.javacv._
 import com.googlecode.javacv.cpp.opencv_core._
 import collection.mutable.{HashMap,HashSet,ListBuffer,LinkedHashMap}
+import scala.actors.Futures._
 import System.err
 
 
@@ -60,12 +61,13 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   import org.lwjgl.BufferUtils
   import org.lwjgl.opengl.GL11._
   import org.lwjgl.opengl.GL12._
-  def captureFrameImg(): IplImage = cam.grab
-  def captureFrameTex(img: IplImage): Int = {
+  private def captureFrameImg(): IplImage = cam.grab
+  private def captureFrameTex(img: IplImage): Int = {
     if(img == null) return -1
     
-    val textureID = glGenTextures //Generate texture ID
-    glBindTexture(GL_TEXTURE_2D, textureID) //Bind texture ID
+    //Generate texture and bind ID
+    val textureID = glGenTextures 
+    glBindTexture(GL_TEXTURE_2D, textureID)
     
     //Setup wrap mode
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
@@ -82,4 +84,20 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     //println(textureID)
     textureID
   }
-}  
+
+  //
+  private var camtexFuture = future[IplImage] { null }
+  private var camTex = -1
+  def getTextureID(): Int = synchronized {
+    if(camTex == -1) {
+      camTex = 0
+      camTex = captureFrameTex(captureFrameImg())
+      camtexFuture = future { captureFrameImg() }
+    } else if(camtexFuture.isSet) {
+      glDeleteTextures(camTex)
+      camTex = captureFrameTex(camtexFuture())
+      camtexFuture = future { captureFrameImg() }
+    }
+    camTex
+  }
+}

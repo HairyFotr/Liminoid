@@ -437,7 +437,7 @@ final object Liminoid {
         ))
 
         System.gc()
-        gotoPhase(CircleSpace)
+        gotoPhase(Radiolarians)
 
       case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
@@ -451,15 +451,15 @@ final object Liminoid {
         radiolarians.find { _.transform.pos.z < 100 }.map { r => r.transformVector.rot *= 0.8 }
         radiolarians.find { _.transform.pos.z < 50 }.map { r => if(!r.active) { r.active = true; fade = 0 } }
 
-        // Render Camera
-        Model.cam.render
-
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
         stereoCameras(0).getTextureID
         stereoCameras(1).getTextureID
 
         G.quad(G.Coord(camx,camy,camw,camh) + testNum, backCamera.getTextureID, alpha = 1)
+
+        // Render Camera
+        Model.cam.render
 
         // Draw invisible wall
         glEnable(GL_DEPTH_TEST)

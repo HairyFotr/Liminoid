@@ -176,13 +176,13 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
       glAttachShader(shader, fragShader)
 
       glLinkProgram(shader)
-      if(glGetProgram(shader, GL_LINK_STATUS) == GL_FALSE) {
+      if(glGetProgrami(shader, GL_LINK_STATUS) == GL_FALSE) {
         println("Linkage error")
         printLogInfo(shader)
       }
 
       glValidateProgram(shader)
-      if(glGetProgram(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
+      if(glGetProgrami(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
         println("Validation error")
         printLogInfo(shader)
       }
@@ -196,7 +196,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
 
   def validate() {
     glValidateProgram(shader)
-    if(glGetProgram(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
+    if(glGetProgrami(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
       printLogInfo(shader)
     }
   }
@@ -208,7 +208,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
       glShaderSource(vertShader, vertexCode)
       glCompileShader(vertShader)
 
-      if(glGetShader(vertShader, GL_COMPILE_STATUS) == GL_FALSE) {
+      if(glGetShaderi(vertShader, GL_COMPILE_STATUS) == GL_FALSE) {
         printLogInfo(vertShader)
         return 0
       }
@@ -222,7 +222,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     if (fragShader != 0) {
       glShaderSource(fragShader, fragCode)
       glCompileShader(fragShader)
-      if (glGetShader(fragShader, GL_COMPILE_STATUS) == GL_FALSE) {
+      if (glGetShaderi(fragShader, GL_COMPILE_STATUS) == GL_FALSE) {
         printLogInfo(fragShader)
         return 0
       }

@@ -17,12 +17,16 @@ libraryDependencies <++= scalaVersion(v => Seq(
 
 //scalacOptions += "-Xplugin:/home/hairy/dev/linter/target/scala-2.10/linter_2.10-0.1-SNAPSHOT.jar"
 
+javaOptions += "-Xmx1G"
+
+fork := true
+
 scalacOptions ++= Seq(
-  //"-optimize",
-  //"-feature",
-  //"-deprecation",
-  "-unchecked",
-  //"-Xlint",
+  //"-target:jvm-1.7",
+  "-J-Xmx1G",
+  "-optimise", "-Yinline", "-Yinline-warnings", "-Yclosure-elim",
+  "-feature", "-deprecation", "-unchecked",
+  "-Xlint",
   "-Ywarn-adapted-args",
   //"-Ywarn-all",
   "-Ywarn-dead-code",

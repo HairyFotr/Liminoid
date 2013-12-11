@@ -7,10 +7,11 @@ import Utils.{thread, getFile}
 import scala.collection.mutable.{Map, SynchronizedMap}
 object Sound {
   val folder = "snd/"
-  val soundMap = getFile(folder + "list.txt") map { line => 
+  var mute = true
+  val soundMap = getFile(folder + "list.txt").map { line => 
     val name :: file :: _ = line.split(" ").toList
     (name, folder + file)
-  } toMap
+  }.toMap
   
   def init(): Unit = {
     for((_, file) <- soundMap) {
@@ -21,7 +22,7 @@ object Sound {
   }
   
   var players = Set.empty[Player]
-  def stopAll() = this.synchronized { 
+  def stopAll() = this.synchronized {
     players.foreach(_.close)
     players = Set.empty
   }

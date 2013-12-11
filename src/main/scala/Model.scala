@@ -6,6 +6,7 @@ import Liminoid.{winWidth, winHeight, renderMode, RenderMode, Normal, Split, eye
 import scala.collection.mutable
 import java.io.File
 import util.Random._
+import scala.language.implicitConversions
 
 object Model {
   private[this] val rawcache = mutable.HashMap[String, RawModel]()
@@ -78,9 +79,11 @@ object Model {
     def minCoord(v: VecLike) = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
     def maxCoord(v: VecLike) = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
     def span(v: VecLike) = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
+    def avg() = (x+y+z)/3d
   }
   object Vec {
     def random = Vec(nextDouble,nextDouble,nextDouble)
+    def randomUniform = { val r = nextDouble; Vec(r,r,r) } 
   }
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
   implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x,it.y,it.z)
@@ -235,8 +238,8 @@ object Model {
   case class Particle(transform: MutableTransform, transformVector: MutableTransform, color: Color, var dead: Boolean = false) {
     val spread = 3d
     transform.pos += (Vec.random * ((nextDouble-nextDouble)*spread))
-    val spread2 = 2d
-    transformVector.pos += (Vec.random * ((nextDouble-nextDouble)*spread2))
+    val spread2 = 20d
+    //transformVector.pos += (Vec.random * ((nextDouble-nextDouble)*spread2))
 
     def render() {
       if(!dead) {
@@ -250,7 +253,7 @@ object Model {
         glColor3d(color.r, color.g, color.b)
         import transform._
         //glBegin(GL_POINTS)
-        val size = 0.01
+        val size = 0.1
         glBegin(GL_QUADS)
           glVertex3d(pos0.x, pos0.y, pos0.z)
           glVertex3d(pos.x, pos.y, pos.z)

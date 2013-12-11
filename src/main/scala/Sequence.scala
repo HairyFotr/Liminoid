@@ -25,18 +25,21 @@ sealed trait Sequence[T] {
   def preload(): Unit
   def get(): T
   def apply(): T = 
-    if(active) {
+    (if(active) {
       val out = get()
       moveCursor()
       out
     } else {
       get()
-    }
+    })
+    
+  def delete(d: String): Unit
 
   def rewind(): Unit = {
     cursor = 0
     direction = 1
   }
+
 
   def moveCursor(): Unit = {
     val currCursor = cursor
@@ -65,9 +68,20 @@ case class TexSequence(
     var delay: Int = 175,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
+    var selfDestruct: Boolean = false,
     val ext: String = ".png") extends Sequence[Int] { 
-  override def get() = Texture(frames(cursor))
+  var last = ""
+  override def get() = {
+    val name = frames(cursor)
+    val out = Texture(name)
+    if(selfDestruct && name != last) {
+      if(last.nonEmpty) delete(last)
+      last = name
+    }
+    out
+  }
   override def preload() { Texture.preload(files) }
+  override def delete(d: String) { Texture.delete(d) }
 }
 
 import Model._
@@ -85,6 +99,7 @@ case class OBJSequence(
   val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform) }
   override def get() = models(cursor)
   override def preload() { OBJModel.preload(files) }
+  override def delete(d: String) { /*foo*/ }
 }
 
 

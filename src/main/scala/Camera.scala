@@ -9,6 +9,7 @@ import System.err
 
 object Camera {
   val FrameGrabbers = HashMap[Int, OpenCVFrameGrabber]()
+  val supressErrors = true
   
   def getCamera(camIds: Seq[Int], width: Int = 640, height: Int = 480): Option[Camera] = {
     for(camId <- camIds) {
@@ -39,10 +40,10 @@ object Camera {
   }
 }
 class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
-  var camOpt: Option[OpenCVFrameGrabber] = Camera.getFrameGrabber(camId, width, height)
+  private var camOpt: Option[OpenCVFrameGrabber] = Camera.getFrameGrabber(camId, width, height)
   def isStarted: Boolean = camOpt.isDefined
-  lazy val cam = camOpt.get
-  lazy val grabRange = (0 until width*height)
+  private lazy val cam = camOpt.get
+  private lazy val grabRange = (0 until width*height).toArray
   
   def captureFrame(pixels: Array[Array[Int]]) {
     for(img <- Option(cam.grab)) {
@@ -56,7 +57,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
   }
 
-  val pixels = Array.ofDim[Int](this.width * this.height)
+  private[this] val pixels = Array.ofDim[Int](this.width * this.height)
 
   import org.lwjgl.BufferUtils
   import org.lwjgl.opengl.GL11._
@@ -88,7 +89,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   //
   private var camtexFuture = future[IplImage] { null }
   private var camTex = -1
-  def getTextureID(): Int = synchronized {
+  def getTextureID(): Int = synchronized { try {
     if(camTex == -1) {
       camTex = 0
       camTex = captureFrameTex(captureFrameImg())
@@ -99,5 +100,5 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
       camtexFuture = future { captureFrameImg() }
     }
     camTex
-  }
+  } catch { case x: Exception => if(Camera.supressErrors) -1 else throw x } }
 }

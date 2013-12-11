@@ -10,10 +10,10 @@ import scala.collection.mutable
 
 object Texture {
   private[this] val cache = mutable.HashMap[String, Int]()
+
+  protected final class Buffer(val w: Int, val h: Int, val buffer: ByteBuffer)
   
-  case class Buffer(w: Int, h: Int, buffer: ByteBuffer)
-  
-  def loadBuffer(filename: String): Buffer = {
+  def loadBuffer(filename: String): Buffer = try {
     // Open the PNG file as an InputStream
     val in = new FileInputStream(filename)
     // Link the PNG decoder to this stream
@@ -33,7 +33,11 @@ object Texture {
 
     in.close()
 
-    Buffer(w, h, buffer)
+    new Buffer(w, h, buffer)
+  } catch {
+    case e: Exception =>
+      println(filename)
+      throw e
   }
   
   def makeTexture(buffer: Buffer): Int = {
@@ -47,26 +51,46 @@ object Texture {
     //Setup texture scaling filtering
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode)
     
+    // MipMap
+    /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
     //Send texel data to OpenGL
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    //gluBuild2DMipmaps(GL_TEXTURE_2D, c, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.w, buffer.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.buffer)
-    GL30.glGenerateMipmap(GL_TEXTURE_2D);
+    GL30.glGenerateMipmap(GL_TEXTURE_2D);*/
 
-    //Return the texture ID so we can bind it later again
+    // Linear
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    //Send texel data to OpenGL
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.w, buffer.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.buffer)
+
+    buffer.buffer.clear()
+
     //println(textureID)
+    //Voodoo magic to prevent OOM errors with buffers
 
     textureID
   }
   
   def apply(filename: String): Int = cache.getOrElseUpdate(filename, makeTexture(loadBuffer(filename)))
-  def preload(files: Array[File]) {
-    files
-      .filterNot { file => cache.contains(file.toString) }
-      .par.map { file => (file.toString, loadBuffer(file.toString)) }
-      .seq.foreach { case (filename, buffer) => cache(filename) = makeTexture(buffer) }
+
+  def preload(files: Array[File], max: Int = -1) {
+    try {
+      (if(max == -1) files else files.take(max))
+        .filterNot { file => cache.contains(file.toString) }
+        .par.map { file => (file.toString, loadBuffer(file.toString)) }
+        .seq.foreach { case (filename, buffer) => cache(filename) = makeTexture(buffer) }
+    } catch {
+      case t: Throwable =>
+        t.printStackTrace
+    }
+  }
+
+  def delete(a: String) {
+    glDeleteTextures(cache(a))
+    cache -= a
   }
 }

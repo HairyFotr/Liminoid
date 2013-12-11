@@ -31,6 +31,7 @@ final object Liminoid {
   var pause = false
 
   // Cameras
+  //supressErrors...
   val cams = Array(hardware.Camera(camId = 1), hardware.Camera(camId = 2), hardware.Camera(camId = 3))
   val backCamera = cams.last
   val stereoCameras = cams.take(2)
@@ -216,12 +217,23 @@ final object Liminoid {
   val Mandalas = 2
   val CircleSpace = 3
   val BackSpace = 4
+  val PhaseTerminator = CircleSpace
 
   var phase = Setup // Set initial phase
   var phaseChange = true
   
   def gotoPhase(i: Int) {
     phase = i
+    phaseChange = true
+  }
+  def nextPhase() {
+    if(phaseChange || phase >= PhaseTerminator) return
+    phase += 1
+    phaseChange = true
+  }
+  def previousPhase() {
+    if(phaseChange || phase <= Setup) return
+    phase -= 1
     phaseChange = true
   }
   def initPhase(f: => Unit): Unit = if(phaseChange) {
@@ -267,7 +279,14 @@ final object Liminoid {
   var particles = Vector.empty[Particle]
 
   // Mandalas phase objects
-  val mainMandala = new TexSequence("seq/00/", delay = 75, stopAtEnd = true)
+  val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 34, stopAtEnd = true, selfDestruct = true)
+  val whiteMandala = new TexSequence("seq/optipng_Liminoid_sekvenca_mandala_belo_ozadje_II/", delay = 34, stopAtEnd = true, selfDestruct = true)
+  var whiteFlashTimer = -1
+  var startHeart = -1
+  var startDustHeart = -1
+  lazy val blackHeartMandala = Texture("seq/Srcni_utrip_CO/Srcni_utrip_CO_01290.png")
+  lazy val blackHeartDustMandala = Texture("seq/Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png")
+  lazy val whiteHeartMandala = Texture("seq/Srcni_utrip_BO/Srcni_utrip_BO_05848.png")
 
   // CircleSpace phase objects
   def newStar = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
@@ -299,10 +318,12 @@ final object Liminoid {
     frames += 1
 
     // Generate/Get oscilators, and heart signals
+    val harhar = 25
+    val beat = (frames % 70) == 0
     val heart = (frames % 70) match {
       case 0 => 1
-      case x @ (1|2|3)    => pow(0.5, x)
-      case x @ (69|68|67) => pow(0.75, 70-x)
+      case x if x < harhar => pow(0.6, x)
+      case x if x > harhar => pow(0.75, 70-x)
       case _ => 0
     }
 
@@ -383,14 +404,6 @@ final object Liminoid {
 
       to white, mogoce ze prej vletavajo utrinki "asteroid field effect"
 
-      utriniki po kroznici gredo skozi ~5 tock + trail (2 kota sin cos?)
-        fake1 - if top change direction, +x... 
-          + all will pass through same point :P`
-          - you're adding energy to them, 
-          - probably glitches at top
-        proper?
-          draw on one view, transform to another
-
       kugla z uv mapo kamere, upocasnitev pogleda
 
       kamera
@@ -418,8 +431,8 @@ final object Liminoid {
     //G.quad(G.Coord(rotx + cx-frames*ratio/2d, roty + cy-frames/2d,mw+frames*ratio,mh+frames), (seqs.head)(), alpha = 1-abs(osc1)/4)
     //G.quad(G.Coord(0,0,1920,1080) + osc1*30, num(), alpha = 1)
     
-    def glClear(r: Double, g: Double, b: Double) {
-      GL11.glClearColor(r.toFloat,g.toFloat,b.toFloat,1)
+    def glClear(g: Double) {
+      GL11.glClearColor(g.toFloat,g.toFloat,g.toFloat,1)
       GL11.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     }
 
@@ -427,23 +440,23 @@ final object Liminoid {
 
     phase match {
       case Setup => /////////////////////////////////////////////////////////////////////////////////////////////
-        glClear(0,0,0)
+        glClear(0)
 
         // Preload everything
         println((
           //Utils.time { for(radio <- radiolarians) { radio.preload } },
           //Utils.time { rocks }, // just triggers the lazy compute
-          //Utils.time { mainMandala.preload }
+          //Utils.time { blackMandala.preload }
         ))
 
         System.gc()
-        gotoPhase(Radiolarians)
+        gotoPhase(Mandalas)
 
       case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
           //Sound.play("intro")
         }
-        glClear(1,1,1)
+        glClear(1)
 
         // When radiolarian is close enough, change phase
         if(radiolarians.exists { _.transform.pos.z < 0 }) { gotoPhase(Mandalas) }
@@ -495,22 +508,58 @@ final object Liminoid {
         }
 
       case Mandalas => /////////////////////////////////////////////////////////////////////////////////////////////
-        initPhase {}
+        initPhase {
+          fade = 0
+          Sound.play("mandalas")
+          startHeart = now
+        }
 
-        glClear(0,0,0)
-        
-        G.quad(G.Coord(0,0,winWidth,winHeight), mainMandala(), alpha = (0.5+(1-heart)*0.5)*fade)
+        if(blackMandala.active) {
+          glClear(0)
+          G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), blackMandala(), alpha = 1)
+          fade = 0
+        } else if(whiteMandala.active) {
+          if(whiteFlashTimer == -1) {
+            whiteFlashTimer = now
+            glClear(1)
+          } else if(since(whiteFlashTimer) <= 30*1000) { //30s
+            glClear(1-fade*75+heart)
+            fade = heart
+          } else {
+            glClear(fade*75)
+          }
 
-        if(!mainMandala.active) gotoPhase(CircleSpace)
+          G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), whiteMandala(), alpha = 1)
+        } else {
+          gotoPhase(CircleSpace)
+        }
+        if(since(startHeart) > 105*1000) {//1m45s
+          if(startDustHeart == -1) startDustHeart = now
+
+          if(beat) {
+            Sound.play("heart")
+          }
+          if(blackMandala.active) {
+            if(since(startDustHeart) > 15*1000) {//15s
+              val w = 640*0.8
+              val h = 800*0.8
+              G.quad(G.Coord(winWidth/2-w/2,winHeight/2-h/2,w,h), blackHeartMandala, alpha = heart*0.7)
+            }
+
+            G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), blackHeartDustMandala, alpha = heart)
+          } else if(whiteMandala.active) {
+            G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), whiteHeartMandala, alpha = heart)
+          }
+        }
 
       case CircleSpace => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
           fade = 0
           frames = 0
-          stars = Vector.fill(10)(newStar)
+          stars = Vector.fill(30)(newStar)
         }
         val radius = 100
-        glClear(1,1,1)
+        glClear(1)
 
         //Model.cam.lookAt(Vec3(testNum,0,0))
         Model.cam.lookAt(Vec3(testNum,-20,1))
@@ -525,6 +574,7 @@ final object Liminoid {
         def getDiff(phi: Double, theta0: Double, theta1: Double) = {
           getVec(phi,theta1) - getVec(phi,theta0)
         }
+        def zeroDist(v: Vec) = v distance Vec(0,0,0)
 
         for(magnet <- magnets) {
           val phi = magnet.phi
@@ -558,19 +608,22 @@ final object Liminoid {
           if(frames == 0) {
             star.transform.pos = getVec(phi, theta1)
           } else if(!pause) {
-            val magnet = magnets.minBy { magnet => magnet.transform.pos distance star.transform.pos }
+            val magnet = magnets.minBy { magnet => (magnet.transform.pos distance star.transform.pos) - magnet.transform.size.avg }
             val magdist = magnet.transform.pos distance star.transform.pos
 
             val diff = getDiff(phi, theta0, theta1)
-            val magthresh = 0
-            val ratio = 1//if(magdist < magthresh) math.pow((magthresh-magdist)/magthresh, 300) else 1
+            val magthresh = 5
+            val ratio = if(magdist < magthresh) math.pow((magthresh-magdist)/magthresh, 300) else 1
             star.transform.pos += diff*ratio + magnet.transform.pos*(1 - ratio)
             star.transformVector.pos = diff
-            if(magdist < 1 && nextDouble < 0.01) star.transform.pos = Vec.random
+            if(magdist < magnet.transform.size.avg && nextDouble < 0.01) {
+              star.transform.pos = Vec.random
+              magnet.transform.size += Vec.randomUniform
+            }
             
-            val zeroDist = star.transform.pos distance Vec(0,0,0)
-            if(abs(zeroDist - radius) > 0) {
-              star.transform.pos = star.transform.pos * (radius/zeroDist)
+            val zeroD = zeroDist(star.transform.pos)
+            if(abs(zeroD - radius) > 0) {
+              star.transform.pos = star.transform.pos * (radius/zeroD)
             }
             star.theta = theta1
             star.phi += nextDouble*0.005
@@ -585,7 +638,11 @@ final object Liminoid {
           star.render(color = Color(0,0,0))
         }
 
-        particles = particles.filterNot(_.dead)
+        particles = particles.filterNot(_.dead).map { p => 
+          val zd = zeroDist(p.transform.pos);
+          p.transform.pos = p.transform.pos * (radius/zd)
+          p
+        }
         particles.foreach { _.render }
 
         //stars.head.render(color = Color(0.5, 0.5, 0.5), alpha = 0.25, transform = Transform(pos = Vec(0,0,0), size = Vec(radius,radius,radius)))
@@ -617,7 +674,7 @@ final object Liminoid {
           Thread.sleep(5000)
         }
         
-        glClear(1,1,1)
+        glClear(1)
 
         //if(radiolarians.exists { _.transform.pos.z < -18 }) phase += 1
         //radiolarians.find { _.transform.pos.z < 0 }.map { _.active = true }
@@ -660,6 +717,9 @@ final object Liminoid {
     if(isKeyDown(KEY_E)) modelSeq.rot = modelSeq.rot.copy(x = modelSeq.rot.x - 2)
     */
 
+    if(isKeyDown(KEY_NEXT)) nextPhase
+    if(isKeyDown(KEY_PRIOR)) previousPhase
+    if(isKeyDown(KEY_HOME)) gotoPhase(Radiolarians)
     if(isKeyDown(KEY_P)) pause = !pause
     if(isKeyDown(KEY_0)) Model.cam.pos = Vec3(0,0,0)
 

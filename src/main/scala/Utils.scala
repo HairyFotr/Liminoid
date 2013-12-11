@@ -1,6 +1,16 @@
 package org.ljudmila.liminoid
 
 object Utils {
+  /*def cleanBuffer(b: java.io.ByteBuffer) {
+    import sun.misc.Cleaner
+    import java.lang.reflect.Field;
+
+    val cleanerField: Field = b.getClass.getDeclaredField("cleaner")
+    cleanerField.setAccessible(true)
+    val cleaner: Cleaner = cleanerField.get(b).asInstanceOf[Cleaner]
+    cleaner.clean
+  }*/
+
   implicit class D(val d:Double) { def prob: Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
   implicit class F(val f:Float) { def prob: Boolean = util.Random.nextFloat < f }
 

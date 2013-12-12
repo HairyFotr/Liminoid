@@ -1,4 +1,4 @@
-## [Liminoid](http://projectliminoid.wordpress.com/) | augmented and virtual experience of disintegrating subjectivity ##
+#### [Liminoid](http://projectliminoid.wordpress.com/) | augmented and virtual experience of disintegrating subjectivity ####
 
 Liminoid is written in Scala, and uses the LWJGL OpenGL library.
 

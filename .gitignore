@@ -1,0 +1,15 @@
+# scala/sbt
+/target/
+/project/target/
+/project/project
+*.class
+
+# various
+*~
+.dropbox
+.bak
+
+# OSX
+.DS_Store
+__MACOSX
+._*

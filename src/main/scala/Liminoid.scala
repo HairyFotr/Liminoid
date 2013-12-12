@@ -210,6 +210,8 @@ final object Liminoid {
   /**
   * Renders current frame
   */
+
+  lazy val liminoidTitle = Texture("img/liminoid.png")
   
   // Liminoid phases
   val Setup = 0
@@ -298,7 +300,7 @@ final object Liminoid {
 
   // Mandalas phase objects
   val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
-  val whiteMandala = new TexSequence("seq/optipng_Liminoid_sekvenca_mandala_belo_ozadje_II/", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
+  val whiteMandala = new TexSequence("seq/optipng_Sekvenca_mandala_belo_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
   var whiteFlashTimer = -1
   var startHeart = -1
   var startDustHeart = -1
@@ -326,9 +328,6 @@ final object Liminoid {
   // BackSpace phase objects
   lazy val wall = Texture("img/Image.png")
 
-  //val Particles
-  
-  //used for quick fadeins
   var fade = 1d
 
   var lastRotation = Rotation(0,0,0)
@@ -463,21 +462,23 @@ final object Liminoid {
       case Setup => /////////////////////////////////////////////////////////////////////////////////////////////
         glClear(0)
 
-        // Preload everything
-        println((
-          // Radiolarians
-          Utils.time { for(radio <- radiolarians) { radio.preload } },
-          Utils.time { rocks }, // just triggers the lazy compute
-          
-          // Mandalas
-          Utils.time { blackMandala.preload(50); whiteMandala.preload(50) },
-          Utils.time { blackHeartMandala; blackHeartDustMandala; whiteHeartMandala },
-          
-          // BackSpace
-          Utils.time { wall }
-        ))
+        val (camw, camh) = (winHeight*4/3d, winHeight)
+        val (camx, camy) = (winWidth/2-camw/2, 0)
+        G.quad(G.Coord(winWidth/2-940/2,winHeight/2-550/2,940,550), liminoidTitle, alpha = 1)
+        //G.quad(G.Coord(camx,camy,camw,camh), backCamera.getTextureID, alpha = 1)
 
-        gotoPhase(BackSpace)
+        // preload - 
+        println(Utils.time(frames match {
+          case 1 => //Foo
+          case 2 => for(radio <- radiolarians) { radio.preload }
+          case 3 => quasiradiolarians
+          case 4 => rocks // just triggers the lazy compute
+          case 5 => blackMandala.preload(100); whiteMandala.preload(100)
+          case 6 => blackHeartMandala; blackHeartDustMandala; whiteHeartMandala
+          case 7 => wall
+          case 8 => magnets
+          case 9 => gotoPhase(Mandalas)
+        }))
 
       case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {

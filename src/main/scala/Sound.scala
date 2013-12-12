@@ -8,11 +8,11 @@ import scala.collection.mutable.{Map, SynchronizedMap}
 object Sound {
   val folder = "snd/"
   private var muted = false
-  def mute = {
+  def mute() = {
     stopAll()
     muted = true
   }
-  def unmute = {
+  def unmute() = {
     muted = false
   }
   val soundMap = getFile(folder + "list.txt").map { line => 
@@ -34,17 +34,21 @@ object Sound {
     players = Set.empty
   }
 
-  def play(sound: String): Unit = if(!muted) { thread {
-    val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
-    this.synchronized { 
-      players += player
+  def play(sound: String): Unit = 
+    if(!muted) { 
+      thread {
+        val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
+        this.synchronized { 
+          players += player
+        }
+
+        player.play
+
+        this.synchronized {
+          players -= player
+          player.close
+        }
+      } 
     }
 
-    player.play
-
-    this.synchronized {
-      players -= player
-      player.close
-    }
-  } }
 }

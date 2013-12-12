@@ -279,8 +279,8 @@ final object Liminoid {
   var particles = Vector.empty[Particle]
 
   // Mandalas phase objects
-  val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 34, stopAtEnd = true, selfDestruct = true)
-  val whiteMandala = new TexSequence("seq/optipng_Liminoid_sekvenca_mandala_belo_ozadje_II/", delay = 34, stopAtEnd = true, selfDestruct = true)
+  val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
+  val whiteMandala = new TexSequence("seq/optipng_Liminoid_sekvenca_mandala_belo_ozadje_II/", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
   var whiteFlashTimer = -1
   var startHeart = -1
   var startDustHeart = -1
@@ -447,6 +447,7 @@ final object Liminoid {
           //Utils.time { for(radio <- radiolarians) { radio.preload } },
           //Utils.time { rocks }, // just triggers the lazy compute
           //Utils.time { blackMandala.preload }
+          Utils.time { blackHeartMandala; blackHeartDustMandala; whiteHeartMandala }
         ))
 
         System.gc()

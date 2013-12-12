@@ -7,7 +7,7 @@ import Utils.{thread, getFile}
 import scala.collection.mutable.{Map, SynchronizedMap}
 object Sound {
   val folder = "snd/"
-  var mute = true
+  var mute = true//todo def mute close all, prevent new
   val soundMap = getFile(folder + "list.txt").map { line => 
     val name :: file :: _ = line.split(" ").toList
     (name, folder + file)

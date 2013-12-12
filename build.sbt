@@ -1,4 +1,4 @@
-scalaVersion := "2.10.3"
+scalaVersion := "2.11.0-M7"
 
 name := "Liminoid"
 
@@ -15,7 +15,7 @@ libraryDependencies <++= scalaVersion(v => Seq(
 
 //addCompilerPlugin("com.foursquare.lint" %% "linter" % "0.1-SNAPSHOT")
 
-//scalacOptions += "-Xplugin:/home/hairy/dev/linter/target/scala-2.10/linter_2.10-0.1-SNAPSHOT.jar"
+scalacOptions += "-Xplugin:/home/hairy/dev/linter/target/scala-2.11/linter_2.11-0.1-SNAPSHOT.jar"
 
 javaOptions += "-Xmx1G"
 
@@ -25,8 +25,10 @@ scalacOptions ++= Seq(
   //"-target:jvm-1.7",
   "-J-Xmx1G",
   "-optimise", "-Yinline", "-Yinline-warnings", "-Yclosure-elim",
-  "-feature", "-deprecation", "-unchecked",
-  "-Xlint",
+  "-feature", 
+  //"-deprecation",
+  "-unchecked",
+  //"-Xlint",
   "-Ywarn-adapted-args",
   //"-Ywarn-all",
   "-Ywarn-dead-code",

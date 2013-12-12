@@ -1,10 +1,11 @@
 package org.ljudmila.liminoid
 import java.io._
+import Utils._
 
 sealed trait Sequence[T] {
   def path: String
   def ext: String
-  def delay: Int
+  def delay: Double
   def bounce: Boolean
   var active: Boolean
   def stopAtEnd: Boolean
@@ -20,7 +21,7 @@ sealed trait Sequence[T] {
 
   val frames = files.map { _.toString }.sorted
 
-  private var time = 0
+  private var time = -1 // for simple animation
 
   def preload(): Unit
   def get(): T
@@ -32,14 +33,13 @@ sealed trait Sequence[T] {
     } else {
       get()
     })
-    
+
   def delete(d: String): Unit
 
   def rewind(): Unit = {
     cursor = 0
     direction = 1
   }
-
 
   def moveCursor(): Unit = {
     val currCursor = cursor
@@ -65,11 +65,22 @@ sealed trait Sequence[T] {
 case class TexSequence(
     val path: String, 
     var active: Boolean = true,
-    var delay: Int = 175,
-    var bounce: Boolean = true,
+    var delay: Double = 1000/240d, //24fps
+    var bounce: Boolean = false,
     var stopAtEnd: Boolean = false,
     var selfDestruct: Boolean = false,
     val ext: String = ".png") extends Sequence[Int] { 
+
+  private var startTime = -1 //for playing the whole thing through
+  override def moveCursor(): Unit = { //breaks bouncing and things like that
+    if(startTime == -1) startTime = now
+    while(since(startTime) > cursor * delay ) cursor += 1
+    if(cursor >= frames.size) {
+      cursor = frames.size - 1
+      active = false
+    }
+  }
+
   var last = ""
   override def get() = {
     val name = frames(cursor)
@@ -91,7 +102,7 @@ case class OBJSequence(
     val transformVector: MutableTransform = Transform000,
     var oscillatorPhase: Double = 0,
     var active: Boolean = true,
-    var delay: Int = 75,
+    var delay: Double = 75,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends Sequence[Model] { 

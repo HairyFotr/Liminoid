@@ -13,7 +13,7 @@ object Texture {
 
   protected final class Buffer(val w: Int, val h: Int, val buffer: ByteBuffer)
   
-  def loadBuffer(filename: String): Buffer = try {
+  def loadBuffer(filename: String): Buffer = {//try {//TODO: could I avoid OOM if I reused buffer and marked synchronized (have another method for mass preload)
     // Open the PNG file as an InputStream
     val in = new FileInputStream(filename)
     // Link the PNG decoder to this stream
@@ -34,11 +34,11 @@ object Texture {
     in.close()
 
     new Buffer(w, h, buffer)
-  } catch {
+  } /*catch {
     case e: Exception =>
       println(filename)
       throw e
-  }
+  }*/
   
   def makeTexture(buffer: Buffer): Int = {
     val textureID = glGenTextures //Generate texture ID

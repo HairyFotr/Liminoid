@@ -2,7 +2,6 @@ package org.ljudmila.liminoid
 
 import org.lwjgl.opengl.GL11._
 import collection.mutable.ListBuffer
-import util.Random._
 
 case class Size(w: Float = 1, h: Float = 1)
 case class Angle(roll: Float = 0, pitch: Float = 0, yaw: Float = 0)

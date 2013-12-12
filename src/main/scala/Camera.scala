@@ -57,9 +57,6 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
   }
 
-  private[this] val pixels = Array.ofDim[Int](this.width * this.height)
-
-  import org.lwjgl.BufferUtils
   import org.lwjgl.opengl.GL11._
   import org.lwjgl.opengl.GL12._
   private def captureFrameImg(): IplImage = cam.grab

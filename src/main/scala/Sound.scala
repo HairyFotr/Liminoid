@@ -7,7 +7,14 @@ import Utils.{thread, getFile}
 import scala.collection.mutable.{Map, SynchronizedMap}
 object Sound {
   val folder = "snd/"
-  var mute = true//todo def mute close all, prevent new
+  private var muted = false
+  def mute = {
+    stopAll()
+    muted = true
+  }
+  def unmute = {
+    muted = false
+  }
   val soundMap = getFile(folder + "list.txt").map { line => 
     val name :: file :: _ = line.split(" ").toList
     (name, folder + file)
@@ -27,7 +34,7 @@ object Sound {
     players = Set.empty
   }
 
-  def play(sound: String): Unit = thread {
+  def play(sound: String): Unit = if(!muted) { thread {
     val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
     this.synchronized { 
       players += player
@@ -39,5 +46,5 @@ object Sound {
       players -= player
       player.close
     }
-  }
+  } }
 }

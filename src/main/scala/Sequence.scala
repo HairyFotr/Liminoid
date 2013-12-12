@@ -65,7 +65,7 @@ sealed trait Sequence[T] {
 case class TexSequence(
     val path: String, 
     var active: Boolean = true,
-    var delay: Double = 1000/240d, //24fps
+    var delay: Double = 1000/24d, //24fps
     var bounce: Boolean = false,
     var stopAtEnd: Boolean = false,
     var selfDestruct: Boolean = false,
@@ -92,6 +92,7 @@ case class TexSequence(
     out
   }
   override def preload() { Texture.preload(files) }
+  def preload(i: Int) { Texture.preload(files, i) }
   override def delete(d: String) { Texture.delete(d) }
 }
 

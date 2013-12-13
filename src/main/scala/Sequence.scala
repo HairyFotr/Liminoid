@@ -21,7 +21,7 @@ sealed trait Sequence[T] {
 
   val frames = files.map { _.toString }.sorted
 
-  private var time = -1 // for simple animation
+  private var time = -1 // for simple animation where timing doesn't matter that much
 
   def preload(): Unit
   def get(): T
@@ -108,7 +108,7 @@ case class OBJSequence(
     var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends Sequence[Model] { 
 
-  val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform) }
+  val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform, color = Color(0.85)) }
   override def get() = models(cursor)
   override def preload() { OBJModel.preload(files) }
   override def delete(d: String) { /*foo*/ }

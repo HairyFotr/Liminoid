@@ -15,7 +15,7 @@ import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL11._
 import hardware.{RiftTracker,Rotation}
 
-import Model.{Transform, Vec, Vec0, Vec1, OBJModel, Color, Particle}
+import Model.{Transform, Vec, Vec0, Vec1, OBJModel, Color, Trail}
 
 final object Liminoid {
   val project = "Liminoid"
@@ -23,7 +23,7 @@ final object Liminoid {
   sealed trait RenderMode
   case class Normal() extends RenderMode
   case class Split() extends RenderMode
-  val renderMode: RenderMode = Normal()
+  val renderMode: RenderMode = Split()
 
   var isMainLoopRunning = false
   var renderTime = 0f
@@ -32,7 +32,7 @@ final object Liminoid {
 
   // Cameras
   //supressErrors...
-  val cams = Array(hardware.Camera(camId = 0, 1920, 1080), hardware.Camera(camId = 1), hardware.Camera(camId = 2), hardware.Camera(camId = 3))
+  val cams = Array(hardware.Camera(camId = 0), hardware.Camera(camId = 1), hardware.Camera(camId = 2), hardware.Camera(camId = 3))
   val backCamera = cams.head
   val stereoCameras = cams.take(2)
   //val camBack = hardware.Camera(camId = 1)
@@ -100,11 +100,13 @@ final object Liminoid {
       renderMode match {
         case Normal() => 
           renderFrame()
+          Display.update() // update window contents and process input messages
         case Split() =>
-          //shader.beginOffScreenRenderPass();
+          shader.beginOffScreenRenderPass();
           renderFrame()  // draw stuff
-          //shader.endOffScreenRenderPass();
-          //shader.renderToScreen();
+          Display.update() // update window contents and process input messages
+          shader.endOffScreenRenderPass();
+          shader.renderToScreen();
 
           /*
           //shader.beginOffScreenRenderPass();
@@ -136,7 +138,6 @@ final object Liminoid {
           */
       }
       
-      Display.update() // update window contents and process input messages
       frameCounter += 1
 
       if(currentTime-FPStimer > second*FPSseconds) {
@@ -254,11 +255,11 @@ final object Liminoid {
   val wallZ = 200 // z position of wall
   var radioBasePosVec = Vec(0,0,-0.1)
   lazy val radiolarians = {
-    val radiolarians = Array.fill(4)(OBJSequence("obj/Radiolarian", active = false, stopAtEnd = true, transformVector = Transform(pos = radioBasePosVec, rot = Vec.random)))
+    val radiolarians = Array.fill(1)(OBJSequence("obj/OBJ_the_radiolarian_normale", active = false, stopAtEnd = true, transformVector = Transform(pos = radioBasePosVec, rot = Vec.random)))
     radiolarians(0).transform += Transform(pos = Vec(0,0,wallZ+15),    rot = Vec(90,0,0))
-    radiolarians(1).transform += Transform(pos = Vec(30,8,wallZ+24),   rot = Vec(120,11,33))
+    /*radiolarians(1).transform += Transform(pos = Vec(30,8,wallZ+24),   rot = Vec(120,11,33))
     radiolarians(2).transform += Transform(pos = Vec(-53,13,wallZ+92), rot = Vec(223,45,143))
-    radiolarians(3).transform += Transform(pos = Vec(84,-31,wallZ+48), rot = Vec(321,92,234))
+    radiolarians(3).transform += Transform(pos = Vec(84,-31,wallZ+48), rot = Vec(321,92,234))*/
 
     radiolarians
   }
@@ -296,10 +297,10 @@ final object Liminoid {
       transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
       color = white)
   )
-  var particles = Vector.empty[Particle]
+  //var particles = Vector.empty[Particle]
 
   // Mandalas phase objects
-  val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
+  val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/240d, stopAtEnd = true, selfDestruct = true)
   val whiteMandala = new TexSequence("seq/optipng_Sekvenca_mandala_belo_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
   var whiteFlashTimer = -1
   var startHeart = -1
@@ -330,6 +331,7 @@ final object Liminoid {
 
   var fade = 1d
 
+
   var lastRotation = Rotation(0,0,0)
   var rotation = Rotation(0,0,0)
   
@@ -339,7 +341,7 @@ final object Liminoid {
 
     // Generate/Get oscilators, and heart signals
     val harhar = 20
-    val beat = (frames % 70) == 0
+    var beat = (frames % 70) == 0
     val heart = (frames % 70) match {
       case 0 => 1
       case x if x < harhar => pow(0.6, x)
@@ -365,12 +367,12 @@ final object Liminoid {
     val (cx, cy) = (winWidth/2 - mw/2, winHeight/2 - mh/2)
     val ratio = mw/mh.toFloat
 
-    // Get head rotation
+    // Get head rotation 2d, 3d
     val (rotx, roty) = (
       if(lastRotation == Rotation(0,0,0)) {
         lastRotation = RiftTracker.poll
         
-        (0f,0f) 
+        (0f,0f)
       } else {
         val rot = RiftTracker.poll
         val rotDelta = rot - lastRotation
@@ -379,7 +381,6 @@ final object Liminoid {
         
         (-rotation.yaw, -rotation.pitch)
       })
-    
 
     /*
       linux -> arduino
@@ -464,83 +465,105 @@ final object Liminoid {
 
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
-        G.quad(G.Coord(winWidth/2-940/2,winHeight/2-550/2,940,550), liminoidTitle, alpha = 1)
+        G.quad(G.Coord(winWidth/2-940/2+rotx,winHeight/2-550/2+roty,940,550), liminoidTitle, alpha = 1)
         //G.quad(G.Coord(camx,camy,camw,camh), backCamera.getTextureID, alpha = 1)
 
-        // preload - 
-        println(Utils.time(frames match {
+        // preload
+        println("time" + frames + ": " + Utils.time((frames-1) match {
+          case 0 =>
           case 1 => //Foo
           case 2 => for(radio <- radiolarians) { radio.preload }
-          case 3 => quasiradiolarians
-          case 4 => rocks // just triggers the lazy compute
-          case 5 => blackMandala.preload(100); whiteMandala.preload(100)
-          case 6 => blackHeartMandala; blackHeartDustMandala; whiteHeartMandala
-          case 7 => wall
-          case 8 => magnets
-          case 9 => gotoPhase(Mandalas)
+          case 3 => //quasiradiolarians
+          case 4 => //rocks // just triggers the lazy compute
+          case 5 => //blackMandala.preload(100); whiteMandala.preload(100)
+          case 6 => //blackHeartMandala; blackHeartDustMandala; whiteHeartMandala
+          case 7 => //wall
+          case 8 => //magnets
+          case _ => gotoPhase(Radiolarians)
         }))
 
       case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
           Sound.play("intro")
         }
-        glClear(1)
+        glClear(0)
 
         // When radiolarian is close enough, change phase
-        if(radiolarians.exists { _.transform.pos.z < 0 }) { gotoPhase(Mandalas); Sound.stopAll() }
+        if(radiolarians.exists { _.transform.pos.z < 1 }) { gotoPhase(Mandalas); Sound.stopAll() }
         // Activate radiolarian shell open animation
-        radiolarians.find { _.transform.pos.z < 100 }.map { r => r.transformVector.rot *= 0.8 }
-        radiolarians.find { _.transform.pos.z < 50 }.map { r => if(!r.active) { r.active = true; fade = 0 } }
+        radiolarians.find { _.transform.pos.z < 150 }.map { r =>
+          r.transformVector.rot *= 0.8
+          val z = r.transformVector.pos.z * 1.01
+          r.transformVector.pos = ((Vec(0,0,0) - r.transform.pos).normalize*4).setZ(z)
+        }
+        radiolarians.find { _.transform.pos.z < 120 }.map { r => if(!r.active) { r.active = true; fade = 0 } }
 
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
-        stereoCameras(0).getTextureID
-        stereoCameras(1).getTextureID
+
+        val img = cams.map(_.getTextureID).find(_ >= 1).getOrElse(wall)
+
+        //stereoCameras(0).getTextureID
+        //stereoCameras(1).getTextureID
         
-        G.quad(G.Coord(camx,camy,camw,camh) + testNum, backCamera.getTextureID, alpha = 1)
+        G.quad(G.Coord(camx,camy,camw,camh)+(-400), img, alpha = 1, flipy = true, flipx = true)
 
         // Render Camera
+        Model.cam.lookAt(Vec3(0,0,500))
         Model.cam.render
+       val ddd = 4
+        Model.cam.rot = Vec3(-rotation.pitch/ddd, rotation.yaw/ddd, rotation.roll/ddd)
 
-        if(since(phaseTimer) > 5*1000) {
+        val t1 = 0
+        val t2 = t1+5
+
+        if(since(phaseTimer) > t1*1000) {
           // Draw invisible wall
-          glEnable(GL_DEPTH_TEST)
-          glEnable(GL_BLEND)
-          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-          glColor4f(1,1,1,0)
-          glBegin(GL_QUADS)
-            glVertex3d(-1000, -1000, wallZ)
-            glVertex3d(+1000, -1000, wallZ)
-            glVertex3d(+1000, +1000, wallZ)
-            glVertex3d(-1000, +1000, wallZ)
-          glEnd()
-          glDisable(GL_DEPTH_TEST)
-          glDisable(GL_BLEND)
+          Model.renderDis {
+            glEnable(GL_DEPTH_TEST)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glColor4f(1,1,1,0)
+            glBegin(GL_QUADS)
+              glVertex3d(-1000, -1000, wallZ)
+              glVertex3d(+1000, -1000, wallZ)
+              glVertex3d(+1000, +1000, wallZ)
+              glVertex3d(-1000, +1000, wallZ)
+            glEnd()
+            glDisable(GL_DEPTH_TEST)
+            glDisable(GL_BLEND)
+          }
+
+          if(since(phaseTimer) > t2*1000) {
+            for(radio <- radiolarians) radio.transformVector.pos = radio.transformVector.pos + Vec.random11.setZ(0)/20
+            for(radio <- quasiradiolarians) radio.transformVector.pos = radio.transformVector.pos + Vec.random11.setZ(0)/20
+            for(rock <- rocks) rock.transformVector.pos = rock.transformVector.pos + Vec.random11.setZ(0)/20
+            val z = radiolarians.head.transformVector.pos.z
+            radiolarians.head.transformVector.pos = (radiolarians.head.transformVector.pos*0.9).setZ(z) 
+          }
 
           // Draw radiolarians
           val oscDiv = 10
           for(radio <- radiolarians) {
-            radio.transform += radio.transformVector
-            radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
-            //radio.transform.rot += Vec(osc1,osc2,osc3)
+            if(!pause) radio.transform += radio.transformVector
+            radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv) * 1.2
             radio().render()
 
             // Make core go blac
             if(radio.active) core.color -= 0.0015
             
-            core.render(transform = radio.transform.copy(size = radio.transform.size * 5))
+            core.render(transform = radio.transform.copy(size = radio.transform.size * 2.5))
           }
           for(radio <- quasiradiolarians) {
-            radio.transform += radio.transformVector
+            if(!pause) radio.transform += radio.transformVector
             radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
-            //radio.transform.rot += Vec(osc1,osc2,osc3)
             radio.render()
 
             core.render(transform = radio.transform.copy(size = radio.transform.size * 5))
           }
 
           for(rock <- rocks) {
-            rock.transform += rock.transformVector
+            if(!pause) rock.transform += rock.transformVector
             rock.render()
           }
         }
@@ -552,9 +575,14 @@ final object Liminoid {
           Sound.play("mandalas")
         }
 
+        val div = 1.75d
+        val (w, h) = (640*0.85, 800*0.85)
+        val posx = winWidth/2-w/2 + rotx/div
+        val posy = winHeight/2-h/2 + roty/div
+
         if(blackMandala.active) {
           glClear(0)
-          G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), blackMandala(), alpha = 1)
+          G.quad(G.Coord(posx,posy, w, h), blackMandala(), alpha = 1)
           fade = 0
         } else if(whiteMandala.active) {
           if(whiteFlashTimer == -1) {
@@ -565,10 +593,11 @@ final object Liminoid {
             fade = heart
           } else {
             glClear(fade*75)
+            beat = false
           }
 
-          G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), whiteMandala(), alpha = 1)
-          if(fade < 1) G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), blackHeartDustMandala, alpha = 1-fade*2+heart/5)
+          G.quad(G.Coord(posx,posy, w, h), whiteMandala(), alpha = 1)
+          //if(fade < 1) G.quad(G.Coord(posx,posy, w, h), blackHeartDustMandala, alpha = 1-fade*2+heart/5)
         } else {
           gotoPhase(CircleSpace)
         }
@@ -580,14 +609,15 @@ final object Liminoid {
 
           if(blackMandala.active) {
             if(since(startDustHeart) > 15*1000) {//15s
-              val w = 640*0.8
-              val h = 800*0.8
-              G.quad(G.Coord(winWidth/2-w/2,winHeight/2-h/2,w,h), blackHeartMandala, alpha = heart*0.7)
+              val (ww, hh) = (w*0.8, w*0.8)
+              val posx = winWidth/2-ww/2 + rotx/div
+              val posy = winHeight/2-hh/2 + roty/div
+              G.quad(G.Coord(posx,posy, ww, hh), blackHeartMandala, alpha = heart*0.7)
             }
 
-            G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), blackHeartDustMandala, alpha = heart)
+            G.quad(G.Coord(posx,posy, w, h), blackHeartDustMandala, alpha = heart)
           } else if(whiteMandala.active) {
-            G.quad(G.Coord(winWidth/2-640/2,winHeight/2-800/2,640,800), whiteHeartMandala, alpha = heart)
+            //G.quad(G.Coord(posx,posy, w, h), whiteHeartMandala, alpha = heart)
           }
         }
 
@@ -597,12 +627,14 @@ final object Liminoid {
           frames = 0
           stars = Vector.fill(30)(newStar)
         }
-        val radius = 100
+        val radius = 400
         glClear(1)
 
         //Model.cam.lookAt(Vec3(testNum,0,0))
-        Model.cam.lookAt(Vec3(testNum,-20,1))
+        Model.cam.lookAt(Vec3(0,0,500))
         Model.cam.render
+        val ddd = 4
+        Model.cam.rot = Vec3(-rotation.pitch/ddd, rotation.yaw/ddd, rotation.roll/ddd)
 
         def getVec(phi: Double, theta: Double) = {
           Vec(
@@ -652,12 +684,12 @@ final object Liminoid {
 
             val diff = getDiff(phi, theta0, theta1)
             val magthresh = 5
-            val ratio = if(magdist < magthresh) math.pow((magthresh-magdist)/magthresh, 300) else 1
+            val ratio = if(magdist < magthresh) math.pow((magthresh-magdist)/magthresh, 3000) else 1
             star.transform.pos += diff*ratio + magnet.transform.pos*(1 - ratio)
             star.transformVector.pos = diff
             if(magdist < magnet.transform.size.avg && nextDouble < 0.01) {
               star.transform.pos = Vec.random
-              magnet.transform.size += Vec.randomUniform
+              magnet.transform.size += Vec.randomUniform/50
             }
             
             val zeroD = zeroDist(star.transform.pos)
@@ -666,43 +698,47 @@ final object Liminoid {
             }
             star.theta = theta1
             star.phi += nextDouble*0.005
-            particles ++= Vector.fill(100)(Particle(
+            /*particles ++= Vector.fill(100)(Particle(
               transform = star.transform.copy(),
               transformVector = star.transformVector.copy(pos = -star.transformVector.pos, rot = Vec.random),
               //fade = nextDouble*2,
               color = Color(0.01+nextDouble*0.3))
-            )
+            )*/
           }
-
           star.render(color = Color(0,0,0))
+          star.trail +>= star.transform.pos.copy()
+          star.trail.render()
         }
 
-        particles = particles.filterNot(_.dead).map { p => 
+        /*particles = particles.filterNot(_.dead).map { p => 
           val zd = zeroDist(p.transform.pos);
           p.transform.pos = p.transform.pos * (radius/zd)
           p
         }
-        particles.foreach { _.render }
+        particles.foreach { _.render }*/
 
-        //stars.head.render(color = Color(0.5, 0.5, 0.5), alpha = 0.25, transform = Transform(pos = Vec(0,0,0), size = Vec(radius,radius,radius)))
-        glBegin(GL_LINES)
-          glColor3f(1,0,0)
-          glVertex3d(-100,0,0)
-          glVertex3d(+100,0,0)
-          glColor3f(0,1,0)
-          glVertex3d(0,-100,0)
-          glVertex3d(0,+100,0)
-          glColor3f(0,0,1)
-          glVertex3d(0,0,-100)
-          glVertex3d(0,0,+100)
-          glColor3f(0,0,0)
-          glVertex3d(-100,-100,-100)
-          glVertex3d(+100,+100,+100)
-          glVertex3d(0,0,-0)
-          glVertex3d(+100,+100,+100)
-          glVertex3d(0,0,0)
-          glVertex3d(-100,-100,-100)
-        glEnd
+
+        //quasiradiolarians.head.render(color = Color(0.5, 0.5, 0.5), alpha = 0.25, transform = Transform(pos = Vec(0,0,0), size = Vec(0.5,0.5,0.5)))
+        Model.renderDis {
+          glBegin(GL_LINES)
+            glColor3f(1,0,0)
+            glVertex3d(-100,0,0)
+            glVertex3d(+100,0,0)
+            glColor3f(0,1,0)
+            glVertex3d(0,-100,0)
+            glVertex3d(0,+100,0)
+            glColor3f(0,0,1)
+            glVertex3d(0,0,-100)
+            glVertex3d(0,0,+100)
+            glColor3f(0,0,0)
+            glVertex3d(-100,-100,-100)
+            glVertex3d(+100,+100,+100)
+            glVertex3d(0,0,-0)
+            glVertex3d(+100,+100,+100)
+            glVertex3d(0,0,0)
+            glVertex3d(-100,-100,-100)
+          glEnd
+        }
 
 
         //core.render(transform = Model.Transform001)
@@ -732,12 +768,25 @@ final object Liminoid {
     if(isKeyDown(KEY_1)) testNum -= 1
     if(isKeyDown(KEY_2)) testNum += 1
     
-    if(isKeyDown(KEY_W)) Model.cam.pos.z += 1
+    /*if(isKeyDown(KEY_W)) Model.cam.pos.z += 1
     if(isKeyDown(KEY_S)) Model.cam.pos.z -= 1
     if(isKeyDown(KEY_D)) Model.cam.pos.x -= 1
     if(isKeyDown(KEY_A)) Model.cam.pos.x += 1
     if(isKeyDown(KEY_Q)) Model.cam.pos.y -= 1
     if(isKeyDown(KEY_E)) Model.cam.pos.y += 1
+    if(isKeyDown(KEY_0)) Model.cam.pos = Vec3(0,0,0)*/
+
+    if(isKeyDown(KEY_Q)) rotation = rotation + Rotation(+1,0,0)
+    if(isKeyDown(KEY_E)) rotation = rotation + Rotation(-1,0,0)
+    if(isKeyDown(KEY_S)) rotation = rotation + Rotation(0,+1,0)
+    if(isKeyDown(KEY_W)) rotation = rotation + Rotation(0,-1,0)
+    if(isKeyDown(KEY_D)) rotation = rotation + Rotation(0,0,+1)
+    if(isKeyDown(KEY_A)) rotation = rotation + Rotation(0,0,-1)
+    if(isKeyDown(KEY_0)) { rotation = Rotation(0,0,0); Model.cam.pos = Vec3(0,0,0) }
+    if(isKeyDown(KEY_UP))    Model.cam.pos.z += 1
+    if(isKeyDown(KEY_DOWN))  Model.cam.pos.z -= 1
+    if(isKeyDown(KEY_LEFT))  Model.cam.pos.y -= 1
+    if(isKeyDown(KEY_RIGHT)) Model.cam.pos.y += 1
 
     /*if(isKeyDown(KEY_SPACE)) println(modelSeq)
     if(isKeyDown(KEY_UP)) modelSeq.pos = modelSeq.pos.copy(z = modelSeq.pos.z + 1)
@@ -756,8 +805,7 @@ final object Liminoid {
     if(isKeyDown(KEY_NEXT)) nextPhase
     if(isKeyDown(KEY_PRIOR)) previousPhase
     if(isKeyDown(KEY_HOME)) gotoPhase(Radiolarians)
-    if(isKeyDown(KEY_P)) pause = !pause
-    if(isKeyDown(KEY_0)) Model.cam.pos = Vec3(0,0,0)
+    if(isKeyDown(KEY_P)) { pause = !pause; }
 
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {
       isMainLoopRunning = false

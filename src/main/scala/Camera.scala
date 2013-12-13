@@ -88,7 +88,6 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   private var camTex = -1
   def getTextureID(): Int = synchronized { try {
     if(camTex == -1) {
-      camTex = 0
       camTex = captureFrameTex(captureFrameImg())
       camtexFuture = future { captureFrameImg() }
     } else if(camtexFuture.isSet) {

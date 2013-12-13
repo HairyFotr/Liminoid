@@ -114,9 +114,19 @@ class Camera extends OldModel {
     GL11.glMatrixMode(GL11.GL_MODELVIEW)
     GL11.glLoadIdentity()
     if(perspective) {
-      GLU.gluLookAt(pos.x,pos.y,pos.z,       // camera position
+      GLU.gluLookAt(pos.x,pos.y,pos.z,             // camera position
                     lookAtV.x,lookAtV.y,lookAtV.z, // look-at vector
-                    0,1,0)             // up vector 
+                    0,1,0)                         // up vector 
     }
+  }
+  def look(v: Vec3, a: Vec3) {
+    GL11.glLoadIdentity()
+    val aa = lookAtV + a
+    GLU.gluLookAt(v.x,v.y,v.z,             // camera position
+                  aa.x,aa.y,aa.z, // look-at vector
+                  0,1,0)                         // up vector 
+    GL11.glRotated(rot.x, 1,0,0)
+    GL11.glRotated(rot.y, 0,1,0)
+    GL11.glRotated(rot.z, 0,0,1)
   }
 }

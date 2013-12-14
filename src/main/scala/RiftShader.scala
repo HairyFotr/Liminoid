@@ -15,9 +15,8 @@ import org.lwjgl.opengl._
 // Adapted from https://developer.oculusvr.com/forums/viewtopic.php?f=20&t=88&start=10
 
 class RiftShader(screenWidth: Int, screenHeight: Int) {
-  sealed trait Eye
-  case class Left() extends Eye
-  case class Right() extends Eye
+  val Left = -1
+  val Right = +1
   
   val vertexShader = 
     """
@@ -116,8 +115,8 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
 
     glBindTexture(GL_TEXTURE_2D, colorTextureID);  
 
-    renderDistortedEye(Left(), 0.0f, 0.0f, 0.5f, 1.0f)
-    renderDistortedEye(Right(), 0.5f, 0.0f, 0.5f, 1.0f)
+    renderDistortedEye(Left, 0.0f, 0.0f, 0.5f, 1.0f)
+    renderDistortedEye(Right, 0.5f, 0.0f, 0.5f, 1.0f)
 
     glUseProgram(0)
     glEnable(GL_DEPTH_TEST)
@@ -128,7 +127,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
   val K2 = 0.24f
   val K3 = 0.0f
   
-  def renderDistortedEye(eye: Eye, x: Float, y: Float, w: Float, h: Float) {
+  def renderDistortedEye(eye: Int, x: Float, y: Float, w: Float, h: Float) {
     val as = w/h
     val scaleFactor = 1.0f
     val eyeHoleScale = 1.75f
@@ -137,8 +136,8 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     Util.checkGLError()
     
     val DistortionXCenterOffset = eye match {
-      case Left()  => +0.25f
-      case Right() => -0.25f
+      case Left  => +0.25f
+      case Right => -0.25f
     }
     
     glUniform2f(LensCenterLocation, x + (w + DistortionXCenterOffset * 0.5f)*0.5f, y + h*0.5f)
@@ -150,12 +149,12 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     
     glBegin(GL_TRIANGLE_STRIP)
     eye match {
-      case Left() =>
+      case Left =>
         glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f)
         glTexCoord2f(0.5f, 0.0f); glVertex2f( 0.0f, -1.0f)
         glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, +1.0f)
         glTexCoord2f(0.5f, 1.0f); glVertex2f( 0.0f, +1.0f)
-      case Right() =>
+      case Right =>
         glTexCoord2f(0.5f, 0.0f); glVertex2f(0.0f, -1.0f)
         glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, -1.0f)
         glTexCoord2f(0.5f, 1.0f); glVertex2f(0.0f, +1.0f)

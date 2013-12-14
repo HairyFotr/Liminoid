@@ -264,11 +264,35 @@ final object Liminoid {
     radiolarians
   }
   lazy val quasiradiolarians = Array(
-    OBJModel("obj/Prihod_iz_stene/Plascek_normale_I.obj").toModel(
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_I.obj").toModel(
       transform = Transform(pos = Vec(-42,25,wallZ+15), rot = Vec(221,24,32), size = Vec(1,1,1)),
       transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
       color = white),
-    OBJModel("obj/Prihod_iz_stene/Plascek_normale_I.obj").toModel(
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_III.obj").toModel(
+      transform = Transform(pos = Vec(22,15,wallZ+100), rot = Vec(221,24,32), size = Vec(1,1,1)),
+      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
+      color = white),
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel(
+      transform = Transform(pos = Vec(22,15,wallZ+100), rot = Vec(221,24,32), size = Vec(1,1,1)),
+      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
+      color = white),
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel(
+      transform = Transform(pos = Vec(22,15,wallZ+100), rot = Vec(221,24,32), size = Vec(1,1,1)),
+      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
+      color = white),
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel(
+      transform = Transform(pos = Vec(22,15,wallZ+100), rot = Vec(221,24,32), size = Vec(1,1,1)),
+      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
+      color = white),
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel(
+      transform = Transform(pos = Vec(22,15,wallZ+100), rot = Vec(221,24,32), size = Vec(1,1,1)),
+      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
+      color = white),
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel(
+      transform = Transform(pos = Vec(22,15,wallZ+100), rot = Vec(221,24,32), size = Vec(1,1,1)),
+      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
+      color = white),
+    OBJModel("obj/Plascki_iz_stene/Plascek_normale_IX_velik.obj").toModel(
       transform = Transform(pos = Vec(22,15,wallZ+100), rot = Vec(221,24,32), size = Vec(1,1,1)),
       transformVector = Transform(pos = radioBasePosVec, rot = Vec.random),
       color = white)
@@ -300,7 +324,7 @@ final object Liminoid {
   //var particles = Vector.empty[Particle]
 
   // Mandalas phase objects
-  val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/240d, stopAtEnd = true, selfDestruct = true)
+  val blackMandala = new TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
   val whiteMandala = new TexSequence("seq/optipng_Sekvenca_mandala_belo_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
   var whiteFlashTimer = -1
   var startHeart = -1
@@ -448,9 +472,6 @@ final object Liminoid {
         jlplayer
       
     */
-      
-    //G.quad(G.Coord(rotx + cx-frames*ratio/2d, roty + cy-frames/2d,mw+frames*ratio,mh+frames), (seqs.head)(), alpha = 1-abs(osc1)/4)
-    //G.quad(G.Coord(0,0,1920,1080) + osc1*30, num(), alpha = 1)
     
     def glClear(g: Double) {
       GL11.glClearColor(g.toFloat,g.toFloat,g.toFloat,1)
@@ -469,18 +490,20 @@ final object Liminoid {
         //G.quad(G.Coord(camx,camy,camw,camh), backCamera.getTextureID, alpha = 1)
 
         // preload
-        println("time" + frames + ": " + Utils.time((frames-1) match {
-          case 0 =>
-          case 1 => //Foo
+        println("Time" + (frames-1) + ": " + Utils.time((frames-1) match {
+          case 0 => 
+          case 1 => 
           case 2 => for(radio <- radiolarians) { radio.preload }
-          case 3 => //quasiradiolarians
-          case 4 => //rocks // just triggers the lazy compute
-          case 5 => //blackMandala.preload(100); whiteMandala.preload(100)
-          case 6 => //blackHeartMandala; blackHeartDustMandala; whiteHeartMandala
-          case 7 => //wall
-          case 8 => //magnets
+          case 3 => quasiradiolarians
+          case 4 => rocks // just triggers the lazy compute
+          case 5 => blackMandala.preload(10); whiteMandala.preload(10)
+          case 6 => blackHeartMandala; blackHeartDustMandala; whiteHeartMandala
+          case 7 => wall
+          case 8 => magnets
           case _ => gotoPhase(Radiolarians)
         }))
+        
+        System.gc()
 
       case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {

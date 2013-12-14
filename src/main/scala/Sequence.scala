@@ -111,6 +111,7 @@ case class OBJSequence(
   val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform, color = Color(0.85)) }
   override def get() = models(cursor)
   override def preload() { OBJModel.preload(files) }
+  def preload(i: Int) { OBJModel.preload(files, i) }
   override def delete(d: String) { /*foo*/ }
 }
 

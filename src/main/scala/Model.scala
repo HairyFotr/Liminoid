@@ -17,75 +17,40 @@ object Model {
   type Normals = Vector[Vec]
 
   object OBJModel {
-    private[this] val fcReg1 = "([0-9]+)/([0-9]+)".r           // face coord, vertex/uvvertex 
-    private[this] val fcReg2 = "([0-9]+)//([0-9]+)".r          // face coord, vertex//normal
-    private[this] val fcReg3 = "([0-9]+)/([0-9]+)/([0-9]+)".r  // face coord, vertex/uvvertex/normal
-
-    def apply(fileStr: String, lines: Boolean = false): RawModel = rawcache.getOrElseUpdate(fileStr, {
-      val file = io.Source.fromFile(fileStr)
-
-      var vertices: Vertices = Vector.empty
-      var faces: Faces = Vector.empty
-      var uvVertices: UVVertices = Vector.empty
-      var normals: Normals = Vector.empty
-
-      file.getLines foreach { line => 
-        val x = line.split(" ")
-
-        x(0) match {
-          case "v"  => vertices :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
-          case "vn" => normals :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
-          case "vt" => uvVertices :+= UV(x(1).toDouble, x(2).toDouble)
-          case "f"  => faces :+= x.tail.map {
-              case fcReg1(v, vt)     => (v.toInt-1, vt.toInt-1, -1)
-              case fcReg2(v, vn)     => (v.toInt-1,         -1, vn.toInt-1)
-              case fcReg3(v, vt, vn) => (v.toInt-1, vt.toInt-1, vn.toInt-1)
-              case v                 => (v.toInt-1,         -1, -1)
-            }
-          case _    => // nop
-        }
-      }
-
-      file.close//*/
-
-    /*private[this] val vReg = "v (.*?) (.*?) (.*?)".r // vertices
-    private[this] val fReg = "f (.*)".r              // faces
-    private[this] val fcReg1 = "([0-9]+)/([0-9]+)".r           // face coord, vertex/uvvertex 
-    private[this] val fcReg2 = "([0-9]+)//([0-9]+)".r          // face coord, vertex//normal
-    private[this] val fcReg3 = "([0-9]+)/([0-9]+)/([0-9]+)".r  // face coord, vertex/uvvertex/normal
-    
-    private[this] val vnReg = "vn (.*?) (.*?) (.*?)".r // vertices
-    private[this] val vtReg = "vt (.*?) (.*?)".r     // uv vertices
-
     def apply(fileStr: String): RawModel = rawcache.getOrElseUpdate(fileStr, {
       val file = io.Source.fromFile(fileStr)
 
       var vertices: Vertices = Vector.empty
       var faces: Faces = Vector.empty
-      var uvVertices: UVVertices = Vector.empty
       var normals: Normals = Vector.empty
+      var uvVertices: UVVertices = Vector.empty
 
-      file.getLines foreach {
-        case vReg(x,y,z)  => vertices :+= Vec(x.toDouble, y.toDouble, z.toDouble)
-        case vnReg(x,y,z) => normals :+= Vec(x.toDouble, y.toDouble, z.toDouble)
-        case vtReg(u,v)   => uvVertices :+= UV(u.toDouble, v.toDouble)
-        case fReg(f)      => faces :+= f.split(" ").map { 
-          case fcReg1(v, vt)     => (v.toInt-1, vt.toInt-1, -1)
-          case fcReg2(v, vn)     => (v.toInt-1,         -1, vn.toInt-1)
-          case fcReg3(v, vt, vn) => (v.toInt-1, vt.toInt-1, vn.toInt-1)
-          case v                 => (v.toInt-1,         -1, -1) }
+      file.getLines.buffered foreach { line =>
+        val x = line.split(" ")
+        
+        x(0) match {
+          case "v"  => vertices :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
+          case "vn" => normals :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
+          case "f"  => faces :+= (x.tail.map { face =>
+              val fs = face.split("/")
+              if(fs.length == 1)      (fs(0).toInt-1,            -1, -1)
+              else if(fs.length == 2) (fs(0).toInt-1, fs(1).toInt-1, -1)
+              else if(fs(1).isEmpty)  (fs(0).toInt-1,            -1, fs(2).toInt-1)
+              else                    (fs(0).toInt-1, fs(1).toInt-1, fs(2).toInt-1)
+            })
 
-        case _ => // nop
+          case "vt" => uvVertices :+= UV(x(1).toDouble, x(2).toDouble)
+          case _    => // nop
+        }
       }
-      file.close*/
 
-      println("bump")
+      file.close
 
-      RawModel(vertices, uvVertices, normals, faces, lines)
+      new RawModel(vertices, uvVertices, normals, faces)
     })
 
-    def preload(files: Array[File]) {
-      files
+    def preload(files: Array[File], max: Int = -1) {
+      (if(max == -1) files else files.take(max))
         .filterNot { file => rawcache.contains(file.toString) }
         .par.map { file => 
           val rawModel = apply(file.toString)
@@ -171,30 +136,47 @@ object Model {
   cam.setPosition(0,0,0);
   cam.lookAt(Vec3(0,0,200))
   
-  case class RawModel(vertices: Vertices, uvVertices: UVVertices, normals: Normals, faces: Faces, lines: Boolean = false) {
+  class RawModel(var vertices: Vertices, var uvVertices: UVVertices, var normals: Normals, var faces: Faces) {
     // Compile model to display list for faster drawing
     lazy val displayList = {
       val displayList = glGenLists(1)
       glNewList(displayList, GL_COMPILE)
-      for(f <- faces) {
-        glBegin(GL_POLYGON)
+      var n = -1
+      for(f <- faces.sortWith(_.length < _.length)) {
+        if(f.length != n || f.length >= 5) {
+          if(n != -1) glEnd
+          n = f.length
+          n match {
+            case 1 => glBegin(GL_POINTS)
+            case 2 => glBegin(GL_LINES)
+            case 3 => glBegin(GL_TRIANGLES)
+            case 4 => glBegin(GL_QUADS)
+            case _ => glBegin(GL_POLYGON)
+          }
+        }
+
         for((vi, vti, vni) <- f) {
           if(vni != -1) glNormal3d(normals(vni).x, normals(vni).y, normals(vni).z)
           if(vti != -1) glTexCoord2d(uvVertices(vti).u, uvVertices(vti).v)
           glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
         }
-        glEnd()
       }
-      if(lines) for(f <- faces) {
+      if(n != -1) glEnd
+      
+      //wireframe experiment
+      /*if(lines) for(f <- faces) {
         glColor4d(0,0,0,1)
         glBegin(GL_LINE_STRIP)
         for((vi, vti, vni) <- f) {
           glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
         }
         glEnd()
-      }
+      }*/
       glEndList()
-
+      vertices = Vector.empty
+      uvVertices = Vector.empty
+      normals = Vector.empty
+      faces = Vector.empty
       displayList
     }
 

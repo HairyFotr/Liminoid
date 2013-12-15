@@ -2,7 +2,7 @@ package org.ljudmila.liminoid
 
 import org.lwjgl.opengl.GL11._
 import math._
-import Liminoid.{winWidth, winHeight, renderMode, RenderMode, Normal, Split, eyeCorrection}
+import Liminoid.{winWidth, winHeight, renderMode, RenderMode, Normal, Stereo, eyeCorrection}
 import scala.collection.mutable
 import java.io.File
 import util.Random._
@@ -81,6 +81,9 @@ object Model {
     def setX(d: Double) = { Vec(d,y,z) }
     def setY(d: Double) = { Vec(x,d,z) }
     def setZ(d: Double) = { Vec(x,y,d) }
+    def zeroX() = { Vec(0,y,z) }
+    def zeroY() = { Vec(x,0,z) }
+    def zeroZ() = { Vec(x,y,0) }
     def normalize() = {
       val m = max(max(abs(x),abs(y)),abs(z))
       Vec(x/m, y/m, z/m)
@@ -88,9 +91,10 @@ object Model {
   }
   object Vec {
     def random = random01
+    def random360 = random01 * 360
     def random01 = Vec(nextDouble,nextDouble,nextDouble)
     def random11 = Vec(nextGaussian,nextGaussian,nextGaussian)
-    def randomUniform = { val r = nextDouble; Vec(r,r,r) } 
+    def randomUniform01 = { val r = nextDouble; Vec(r,r,r) } 
   }
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
   implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x,it.y,it.z)
@@ -127,6 +131,8 @@ object Model {
   }
   object Color {
     def apply(d: Double): Color = Color(d,d,d)
+    def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
+    def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
   }
 
   val cam = new Camera
@@ -173,10 +179,12 @@ object Model {
         glEnd()
       }*/
       glEndList()
+
       vertices = Vector.empty
       uvVertices = Vector.empty
       normals = Vector.empty
       faces = Vector.empty
+
       displayList
     }
 
@@ -201,8 +209,8 @@ object Model {
       var theta: Double,
       var trail: Trail = new Trail()) {
 
-    def render(mode: RenderMode = renderMode, transform: MutableTransform = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
-      renderDis {
+    def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
+      render3D {
         import transform._
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
@@ -237,41 +245,11 @@ object Model {
     }
   }
 
-
-  /*case class Particle(transform: MutableTransform, transformVector: MutableTransform, color: Color, var dead: Boolean = false) {
-    val spread = 3d
-    transform.pos += (Vec.random * ((nextDouble-nextDouble)*spread))
-    val spread2 = 20d
-    //transformVector.pos += (Vec.random * ((nextDouble-nextDouble)*spread2))
-
-    def render() {
-      if(!dead) {
-        transformVector.pos *= (0.9 - nextDouble*0.2)
-        color *= (1.1 + nextDouble*0.2)
-        val pos0 = transform.pos.copy()
-        transform += transformVector
-        if(color.r >= 1) dead = true
-
-
-        glColor3d(color.r, color.g, color.b)
-        import transform._
-        //glBegin(GL_POINTS)
-        val size = 0.1
-        glBegin(GL_QUADS)
-          glVertex3d(pos0.x, pos0.y, pos0.z)
-          glVertex3d(pos.x, pos.y, pos.z)
-          glVertex3d(pos.x+size, pos.y+size, pos.z+size)
-          glVertex3d(pos0.x+size, pos0.y+size, pos0.z+size)
-        glEnd()
-      }
-    }
-  }*/
-
   class Trail(var points: Vector[Vec] = Vector.empty) {
-    def +>=(t: Vec) { points :+= t }
+    def +=(t: Vec) { points :+= t }
 
     def render() {
-      renderDis {
+      render3D {
         val take = 100
         val ratio = 1/take.toDouble
         val error = Vec.random11 * 0.2
@@ -296,29 +274,137 @@ object Model {
     }
   }
 
+  case class Pixel(var x: Double, var y: Double, var transformVector: Vec = Vec0, color: Color, var dead: Boolean = false, var g: Double = 1, var acc: Double = 1.5) {
+    def render() {
+      transformVector = transformVector * 0.8 + Vec.random11/20
+      x += transformVector.x
+      y += transformVector.y + g
+      g += acc
+      if(y > 1080) dead = true
+
+      glColor4d(color.r/(g/10), color.g/(g/10), color.b/(g/10), 1)
+      glVertex3d(x, y, 0)
+      glVertex3d(x+g, y, 0)
+      glVertex3d(x+g, y+g, 0)
+      glVertex3d(x,   y+g, 0)
+      /*def tryset(x: Int, y: Int): Boolean = {
+        if(!Liminoid.backpixelBuffer(x)(y)) {
+          Liminoid.backpixelBuffer(x)(y) = true
+          glColor4d(color.r/(g/10), color.g/(g/10), color.b/(g/10), 1)
+          glVertex3d(x, y, 0)
+          glVertex3d(x+g, y, 0)
+          glVertex3d(x+g, y+g, 0)
+          glVertex3d(x,   y+g, 0)
+          true
+        } else {
+          false
+        }
+      }
+
+      if(y < 1080-1 && y >= 0+1 && x >= 0+1 && x < 1920-1) {
+        (tryset(x.toInt, y.toInt) 
+          || tryset(x.toInt+1, y.toInt) || tryset(x.toInt-1, y.toInt) 
+          || tryset(x.toInt, y.toInt+1) || tryset(x.toInt, y.toInt-1)
+          || tryset(x.toInt+1, y.toInt+1) || tryset(x.toInt-1, y.toInt-1) 
+          || tryset(x.toInt-1, y.toInt+1) || tryset(x.toInt+1, y.toInt-1)
+        )
+      }*/  
+    }
+  }
 
   // See dis? I need dis rendered
-  def renderDis(render: => Unit) {
+  def render3D(r: => Unit) {
     renderMode match {
       case Normal() => 
-        render
-      case Split() =>
+        r
+      case Stereo() =>
         val x = 0.5f//Liminoid.testNum
         val x2 = 126+30+22//+Liminoid.testNum
         glEnable(GL_SCISSOR_TEST)
         glPushMatrix
           glScissor(0,0,winWidth/2, winHeight);
           cam.look(Vec3(-x,0,0), Vec3(-x2,0,0))
-          render
+          r
         glPopMatrix
         glPushMatrix
           glScissor(winWidth/2,0,winWidth/2, winHeight);
           cam.look(Vec3(x,0,0), Vec3(x2,0,0))
-          render
+          r
         glPopMatrix
         glDisable(GL_SCISSOR_TEST)
     }
   }
   
+  val cam2D = new Camera
+  cam2D.setViewPort(0,0,winWidth,winHeight)
+  cam2D.setOrtho(0,winHeight,winWidth,0,1f,-1f)
+  
+  case class Coord(x: Double, y: Double, w: Double, h: Double) {
+    def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
+  }
+
+  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1) {
+    render2D {
+      glDisable(GL_DEPTH_TEST)
+      glDisable(GL_LIGHTING)
+      
+      glEnable(GL_BLEND)
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+      
+      glEnable(GL_TEXTURE_2D)
+      glBindTexture(GL_TEXTURE_2D, texture)
+
+      glPushMatrix()
+        glTranslated(coord.x,coord.y,0)
+        glColor4d(1,1,1,alpha)
+        val (v0,v1) = if(flipy) (0f,1f) else (1f,0f)
+        val (h0,h1) = if(flipx) (0f,1f) else (1f,0f)
+        glBegin(GL_QUADS)
+          glTexCoord2f(h1,v0); glVertex3d(0,       coord.h, 0)
+          glTexCoord2f(h0,v0); glVertex3d(coord.w, coord.h, 0)
+          glTexCoord2f(h0,v1); glVertex3d(coord.w, 0,       0)
+          glTexCoord2f(h1,v1); glVertex3d(0,       0,       0)
+        glEnd()
+      glPopMatrix()
+
+      glDisable(GL_TEXTURE_2D)
+
+      glDisable(GL_BLEND)
+
+      glEnable(GL_LIGHTING)
+      glEnable(GL_DEPTH_TEST)
+    }
+  }
+
+  def render2D(r: => Unit) {
+    renderMode match {
+      case Normal() => 
+        cam2D.render
+        r
+      case Stereo() =>
+        cam2D.render
+        glEnable(GL_SCISSOR_TEST)
+        glPushMatrix
+          glScissor(0,0,winWidth/2, winHeight);
+          glTranslated(-winWidth/4-eyeCorrection,0,0)
+          r
+        glPopMatrix
+        glPushMatrix
+          glScissor(winWidth/2,0,winWidth/2, winHeight);
+          glTranslated(winWidth/4+eyeCorrection,0,0)
+          r
+        glPopMatrix
+        glDisable(GL_SCISSOR_TEST)
+    }
+  }
+
+  /*def displayList(r: => Unit): Int = {
+    val displayList = glGenLists(1)
+    glNewList(displayList, GL_COMPILE)
+    r
+    glEndList()
+
+    displayList
+  }*/
   
 }

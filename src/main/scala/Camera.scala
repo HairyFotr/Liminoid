@@ -2,10 +2,11 @@ package org.ljudmila.liminoid.hardware
 
 import com.googlecode.javacv._
 import com.googlecode.javacv.cpp.opencv_core._
+import com.googlecode.javacv.cpp.opencv_highgui._;
 import collection.mutable.{HashMap,HashSet,ListBuffer,LinkedHashMap}
 import scala.actors.Futures._
 import System.err
-
+import org.ljudmila.liminoid.Model
 
 object Camera {
   val FrameGrabbers = HashMap[Int, OpenCVFrameGrabber]()
@@ -43,25 +44,13 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   private var camOpt: Option[OpenCVFrameGrabber] = Camera.getFrameGrabber(camId, width, height)
   def isStarted: Boolean = camOpt.isDefined
   private lazy val cam = camOpt.get
-  private lazy val grabRange = (0 until width*height).toArray
-  
-  def captureFrame(pixels: Array[Array[Int]]) {
-    for(img <- Option(cam.grab)) {
-      val imgData = img.getBufferedImage.getData.getDataBuffer.asInstanceOf[java.awt.image.DataBufferByte] //surely there's an easier way
-      for(i <- grabRange) {
-        pixels(i%width)(i/width) = (
-          imgData.getElem(i*3 + 0).toInt +
-          imgData.getElem(i*3 + 1).toInt +
-          imgData.getElem(i*3 + 2).toInt)
-      }
-    }
-  }
 
   import org.lwjgl.opengl.GL11._
   import org.lwjgl.opengl.GL12._
   private def captureFrameImg(): IplImage = cam.grab
+  var lastTextureID = -1
   private def captureFrameTex(img: IplImage): Int = {
-    if(img == null) return -1
+    if(img == null) return lastTextureID // fixes ocassional dropped frame
     
     //Generate texture and bind ID
     val textureID = glGenTextures 
@@ -80,7 +69,42 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     
     //Return the texture ID so we can bind it later again
     //println(textureID)
+    lastTextureID = textureID
     textureID
+  }
+
+  def saveImage(filename: String) { 
+    try {
+      cvSaveImage(filename, captureFrameImg)
+    } catch {
+      case e: Exception =>
+        println(filename)
+        throw e
+    }
+  }
+
+  def getDiffBlob(pixels1: Array[Int]): Vector[Model.Pixel] = {
+    val img = captureFrameImg()
+    if(img == null) return Vector.empty
+    val image = img.getBufferedImage
+    val (w, h) = (image.getWidth, image.getHeight)
+    val size = w*h
+    val pixels2 = Array.ofDim[Int](size)
+
+    image.getRGB(0, 0, w, h, pixels2, 0, w)
+
+    val threshold = 50
+    def compare(c1: Int, c2: Int) = math.abs(
+      ((c1 & 255) - (c2 & 255)) +
+      (((c1 >> 8) & 255) - ((c2 >> 8) & 255)) +
+      (((c1 >> 16) & 255) - ((c2 >> 16) & 255))
+    )/3
+
+    var pix = Vector.empty[Model.Pixel]
+    for(i <- 0 until size) if(i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) 
+      pix :+= Model.Pixel(x = i%w, y = i/w, color = Model.Color.BGR(pixels2(i)))
+
+    pix
   }
 
   //

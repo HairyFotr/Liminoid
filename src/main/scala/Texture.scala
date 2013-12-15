@@ -5,6 +5,7 @@ import org.lwjgl.opengl.GL12
 import org.lwjgl.opengl.GL11._
 import java.io._
 import java.nio._
+import javax.imageio.ImageIO
 import de.matthiasmann.twl.utils.PNGDecoder
 import scala.collection.mutable
 
@@ -13,6 +14,21 @@ object Texture {
 
   protected final class Buffer(val w: Int, val h: Int, val buffer: ByteBuffer)
   
+  def getImage(filename: String): Array[Int] = try {
+    val image = ImageIO.read(new File(filename))
+    val (w, h) = (image.getWidth, image.getHeight)
+    val size = w*h
+    val pixels = Array.ofDim[Int](size)
+    
+    image.getRGB(0, 0, w, h, pixels, 0, w)
+
+    pixels
+  } catch {
+    case e: Exception =>
+      println(filename)
+      throw e
+  }
+
   def loadBuffer(filename: String): Buffer = try {//TODO: could I avoid OOM if I reused buffer and marked synchronized (have another method for mass preload)
     // Open the PNG file as an InputStream
     val in = new FileInputStream(filename)

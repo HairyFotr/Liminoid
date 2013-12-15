@@ -161,7 +161,7 @@ final object Liminoid {
         .asInstanceOf[FloatBuffer]
     )
 
-    glLight(GL_LIGHT0, GL_AMBIENT, floatBuffer(0.5f, 0.5f, 0.5f, 0.0f))
+    glLight(GL_LIGHT0, GL_AMBIENT, floatBuffer(1f, 1f, 1f, 0.0f))
     glLight(GL_LIGHT0, GL_DIFFUSE, floatBuffer(0.7f, 0.7f, 0.7f, 0.0f))
     glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 20f)
     glLight(GL_LIGHT0, GL_POSITION, floatBuffer(0f, 0f, 10f, 0f))
@@ -233,105 +233,106 @@ final object Liminoid {
   var testNum3 = 0;
 
   /// Radiolarians phase objects ///
-  val white = Color(0.85)
+  val white = Color(1)
   val wallZ = 600 // z position of wall
-  var radioBasePosVec = Vec(0,0,-0.1) // basic z movement vector
+  var radioBasePosVec = Vec(0,0,-0.05) // basic z movement vector
   val startPos = Vec(0,0,wallZ+15) // central starting point
+  def basicRot = Vec.random11/3
   
+  // The rock inside radiolarians
+  lazy val core = OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.2,0.2,0.2))
+
   // The radiolarian that opens up
   lazy val radiolarian = 
     OBJSequence(
       path = "obj/OBJ_the_radiolarian_normale", 
       active = false, 
       stopAtEnd = true, 
+      color = white,
       coreTransform = Transform(pos = Vec(3,3,3)),
       transform = Transform(pos = startPos, rot = Vec.random*360),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random))
+      transformVector = Transform(pos = radioBasePosVec, rot = Vec0))
     
   // The other radiolaria
   lazy val quasiradiolarians = 
     Array(
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_I.obj").toModel(
-        transform = Transform(pos = startPos, size = Vec1),
-        transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+        transform = Transform(pos = startPos + Vec(-35,14,62), size = Vec1),
+        transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec(5,5,5)),
         color = white),
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel(
-        transform = Transform(pos = startPos + Vec(-5,14,12), size = Vec1),
-        transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+        transform = Transform(pos = startPos + Vec(-5,-14,82), size = Vec1),
+        transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec(3,3,3)),
         color = white), //majhen
       OBJModel("obj/Ogromni_modeli/Plascek_normale_IV.obj").toModel(
-        transform = Transform(pos = startPos + Vec(5,5,5), size = Vec1),
-        transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+        transform = Transform(pos = startPos + Vec(15,25,35), size = Vec1),
+        transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec(3,3,3)),
         color = white), //majhen
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel(
-        transform = Transform(pos = startPos + Vec(5,5,5), size = Vec1),
-        transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+        transform = Transform(pos = startPos + Vec(-35,-15,2), size = Vec1),
+        transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec(5,5,5)),
         color = white),
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel(
-        transform = Transform(pos = startPos + Vec(5,5,5), size = Vec1),
-        transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+        transform = Transform(pos = startPos + Vec(35,15,8), size = Vec1),
+        transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec(5,5,5)),
         color = white),
       OBJModel("obj/Ogromni_modeli/Plascek_normale_IX_velik.obj").toModel(
-        transform = Transform(pos = startPos + Vec(5,5,5), size = Vec1),
-        transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+        transform = Transform(pos = startPos + Vec(25,15,63), size = Vec1),
+        transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec(3,3,3)),
         color = white), //test it
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel(
-        transform = Transform(pos = startPos + Vec(5,5,5), size = Vec1),
-        transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+        transform = Transform(pos = startPos + Vec(35,-25,95), size = Vec1),
+        transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec(5,5,5)),
-        color = white)
-  )
-
-  // The rock inside radiolarians
-  lazy val core = OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.225,0.225,0.225))
+        color = white))
 
   // Some rocks just floating around
   lazy val rocks = Array(
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_I.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(2,2,2)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(35,12,31), size = Vec(2,2,2)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(3,3,3)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(-25,2,22), size = Vec(3,3,3)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(4,4,4)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(-40,-4,44), size = Vec(4,4,4)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(2,2,2)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(48,5,18), size = Vec(2,2,2)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(2,2,2)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(41,15,21), size = Vec(2,2,2)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),///////////////////////////////////////////////////////////////////duplication
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_I.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(3,3,3)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(72,-15,22), size = Vec(3,3,3)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(2,2,2)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(65,-45,35), size = Vec(2,2,2)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(4,4,4)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(75,7,23), size = Vec(4,4,4)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(2,2,2)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(64,5,62), size = Vec(2,2,2)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(5,5,5), size = Vec(2,2,2)),
-      transformVector = Transform(pos = radioBasePosVec, rot = Vec.random11),
+      transform = Transform(pos = startPos + Vec(-25,15,47), size = Vec(2,2,2)),
+      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = white))
 
   /// Mandalas phase objects ///
@@ -567,42 +568,59 @@ final object Liminoid {
         // Render Camera
         Model.cam.lookAt(Vec3(0,0,500))
         Model.cam.render
-        val ddd = 4 + (testNum+700)/100f
-        Model.cam.rot = Vec3(-rotation.pitch/ddd, rotation.yaw/ddd, rotation.roll/ddd)
+        val rotationCalibration = 4 + (testNum+700)/100f
+        Model.cam.rot = Vec3(-rotation.pitch/rotationCalibration, rotation.yaw/rotationCalibration, rotation.roll/rotationCalibration)
 
-        val izSteneTimeProper = 17
-        val izSteneTimeProper = 35
-        val radioVectorTimeProper = 60+25
-        val radioOpenTimeProper = 60+43
-        val endTimeProper = 120+8
+        //
+        //1
+        /// Postavi objekte glede na pleksi
+        /// Pocasen napad glede na muziko
+        /// ob <t> nastavi vektor in kot proti uporabniku
+        //
+        //2
+        /// Zoom <n> seconds before end
+        //
+        //3 
+        /// Fade white to camera
+        /// Tweakanje
+        //
+
+        // According to scenario
+        val izSteneTimeProper = (17)*1000
+        val tresenjeTimeProper = (35)*1000
+        val radioVectorTimeProper = (60+25)*1000
+        val radioOpenTimeProper = (60+43)*1000 // Fall down?
+        val endTimeProper = (120+8)*1000
         
-        val izSteneTime = 0
+        val test = true
+        val testTime = 10000
+
+        val izSteneTime = if(test) 0 else izSteneTimeProper
         var izStene = since(phaseTimer) > izSteneTime
-        val tresenjeTime = izSteneTime + 5000
+
+        // Start shaking elements
+        val tresenjeTime = if(test) izSteneTime + testTime else tresenjeTimeProper
         val tresenje = since(phaseTimer) > tresenjeTime
-        val radioVectorTime = tresenjeTime + 5000
-        val radioVector = since(phaseTimer) > radioVectorTime
-        val radioOpenTime = radioVectorTime + 5000
-        val radioOpen = since(phaseTimer) > radioOpenTime
-        val endTime = radioOpenTime + 5000
-        val end = since(phaseTimer) > endTime
-
-
-        /// Fix these.
-        // When radiolarian is close enough, change phase
-        if(radiolarian.transform.pos.z < 1) { 
-          gotoPhase(Mandalas)
-        }
+        
         // Pull radiolarian towards view
-        if(radiolarian.transform.pos.z < 150) { 
-          radiolarian.transformVector.rot *= 0.8
-          val z = radiolarian.transformVector.pos.z * 1.01
-          radiolarian.transformVector.pos = ((Vec(0,0,0) - radiolarian.transform.pos).normalize*4).setZ(z)
+        val radioVectorTime = if(test) tresenjeTime + testTime else radioVectorTimeProper
+        val radioVector = since(phaseTimer) > radioVectorTime
+        if(radioVector) {
+          radiolarian.transformVector.pos = radiolarian.transformVector.pos.setZ(radioBasePosVec.z*2)  //((Vec(0,0,0) - radiolarian.transform.pos).normalize)
         }
+
         // Activate radiolarian shell open animation
-        if(radiolarian.transform.pos.z < 120 && !radiolarian.active) { 
+        val radioOpenTime = if(test) radioVectorTime + testTime else radioOpenTimeProper
+        val radioOpen = since(phaseTimer) > radioOpenTime
+        if(radioOpen) {
           radiolarian.active = true; 
-          fade = 0
+        }
+
+        // End phase
+        val endTime = if(test) radioOpenTime + testTime else endTimeProper
+        val end = since(phaseTimer) > endTime
+        if(end) {
+          gotoPhase(Mandalas)
         }
 
         if(izStene) {
@@ -622,81 +640,43 @@ final object Liminoid {
             glDisable(GL_BLEND)
           }
 
-          /*val transforms: Array[(Model.MutableTransform, Model.MutableTransform)] = 
-            (Array((radiolarian.transform, radiolarian.transformVector)) ++
-              quasiradiolarians.map { a => (a.transform, a.transformVector)} ++
-              rocks.map { a => (a.transform, a.transformVector)})
+          def shake(m: Model.Model): Transform = {
+            val newPos = 
+              if(tresenje)
+                m.transform.pos
+                  .setX(m.transform.pos.x + nextGaussian/7)
+                  .setY(m.transform.pos.y + nextGaussian/22)
+              else 
+                m.transform.pos            
 
-          // Prevent them from getting away or bumping
-          def fixTransform(t: Model.MutableTransform, tVector: Model.MutableTransform) {
-            if(t.pos.z > wallZ && izStene)
-              tVector.pos = tVector.pos.setZ(-(abs(tVector.pos.z))*1.01)
+            m.transform.copy(pos = newPos)
+          }
 
-            if(t.pos.z < 20 && izStene)
-              tVector.pos = tVector.pos.setZ(abs(tVector.pos.z)*0.90)
-
-            if(abs(t.pos.y) >= 170 && izStene) 
-              tVector.pos = tVector.pos.setY(-signum(tVector.pos.y)*abs(tVector.pos.y)*0.9)
-
-            if(abs(t.pos.x) >= 170 && izStene) 
-              tVector.pos = tVector.pos.setX(-signum(tVector.pos.x)*abs(tVector.pos.x)*0.9)
-          }*/
-
-
-          /// 1
-          // Postavi objekte glede na pleksi
-          // Pocasen napad glede na muziko
-          // ob <t> nastavi vektor in kot proti uporabniku
-          /// 2
-          // Zoom
-          /// 3 
-          // Fade
-          // Tweak
-
-          // Debounce them
-          /*for(i <- 0 until transforms.length-1) {
-            for(j <- i+1 until transforms.length) {
-              if(i != j && (transforms(i)._1.pos distance transforms(j)._1.pos) < 5) {
-                if(i != 0) {
-                  //transforms(i)._2.pos = transforms(i)._2.pos*0.8 + (transforms(i)._1.pos - transforms(j)._1.pos).normalize * transforms(i)._2.pos.avg * 0.2
-                }
-                transforms(j)._2.pos = transforms(j)._2.pos*0.8 + ((transforms(j)._1.pos - transforms(i)._1.pos) / 5) * 0.2
-              }
-            }
-          }*/
-
-          radiolarian.transformVector.pos = radiolarian.transformVector.pos + Vec.random11.setZ(0)/20
-          for(radio <- quasiradiolarians) radio.transformVector.pos = radio.transformVector.pos + Vec.random11.setZ(0)/20
-          for(rock <- rocks) rock.transformVector.pos = rock.transformVector.pos + Vec.random11.setZ(0)/20
-          //val z = radiolarian.transformVector.pos.z
-          //radiolarian.transformVector.pos = (radiolarian.transformVector.pos).setZ(z)
-
-          // Draw radiolarians
+          // Draw radiolarian
           val oscDiv = 10
           if(!pause) radiolarian.transform += radiolarian.transformVector
           radiolarian.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv) * 1.2
-          radiolarian().render() // duplication below
+          val shaked = shake(radiolarian())
+          radiolarian().render(transform = shaked) // duplication below
 
-          // Make core go black after radiolarian opening
-          if(radiolarian.active) core.color -= 0.002
-          core.render(transform = radiolarian.transform.copy(size = radiolarian.transform.size * radiolarian.coreTransform.pos.x))
+          if(radiolarian.active) core.color -= 0.002 // Make core go black after radiolarian opening
 
+          core.render(transform = shaked.copy(size = radiolarian.transform.size * radiolarian.coreTransform.pos.x))
+
+          // Draw the other radiolarians
           for(radio <- quasiradiolarians) {
-            //fixTransform(radio.transform, radio.transformVector)
-
             if(!pause) radio.transform += radio.transformVector
             radio.transform.size = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
-            radio.render()
+            val shaked = shake(radio)
+            radio.render(transform = shaked)
 
-            core.render(transform = radio.transform.copy(size = radio.transform.size * radio.coreTransform.pos.x))
-            //core.render(transform = radio.transform.copy(size = radio.transform.size * 5))
+            core.render(transform = shaked.copy(size = radio.transform.size * radio.coreTransform.pos.x))
           }
 
+          // Draw rocks
           for(rock <- rocks) {
-            //fixTransform(rock.transform, rock.transformVector)
-
             if(!pause) rock.transform += rock.transformVector
-            rock.render()
+            rock.render(transform = shake(rock))
           }
         }
 
@@ -829,25 +809,11 @@ final object Liminoid {
             }
             star.theta = theta1
             star.phi += nextDouble*0.005
-            /*particles ++= Vector.fill(100)(Particle(
-              transform = star.transform.copy(),
-              transformVector = star.transformVector.copy(pos = -star.transformVector.pos, rot = Vec.random),
-              //fade = nextDouble*2,
-              color = Color(0.01+nextDouble*0.3))
-            )*/
           }
           star.render(color = Color(0,0,0))
           star.trail += star.transform.pos.copy()
           star.trail.render()
         }
-
-        /*particles = particles.filterNot(_.dead).map { p => 
-          val zd = zeroDist(p.transform.pos);
-          p.transform.pos = p.transform.pos * (radius/zd)
-          p
-        }
-        particles.foreach { _.render }*/
-
 
         //quasiradiolarians.head.render(color = Color(0.5, 0.5, 0.5), alpha = 0.25, transform = Transform(pos = Vec(0,0,0), size = Vec(0.5,0.5,0.5)))
         Model.render3D {
@@ -870,9 +836,6 @@ final object Liminoid {
             glVertex3d(-100,-100,-100)
           glEnd
         }
-
-
-        //core.render(transform = Model.Transform001)
 
 
       case BackSpace => /////////////////////////////////////////////////////////////////////////////////////////////

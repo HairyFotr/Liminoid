@@ -104,12 +104,13 @@ case class OBJSequence(
     var oscillatorPhase: Double = 0,
     var active: Boolean = true,
     var delay: Double = 75,
+    var color: Color,
     var coreTransform: MutableTransform,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends Sequence[Model] { 
 
-  val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform, color = Color(0.85), coreTransform = coreTransform) }
+  val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform, color = color, coreTransform = coreTransform) }
   override def get() = models(cursor)
   override def preload() { OBJModel.preload(files) }
   def preload(i: Int) { OBJModel.preload(files, i) }

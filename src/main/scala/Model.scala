@@ -142,7 +142,7 @@ object Model {
   val cam = new Camera
   cam.setViewPort(0,0,winWidth,winHeight)
   cam.setOrtho(0,winHeight,winWidth,0,1f,-1f)
-  cam.setPerspective(50, (winWidth)/winHeight.toFloat, 0.1f, 700f)
+  cam.setPerspective(50, (winWidth)/winHeight.toFloat, 0.15f, 600f)
   cam.setPosition(0,0,0);
   cam.lookAt(Vec3(0,0,200))
   

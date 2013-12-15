@@ -114,6 +114,10 @@ object Model {
   implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos,it.rot,it.size) //meh
   implicit def imutableTransform(mt: MutableTransform): Transform = Transform(mt.pos,mt.rot,mt.size) //meh
   case class MutableTransform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec0) extends TransformLike {
+    def setPosX(d: Double) { pos = pos.setX(d) }
+    def setPosY(d: Double) { pos = pos.setY(d) }
+    def setPosZ(d: Double) { pos = pos.setZ(d) }
+
     def +=(vector: TransformLike) {
       pos = pos + vector.pos
       rot = rot + vector.rot
@@ -138,7 +142,7 @@ object Model {
   val cam = new Camera
   cam.setViewPort(0,0,winWidth,winHeight)
   cam.setOrtho(0,winHeight,winWidth,0,1f,-1f)
-  cam.setPerspective(50, (winWidth)/winHeight.toFloat, 0.01f, 500f)
+  cam.setPerspective(50, (winWidth)/winHeight.toFloat, 0.1f, 700f)
   cam.setPosition(0,0,0);
   cam.lookAt(Vec3(0,0,200))
   
@@ -194,8 +198,10 @@ object Model {
         tex: Int = -1,
         color: Color,
         alpha: Double = 1d,
-        phi: Double = 0,
-        theta: Double = 0) = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta)
+        phi: Double = 0,        
+        theta: Double = 0,
+        baseVector: Vec = Vec0,
+        coreTransform: MutableTransform = Transform000) = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
   }
 
   case class Model(
@@ -207,6 +213,8 @@ object Model {
       val alpha: Double,
       var phi: Double,
       var theta: Double,
+      var baseVector: Vec,
+      var coreTransform: MutableTransform,
       var trail: Trail = new Trail()) {
 
     def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
@@ -396,6 +404,77 @@ object Model {
       glEnable(GL_DEPTH_TEST)
     }
   }
+  def quadStereo(coord: Coord, texture1: Int = -1, texture2: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, rotate90: Boolean = false) {
+    render2D2({
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_LIGHTING)
+        
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, texture1)
+
+        glPushMatrix()
+          if(rotate90) {
+            glTranslated(coord.x,coord.y,0)
+            glRotated(90, 0,0,1)
+            glTranslated(-coord.x,-coord.y,0)
+          }
+          glTranslated(coord.x,coord.y,0)
+          glColor4d(1,1,1,alpha)
+          val (v0,v1) = if(flipy) (0f,1f) else (1f,0f)
+          val (h0,h1) = if(flipx) (0f,1f) else (1f,0f)
+          glBegin(GL_QUADS)
+            glTexCoord2f(h1,v0); glVertex3d(0,       coord.h, 0)
+            glTexCoord2f(h0,v0); glVertex3d(coord.w, coord.h, 0)
+            glTexCoord2f(h0,v1); glVertex3d(coord.w, 0,       0)
+            glTexCoord2f(h1,v1); glVertex3d(0,       0,       0)
+          glEnd()
+        glPopMatrix()
+
+        glDisable(GL_TEXTURE_2D)
+
+        glDisable(GL_BLEND)
+
+        glEnable(GL_LIGHTING)
+        glEnable(GL_DEPTH_TEST)
+      }, {
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_LIGHTING)
+        
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, texture2)
+
+        glPushMatrix()
+          if(rotate90) {
+            glTranslated(coord.x,coord.y,0)
+            glRotated(90, 0,0,1)
+            glTranslated(-coord.x,-coord.y,0)
+          }
+          glTranslated(coord.x,coord.y,0)
+          glColor4d(1,1,1,alpha)
+          val (v0,v1) = if(flipy) (0f,1f) else (1f,0f)
+          val (h0,h1) = if(flipx) (0f,1f) else (1f,0f)
+          glBegin(GL_QUADS)
+            glTexCoord2f(h1,v0); glVertex3d(0,       coord.h, 0)
+            glTexCoord2f(h0,v0); glVertex3d(coord.w, coord.h, 0)
+            glTexCoord2f(h0,v1); glVertex3d(coord.w, 0,       0)
+            glTexCoord2f(h1,v1); glVertex3d(0,       0,       0)
+          glEnd()
+        glPopMatrix()
+
+        glDisable(GL_TEXTURE_2D)
+
+        glDisable(GL_BLEND)
+
+        glEnable(GL_LIGHTING)
+        glEnable(GL_DEPTH_TEST)
+      })
+  }
 
   def render2D(r: => Unit) {
     renderMode match {
@@ -414,6 +493,29 @@ object Model {
           glScissor(winWidth/2,0,winWidth/2, winHeight);
           glTranslated(winWidth/4+eyeCorrection,0,0)
           r
+        glPopMatrix
+        glDisable(GL_SCISSOR_TEST)
+    }
+  }
+
+  val eyeCorrection2 = 85
+  def render2D2(r1: => Unit, r2: => Unit) {
+    renderMode match {
+      case Normal() => 
+        cam2D.render
+        r1
+      case Stereo() =>
+        cam2D.render
+        glEnable(GL_SCISSOR_TEST)
+        glPushMatrix
+          glScissor(0,0,winWidth/2, winHeight);
+          glTranslated(-winWidth/4-eyeCorrection+eyeCorrection2+Liminoid.testNum2,0,0)
+          r1
+        glPopMatrix
+        glPushMatrix
+          glScissor(winWidth/2,0,winWidth/2, winHeight);
+          glTranslated(winWidth/4+eyeCorrection-eyeCorrection2-Liminoid.testNum2,0,0)
+          r2
         glPopMatrix
         glDisable(GL_SCISSOR_TEST)
     }

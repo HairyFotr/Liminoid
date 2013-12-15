@@ -274,19 +274,40 @@ object Model {
     }
   }
 
-  case class Pixel(var x: Double, var y: Double, var transformVector: Vec = Vec0, color: Color, var dead: Boolean = false, var g: Double = 1, var acc: Double = 1.5) {
-    def render() {
-      transformVector = transformVector * 0.8 + Vec.random11/20
-      x += transformVector.x
-      y += transformVector.y + g
-      g += acc
-      if(y > 1080) dead = true
+  case class Pixel(var x: Double, var y: Double, var transformVector: Vec = Vec0,
+    color: Color, var colorg: Double = 70,
+    var dead: Boolean = false, var g: Double = 0, var acc: Double = 0.77) {
 
-      glColor4d(color.r/(g/10), color.g/(g/10), color.b/(g/10), 1)
-      glVertex3d(x, y, 0)
-      glVertex3d(x+g, y, 0)
-      glVertex3d(x+g, y+g, 0)
-      glVertex3d(x,   y+g, 0)
+    var ssize = nextGaussian*2.5
+
+    def render() {
+      var randVecr = (Vec.random11 * 0.007)
+      val randVec = 
+        if(Liminoid.frames % Liminoid.shakeBumpN > Liminoid.shakeBumpN/3d) 
+          randVecr.setX(randVecr.x*5.0).setY(randVecr.y*3.4)
+        else
+          randVecr
+      
+
+      transformVector = transformVector * 0.995 + randVec
+      val actualTransformVector = transformVector
+
+      x += actualTransformVector.x
+      y += actualTransformVector.y + g
+      if(Liminoid.backPixelDrop) {
+        g += acc
+      }
+      colorg += acc
+      if(y > 5080) dead = true
+
+      val size: Double = (ssize + nextGaussian*0.4)/2
+      if(y <= 1080) {
+        glColor4d(color.r/(colorg/50), color.g/(colorg/50), color.b/(colorg/50), 1)
+        glVertex3d(x, y, 0)
+        glVertex3d(x+size, y, 0)
+        glVertex3d(x+size, y+size, 0)
+        glVertex3d(x,      y+size, 0)
+      }
       /*def tryset(x: Int, y: Int): Boolean = {
         if(!Liminoid.backpixelBuffer(x)(y)) {
           Liminoid.backpixelBuffer(x)(y) = true

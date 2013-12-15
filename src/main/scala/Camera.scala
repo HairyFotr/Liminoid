@@ -75,7 +75,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
 
   def saveImage(filename: String) { 
     try {
-      cvSaveImage(filename, captureFrameImg)
+      cvSaveImage(filename, captureFrameImg())
     } catch {
       case e: Exception =>
         println(filename)
@@ -93,15 +93,15 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
 
     image.getRGB(0, 0, w, h, pixels2, 0, w)
 
-    val threshold = 50
+    val threshold = 70
     def compare(c1: Int, c2: Int) = math.abs(
-      ((c1 & 255) - (c2 & 255)) +
-      (((c1 >> 8) & 255) - ((c2 >> 8) & 255)) +
-      (((c1 >> 16) & 255) - ((c2 >> 16) & 255))
-    )/3
+      ((c1 & 255) - (c2 & 255))// +
+      //(((c1 >> 8) & 255) - ((c2 >> 8) & 255)) +
+      //(((c1 >> 16) & 255) - ((c2 >> 16) & 255))
+    )///3
 
     var pix = Vector.empty[Model.Pixel]
-    for(i <- 0 until size) if(i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) 
+    for(i <- 0 until size by 2) if(i/w % 2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) 
       pix :+= Model.Pixel(x = i%w, y = i/w, color = Model.Color.BGR(pixels2(i)))
 
     pix
@@ -120,5 +120,17 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
       camtexFuture = future { captureFrameImg() }
     }
     camTex
+  } catch { case x: Exception => if(Camera.supressErrors) -1 else throw x } }
+
+  def getTextureIDWait(): Int = synchronized { try {
+    var limit = 100
+    var tex = captureFrameTex(captureFrameImg())
+    while(tex == -1 || tex == camTex) {
+      tex = captureFrameTex(captureFrameImg())
+      limit -= 1
+      Thread.sleep(20)
+    }
+
+    tex
   } catch { case x: Exception => if(Camera.supressErrors) -1 else throw x } }
 }

@@ -329,12 +329,20 @@ final object Liminoid {
   // BackSpace phase objects
   var wall = -1
   var backCamSnap = Texture.getImage("img/Image.png")
+  var backCamSnapTex = backCamera.getTextureIDWait
   var backPixels = Vector.empty[Model.Pixel]
   var backpixelBuffer = Array[Array[Boolean]]()
+  var backPixelDrop = false
+  var finished = false
 
   // variable that goes to 1 by little each frame
   var fade = 1d
   var fadeSpeed = 0.002
+
+  // have a small bump for movement
+  var shakeBump = 3
+  def shakeBumpN = 50
+
 
   // Oculus rift head tracking
   var lastRotation = Rotation(0,0,0)
@@ -473,14 +481,14 @@ final object Liminoid {
         println("Time" + (frames-1) + ": " + Utils.time((frames-1) match {
           case 0 => 
           case 1 => 
-          case 2 => radiolarian
+          /*case 2 => radiolarian
           case 3 => quasiradiolarians
           case 4 => rocks
           case 5 => blackMandala.preload(24); whiteMandala.preload(24)
           case 6 => blackHeartMandala; blackHeartDustMandala; whiteHeartMandala
           case 7 => wall
-          case 8 => magnets
-          case _ => gotoPhase(Radiolarians)
+          case 8 => magnets*/
+          case _ => gotoPhase(BackSpace)
         }))
         
         System.gc()
@@ -755,24 +763,32 @@ final object Liminoid {
       case BackSpace => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
           fade = 0
+          //backCamera.saveImage("img/Image.png");
+          backPixels = Vector.empty;
+          phaseTimer = now
+          backCamSnap = Texture.getImage("img/Image.png")
+          backCamSnapTex = Texture("img/Image.png")//backCamera.getTextureIDWait
+          backPixelDrop = true
+          Sound.play("razpad")
         }
         
-        glClear(1)
+        glClear(0)
 
-        val (camw, camh) = (winHeight*4/3d, winHeight)
-        val (camx, camy) = (winWidth/2-camw/2, 0)
+        val f = 1400d
+        val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
+        val (camx, camy) = (rotx*0.7-camw/7, roty*0.7-camh/7)
 
         backCamera.getTextureID
 
-        if(backPixels.isEmpty) 
+        if((backPixels.isEmpty && backPixelDrop == true && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I)) 
           quad(Coord(camx,camy,camw,camh), backCamera.getTextureID, alpha = 1, flipx = false)
         else
-          quad(Coord(camx,camy,camw,camh), wall, alpha = 1, flipx = false)
+          quad(Coord(camx,camy,camw,camh), backCamSnapTex, alpha = 1, flipx = false)
 
-        if(since(phaseTimer) >= 7*1000) {
+        if((backPixelDrop == true && since(phaseTimer) >= 15*1000 && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I)) {
           //if(backPixels.isEmpty || Keyboard.isKeyDown(Keyboard.KEY_I)) {
           val blob = backCamera.getDiffBlob(backCamSnap)
-          backPixels = backPixels ++ blob// ++ blob.map { _.copy() } ++ blob.map { _.copy() }
+          backPixels = blob //++ blob.map { _.copy() } ++ blob.map { _.copy() }
           //backCamera.saveImage("img/Image.png"); backCamSnap = Texture.getImage("img/Image.png"); wall = Texture("img/Image.png"); 
           val cv = {
             var x,y = 0d
@@ -781,18 +797,26 @@ final object Liminoid {
             Vec(x/backPixels.size, y/backPixels.size, 0)
           }
 
-          backPixels.foreach { b => b.transformVector = (Vec(b.x, b.y, 0) - cv)/10 }
-          //Sound.play("razpadheart1")
+          backPixels.foreach { b => b.transformVector = (Vec(b.x, b.y, 0) - cv)/200 }
+          Sound.play("razpadheart1")
 
 
+          backPixelDrop = false
           phaseTimer = now
           //}
+        }
+        if(backPixelDrop == false && since(phaseTimer) >= 15*1000) {
+          backPixelDrop = true
+          finished = true
+          phaseTimer = now
+          Sound.play("razpadheart2")
         }
 
         //backpixelBuffer = Array.ofDim[Boolean](1920, 1080)
         Model.render2D {
-          glTranslated(camx, camy, 0)          
+          glTranslated(camx, camy, 0)
           glScaled(camw/1920d, camh/1080d, 1)
+          glColor4d(0, 0, 0, 1)
           //glBegin(GL_POINTS)
           glBegin(GL_QUADS)
           backPixels.foreach(_.render())
@@ -852,7 +876,26 @@ final object Liminoid {
     if(isKeyDown(KEY_HOME)) gotoPhase(Radiolarians)
     if(isKeyDown(KEY_P)) { pause = !pause; }
 
-    if(isKeyDown(KEY_C)) { backCamera.saveImage("img/Image.png"); backCamSnap = Texture.getImage("img/Image.png"); wall = Texture("img/Image.png"); backPixels = Vector.empty; phaseTimer = now }
+    if(isKeyDown(KEY_C)) { 
+      backCamera.getTextureIDWait;
+      //backCamera.saveImage("img/Image.png");
+      backPixels = Vector.empty;
+      phaseTimer = now
+      backCamSnap = Texture.getImage("img/Image.png")
+      backCamSnapTex = Texture("img/Image.png")//backCamera.getTextureIDWait
+      backPixelDrop = true
+      finished = false
+    }
+    if(isKeyDown(KEY_Z)) { 
+      backCamera.getTextureIDWait;
+      backCamera.saveImage("img/Image.png");
+      backPixels = Vector.empty;
+      phaseTimer = now
+      backCamSnap = Texture.getImage("img/Image.png")
+      backCamSnapTex = Texture("img/Image.png")//backCamera.getTextureIDWait
+      backPixelDrop = true
+      finished = false
+    }
     if(isKeyDown(KEY_M)) { renderMode = (if(renderMode == Normal()) Stereo() else Normal()) }
 
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {

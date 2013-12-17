@@ -7,15 +7,16 @@ javaOptions += "-Djava.library.path=lib"
 seq(lwjglSettings: _*)
 
 libraryDependencies <++= scalaVersion(v => Seq(
-  "org.scala-lang" % "scala-actors" % v,
+  "org.scala-lang" % "scala-actors" % v//,
   //"org.rxtx" % "rxtxcomm" % "2.0-7pre1"
-  "org.rxtx" % "rxtx" % "2.1.7"))
+  //"org.rxtx" % "rxtx" % "2.1.7")
+))
 
 //resolvers += "linter" at "http://hairyfotr.github.io/linteRepo/releases"
 
 //addCompilerPlugin("com.foursquare.lint" %% "linter" % "0.1-SNAPSHOT")
 
-scalacOptions += "-Xplugin:/home/hairy/dev/linter/target/scala-2.11/linter_2.11-0.1-SNAPSHOT.jar"
+//scalacOptions += "-Xplugin:/home/hairy/dev/linter/target/scala-2.11/linter_2.11-0.1-SNAPSHOT.jar"
 
 javaOptions += "-Xmx4G"
 

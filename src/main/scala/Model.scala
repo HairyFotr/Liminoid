@@ -109,6 +109,10 @@ object Model {
     def pos: Vec
     def rot: Vec
     def size: Vec
+
+    def **(d: Double) = {
+      Transform(this.pos * d, this.rot * d, this.size * d)
+    }
   }
   case class Transform(val pos: Vec = Vec0, val rot: Vec = Vec0, val size: Vec = Vec0) extends TransformLike
   implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos,it.rot,it.size) //meh
@@ -142,7 +146,7 @@ object Model {
   val cam = new Camera
   cam.setViewPort(0,0,winWidth,winHeight)
   cam.setOrtho(0,winHeight,winWidth,0,1f,-1f)
-  cam.setPerspective(50, (winWidth)/winHeight.toFloat, 0.15f, 600f)
+  cam.setPerspective(50, (winWidth)/winHeight.toFloat, 0.25f, 700f)
   cam.setPosition(0,0,0);
   cam.lookAt(Vec3(0,0,200))
   
@@ -198,7 +202,7 @@ object Model {
         tex: Int = -1,
         color: Color,
         alpha: Double = 1d,
-        phi: Double = 0,        
+        phi: Double = 2*Pi*nextDouble,
         theta: Double = 0,
         baseVector: Vec = Vec0,
         coreTransform: MutableTransform = Transform000) = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
@@ -372,7 +376,7 @@ object Model {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
 
-  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1) {
+  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = Color(1,1,1)) {
     render2D {
       glDisable(GL_DEPTH_TEST)
       glDisable(GL_LIGHTING)
@@ -380,12 +384,14 @@ object Model {
       glEnable(GL_BLEND)
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
       
-      glEnable(GL_TEXTURE_2D)
-      glBindTexture(GL_TEXTURE_2D, texture)
+      if(texture != -1) {
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, texture)
+      }
 
       glPushMatrix()
         glTranslated(coord.x,coord.y,0)
-        glColor4d(1,1,1,alpha)
+        glColor4d(color.r,color.g,color.b,alpha)
         val (v0,v1) = if(flipy) (0f,1f) else (1f,0f)
         val (h0,h1) = if(flipx) (0f,1f) else (1f,0f)
         glBegin(GL_QUADS)

@@ -74,7 +74,7 @@ case class TexSequence(
   private var startTime = -1 //for playing the whole thing through
   override def moveCursor(): Unit = { //breaks bouncing and things like that
     if(startTime == -1) startTime = now
-    while(since(startTime) > cursor * delay ) cursor += 1
+    while(since(startTime) > cursor * delay) cursor += 1
     if(cursor >= frames.size) {
       cursor = frames.size - 1
       active = false
@@ -103,7 +103,7 @@ case class OBJSequence(
     val transformVector: MutableTransform = Transform000,
     var oscillatorPhase: Double = 0,
     var active: Boolean = true,
-    var delay: Double = 75,
+    var delay: Double = 80,
     var color: Color,
     var coreTransform: MutableTransform,
     var bounce: Boolean = true,

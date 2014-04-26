@@ -9,12 +9,12 @@ object Vec3 {
 class Vec3(var x: Float, var y: Float, var z: Float) {
   def this() = this(0f, 0f, 0f)
   
-  private def setPoints(v: Vec3) { x=v.x; y=v.y; z=v.z; }
-  private def setPoints(x: Float, y: Float, z: Float) { this.x=x; this.y=y; this.z=z; }
+  private def setPoints(v: Vec3): Unit = { x=v.x; y=v.y; z=v.z; }
+  private def setPoints(x: Float, y: Float, z: Float): Unit = { this.x=x; this.y=y; this.z=z; }
   //private def setPoints(p: Array[Float]): Unit = setPoints(p(0), p(1), p(2))
   
   override def clone: Vec3 = Vec3(x,y,z)
-  private def each(f: Float => Float) { x = f(x); y = f(y); z = f(z); }
+  private def each(f: Float => Float): Unit = { x = f(x); y = f(y); z = f(z); }
   private def map(f: Float => Float): Vec3 = { val out = this.clone; out.each(f); out }
   def applyVector(v: Vec3, multi: Float = 1): Unit = setPoints(this + (v * multi))
   
@@ -82,11 +82,11 @@ class BoundingBox(vec: Vec3) {
       (if(max.z+offset.z >= b.min.z) abs(max.z+offset.z - b.min.z) else 0)
     }
     
-    def +=(v: Vec3) {
+    def +=(v: Vec3): Unit = {
         this.min = min.minCoords(v)
         this.max = max.maxCoords(v)
     }
-    def +=(b: BoundingBox) {
+    def +=(b: BoundingBox): Unit = {
         this += b.min
         this += b.max
     }

@@ -10,7 +10,7 @@ import de.matthiasmann.twl.utils.PNGDecoder
 import scala.collection.mutable
 
 object Texture {
-  private[this] val cache = mutable.HashMap[String, Int]()
+  private[this] val cache = mutable.AnyRefMap[String, Int]()
 
   protected final class Buffer(val w: Int, val h: Int, val buffer: ByteBuffer)
   
@@ -93,7 +93,7 @@ object Texture {
   
   def apply(filename: String): Int = cache.getOrElseUpdate(filename, makeTexture(loadBuffer(filename)))
 
-  def preload(files: Array[File], max: Int = -1) {
+  def preload(files: Array[File], max: Int = -1): Unit = {
     try {
       (if(max == -1) files else files.take(max))
         .filterNot { file => cache.contains(file.toString) }
@@ -105,7 +105,7 @@ object Texture {
     }
   }
 
-  def delete(a: String) {
+  def delete(a: String): Unit = {
     glDeleteTextures(cache(a))
     cache -= a
   }

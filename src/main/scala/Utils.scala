@@ -11,15 +11,15 @@ object Utils {
     cleaner.clean
   }*/
 
-  implicit class D(val d:Double) { def prob: Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
-  implicit class F(val f:Float) { def prob: Boolean = util.Random.nextFloat < f }
+  implicit class D(val d: Double) { def prob(): Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
+  implicit class F(val f: Float) { def prob(): Boolean = util.Random.nextFloat < f }
 
   def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}
   def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
 
-  def thread(x: => Unit) {
+  def thread(x: => Unit): Unit = {
     (new Thread(new Runnable { 
-      def run() { x }
+      def run(): Unit = { x }
     })).start
   }
 
@@ -42,7 +42,7 @@ object Utils {
     
     private var lockTime = milliTime
     private var lockDuration = 0L
-    def lockIt(ms: Long) {
+    def lockIt(ms: Long): Unit = {
       lockTime = milliTime
       lockDuration = ms
       locked = true

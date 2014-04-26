@@ -3,9 +3,9 @@ package org.ljudmila.liminoid.hardware
 import de.fruitfly.ovr.OculusRift
 
 case class Rotation(yaw: Float, pitch: Float, roll: Float) {
-  def +(r: Rotation) = Rotation(yaw+r.yaw, pitch+r.pitch, roll+r.roll)
-  def -(r: Rotation) = Rotation(yaw-r.yaw, pitch-r.pitch, roll-r.roll)
-  def *(f: Float) = Rotation(yaw*f, pitch*f, roll*f)
+  def +(r: Rotation): Rotation = Rotation(yaw+r.yaw, pitch+r.pitch, roll+r.roll)
+  def -(r: Rotation): Rotation = Rotation(yaw-r.yaw, pitch-r.pitch, roll-r.roll)
+  def *(f: Float): Rotation = Rotation(yaw*f, pitch*f, roll*f)
 }
 
 object RiftTracker {

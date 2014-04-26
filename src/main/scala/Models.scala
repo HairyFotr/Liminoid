@@ -18,29 +18,29 @@ trait OldModel {
   var rot = Vec3()
   private var scal = Vec3(1f,1f,1f)
   def scale: Vec3 = scal
-  def scale_=(v: Vec3) { scal = v }
+  def scale_=(v: Vec3): Unit = { scal = v }
   var visible = true
 
-  def setPosition(x: Float, y: Float, z: Float) { pos = Vec3(x,y,z) }
-  def setRotation(x: Float, y: Float, z: Float) { rot = Vec3(x,y,z) }
-  def setScale(x: Float, y: Float, z: Float) { scale = Vec3(x,y,z) }
-  def setPosition(v: Vec3) { pos = v.clone }
-  def setRotation(v: Vec3) { rot = v.clone }
-  def setScale(v: Vec3) { scale = v.clone }
+  def setPosition(x: Float, y: Float, z: Float): Unit = { pos = Vec3(x,y,z) }
+  def setRotation(x: Float, y: Float, z: Float): Unit = { rot = Vec3(x,y,z) }
+  def setScale(x: Float, y: Float, z: Float): Unit = { scale = Vec3(x,y,z) }
+  def setPosition(v: Vec3): Unit = { pos = v.clone }
+  def setRotation(v: Vec3): Unit = { rot = v.clone }
+  def setScale(v: Vec3): Unit = { scale = v.clone }
   
-  def doTranslate() {
+  def doTranslate(): Unit = {
     GL11.glTranslatef(pos.x, pos.y, pos.z)
   }
-  def doRotate() {
+  def doRotate(): Unit = {
     if(rot.z != 0) GL11.glRotatef(rot.z, 0, 0, 1)
     if(rot.y != 0) GL11.glRotatef(rot.y, 0, 1, 0)
     if(rot.x != 0) GL11.glRotatef(rot.x, 1, 0, 0)
   }
-  def doScale() {
+  def doScale(): Unit = {
     GL11.glScalef(scale.x, scale.y, scale.z)
   }
 
-  def doTransforms() {
+  def doTransforms(): Unit = {
     doTranslate()
     doRotate()
     doScale()
@@ -62,13 +62,13 @@ class Camera extends OldModel {
   var angle = Vec3()
   var viewPort = (0,0,0,0)
 
-  def setViewPort(x: Int, y: Int, xx: Int, yy: Int) {
+  def setViewPort(x: Int, y: Int, xx: Int, yy: Int): Unit = {
     GL11.glViewport(x,y,xx,yy)
     viewPort = (x,y,xx,yy)
   }
 
   // set a perspective projection
-  def setPerspective(fv: Float, ar: Float, n: Float, f: Float) {
+  def setPerspective(fv: Float, ar: Float, n: Float, f: Float): Unit = {
     perspective = true
     fov = fv
     aspectRatio = ar
@@ -78,7 +78,7 @@ class Camera extends OldModel {
   }
   
   // set an ortographic projection
-  def setOrtho(mx: Float, my: Float, Mx: Float, My: Float, n: Float, f: Float) {
+  def setOrtho(mx: Float, my: Float, Mx: Float, My: Float, n: Float, f: Float): Unit = {
     perspective = false
     minX = mx
     minY = my
@@ -93,7 +93,7 @@ class Camera extends OldModel {
   def lookAt(v: Vec3): Unit = lookAtV = v.clone
   def lookAt(m: OldModel): Unit = lookAtV = m.pos.clone
     
-  override def render() {
+  override def render(): Unit = {
     // setup projection matrix stack
     //if(projectionChanged) {
       projectionChanged = false
@@ -119,7 +119,7 @@ class Camera extends OldModel {
                     0,1,0)                         // up vector 
     }
   }
-  def look(v: Vec3, a: Vec3) {
+  def look(v: Vec3, a: Vec3): Unit = {
     GL11.glLoadIdentity()
     val aa = lookAtV + a
     GLU.gluLookAt(v.x,v.y,v.z,             // camera position

@@ -3,13 +3,13 @@ package org.ljudmila.liminoid.hardware
 import com.googlecode.javacv._
 import com.googlecode.javacv.cpp.opencv_core._
 import com.googlecode.javacv.cpp.opencv_highgui._;
-import collection.mutable.{HashMap,HashSet,ListBuffer,LinkedHashMap}
+import collection.mutable
 import scala.actors.Futures._
 import System.err
 import org.ljudmila.liminoid.Model
 
 object Camera {
-  val FrameGrabbers = HashMap[Int, OpenCVFrameGrabber]()
+  val FrameGrabbers = mutable.HashMap[Int, OpenCVFrameGrabber]()
   val supressErrors = true
   
   def getCamera(camIds: Seq[Int], width: Int = 640, height: Int = 480): Option[Camera] = {
@@ -73,7 +73,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     textureID
   }
 
-  def saveImage(filename: String) { 
+  def saveImage(filename: String): Unit = { 
     try {
       cvSaveImage(filename, captureFrameImg())
     } catch {
@@ -94,14 +94,14 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     image.getRGB(0, 0, w, h, pixels2, 0, w)
 
     val threshold = 70
-    def compare(c1: Int, c2: Int) = math.abs(
+    def compare(c1: Int, c2: Int): Int = math.abs(
       ((c1 & 255) - (c2 & 255))// +
       //(((c1 >> 8) & 255) - ((c2 >> 8) & 255)) +
       //(((c1 >> 16) & 255) - ((c2 >> 16) & 255))
     )///3
 
     var pix = Vector.empty[Model.Pixel]
-    for(i <- 0 until size by 2) if(i/w % 2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) 
+    for(i <- 0 until size by 2) if((i/w)%2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) 
       pix :+= Model.Pixel(x = i%w, y = i/w, color = Model.Color.BGR(pixels2(i)))
 
     pix

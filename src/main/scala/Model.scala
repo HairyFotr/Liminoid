@@ -9,7 +9,7 @@ import util.Random._
 import scala.language.implicitConversions
 
 object Model {
-  private[this] val rawcache = mutable.HashMap[String, RawModel]()
+  private[this] val rawcache = mutable.AnyRefMap[String, RawModel]()
 
   type Vertices = Vector[Vec]
   type Faces = Vector[Array[(Int, Int, Int)]] //Array of indices vertex,tex,normal
@@ -20,9 +20,9 @@ object Model {
     def apply(fileStr: String): RawModel = rawcache.getOrElseUpdate(fileStr, {
       val file = io.Source.fromFile(fileStr)
 
-      var vertices: Vertices = Vector.empty
-      var faces: Faces = Vector.empty
-      var normals: Normals = Vector.empty
+      var vertices: Vertices     = Vector.empty
+      var faces: Faces           = Vector.empty
+      var normals: Normals       = Vector.empty
       var uvVertices: UVVertices = Vector.empty
 
       file.getLines.buffered foreach { line =>
@@ -30,7 +30,7 @@ object Model {
         
         x(0) match {
           case "v"  => vertices :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
-          case "vn" => normals :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
+          case "vn" => normals  :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
           case "f"  => faces :+= (x.tail.map { face =>
               val fs = face.split("/")
               if(fs.length == 1)      (fs(0).toInt-1,            -1, -1)
@@ -49,7 +49,7 @@ object Model {
       new RawModel(vertices, uvVertices, normals, faces)
     })
 
-    def preload(files: Array[File], max: Int = -1) {
+    def preload(files: Array[File], max: Int = -1): Unit = {
       (if(max == -1) files else files.take(max))
         .filterNot { file => rawcache.contains(file.toString) }
         .par.map { file => 
@@ -63,38 +63,38 @@ object Model {
     }
   }
 
-  trait VecLike {
+  sealed trait VecLike {
     def x: Double
     def y: Double
     def z: Double
 
-    def +(v: VecLike) = Vec(x+v.x, y+v.y, z+v.z)
-    def -(v: VecLike) = Vec(x-v.x, y-v.y, z-v.z)
-    def unary_-() = Vec(-x, -y, -z)
-    def *(f: Double) = Vec(x*f, y*f, z*f)
-    def /(f: Double) = Vec(x/f, y/f, z/f)
+    def +(v: VecLike): Vec = Vec(x+v.x, y+v.y, z+v.z)
+    def -(v: VecLike): Vec = Vec(x-v.x, y-v.y, z-v.z)
+    def unary_-(): Vec = Vec(-x, -y, -z)
+    def *(f: Double): Vec = Vec(x*f, y*f, z*f)
+    def /(f: Double): Vec = Vec(x/f, y/f, z/f)
     def distance(v: Vec): Double = sqrt(pow(x-v.x, 2) + pow(y-v.y, 2) + pow(z-v.z, 2))
-    def minCoord(v: VecLike) = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
-    def maxCoord(v: VecLike) = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
-    def span(v: VecLike) = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
-    def avg() = (x+y+z)/3d
-    def setX(d: Double) = { Vec(d,y,z) }
-    def setY(d: Double) = { Vec(x,d,z) }
-    def setZ(d: Double) = { Vec(x,y,d) }
-    def zeroX() = { Vec(0,y,z) }
-    def zeroY() = { Vec(x,0,z) }
-    def zeroZ() = { Vec(x,y,0) }
-    def normalize() = {
+    def minCoord(v: VecLike): Vec = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
+    def maxCoord(v: VecLike): Vec = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
+    def span(v: VecLike): Vec = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
+    def avg(): Double = (x+y+z)/3d
+    def setX(d: Double): Vec = Vec(d,y,z)
+    def setY(d: Double): Vec = Vec(x,d,z)
+    def setZ(d: Double): Vec = Vec(x,y,d)
+    def zeroX(): Vec = Vec(0,y,z)
+    def zeroY(): Vec = Vec(x,0,z)
+    def zeroZ(): Vec = Vec(x,y,0)
+    def normalize(): Vec = {
       val m = max(max(abs(x),abs(y)),abs(z))
       Vec(x/m, y/m, z/m)
     }
   }
   object Vec {
-    def random = random01
-    def random360 = random01 * 360
-    def random01 = Vec(nextDouble,nextDouble,nextDouble)
-    def random11 = Vec(nextGaussian,nextGaussian,nextGaussian)
-    def randomUniform01 = { val r = nextDouble; Vec(r,r,r) } 
+    def random(): Vec = random01
+    def random360(): Vec = random01 * 360
+    def random01(): Vec = Vec(nextDouble,nextDouble,nextDouble)
+    def random11(): Vec = Vec(nextGaussian,nextGaussian,nextGaussian)
+    def randomUniform01(): Vec = { val r = nextDouble; Vec(r,r,r) } 
   }
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
   implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x,it.y,it.z)
@@ -105,24 +105,22 @@ object Model {
   final val Vec0 = Vec(0,0,0)
   final val Vec1 = Vec(1,1,1)
 
-  trait TransformLike {
+  sealed trait TransformLike {
     def pos: Vec
     def rot: Vec
     def size: Vec
 
-    def **(d: Double) = {
-      Transform(this.pos * d, this.rot * d, this.size * d)
-    }
+    def **(d: Double): Transform = Transform(this.pos * d, this.rot * d, this.size * d)
   }
   case class Transform(val pos: Vec = Vec0, val rot: Vec = Vec0, val size: Vec = Vec0) extends TransformLike
   implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos,it.rot,it.size) //meh
   implicit def imutableTransform(mt: MutableTransform): Transform = Transform(mt.pos,mt.rot,mt.size) //meh
   case class MutableTransform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec0) extends TransformLike {
-    def setPosX(d: Double) { pos = pos.setX(d) }
-    def setPosY(d: Double) { pos = pos.setY(d) }
-    def setPosZ(d: Double) { pos = pos.setZ(d) }
+    def setPosX(d: Double): Unit = { pos = pos.setX(d) }
+    def setPosY(d: Double): Unit = { pos = pos.setY(d) }
+    def setPosZ(d: Double): Unit = { pos = pos.setZ(d) }
 
-    def +=(vector: TransformLike) {
+    def +=(vector: TransformLike): Unit = {
       pos = pos + vector.pos
       rot = rot + vector.rot
       size = size + vector.size
@@ -134,8 +132,8 @@ object Model {
   case class UV(u: Double, v: Double)
 
   case class Color(var r: Double, var g: Double, var b: Double) {
-    def -=(f: Double) { r -= f; g -= f; b -= f; }
-    def *=(f: Double) { r *= f; g *= f; b *= f; }
+    def -=(f: Double): Unit = { r -= f; g -= f; b -= f; }
+    def *=(f: Double): Unit = { r *= f; g *= f; b *= f; }
   }
   object Color {
     def apply(d: Double): Color = Color(d,d,d)
@@ -205,7 +203,7 @@ object Model {
         phi: Double = 2*Pi*nextDouble,
         theta: Double = 0,
         baseVector: Vec = Vec0,
-        coreTransform: MutableTransform = Transform000) = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
+        coreTransform: MutableTransform = Transform000): Model = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
   }
 
   case class Model(
@@ -221,7 +219,7 @@ object Model {
       var coreTransform: MutableTransform,
       var trail: Trail = new Trail()) {
 
-    def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha) {
+    def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha): Unit = {
       render3D {
         import transform._
         glEnable(GL_DEPTH_TEST)
@@ -258,9 +256,9 @@ object Model {
   }
 
   class Trail(var points: Vector[Vec] = Vector.empty) {
-    def +=(t: Vec) { points :+= t }
+    def +=(t: Vec): Unit = { points :+= t }
 
-    def render() {
+    def render(): Unit = {
       render3D {
         val take = 100
         val ratio = 1/take.toDouble
@@ -292,7 +290,7 @@ object Model {
 
     var ssize = nextGaussian*2.5
 
-    def render() {
+    def render(): Unit = {
       var randVecr = (Vec.random11 * 0.007)
       val randVec = 
         if(Liminoid.frames % Liminoid.shakeBumpN > Liminoid.shakeBumpN/3d) 
@@ -346,7 +344,7 @@ object Model {
   }
 
   // See dis? I need dis rendered
-  def render3D(r: => Unit) {
+  def render3D(r: => Unit): Unit = {
     renderMode match {
       case Normal() => 
         r
@@ -376,13 +374,13 @@ object Model {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
 
-  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = Color(1,1,1)) {
+  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = Color(1,1,1), blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
     render2D {
       glDisable(GL_DEPTH_TEST)
       glDisable(GL_LIGHTING)
       
       glEnable(GL_BLEND)
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+      glBlendFunc(blend._1, blend._2)
       
       if(texture != -1) {
         glEnable(GL_TEXTURE_2D)
@@ -410,7 +408,7 @@ object Model {
       glEnable(GL_DEPTH_TEST)
     }
   }
-  def quadStereo(coord: Coord, texture1: Int = -1, texture2: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, rotate90: Boolean = false) {
+  def quadStereo(coord: Coord, texture1: Int = -1, texture2: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, rotate90: Boolean = false): Unit = {
     render2D2({
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_LIGHTING)
@@ -482,7 +480,7 @@ object Model {
       })
   }
 
-  def render2D(r: => Unit) {
+  def render2D(r: => Unit): Unit = {
     renderMode match {
       case Normal() => 
         cam2D.render
@@ -505,7 +503,7 @@ object Model {
   }
 
   val eyeCorrection2 = 85
-  def render2D2(r1: => Unit, r2: => Unit) {
+  def render2D2(r1: => Unit, r2: => Unit): Unit = {
     renderMode match {
       case Normal() => 
         cam2D.render

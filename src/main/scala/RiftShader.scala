@@ -35,18 +35,16 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     |uniform vec2 ScaleIn;
     |uniform vec4 HmdWarpParam;
     | 
-    |vec2 HmdWarp(vec2 texIn) 
-    |{ 
+    |vec2 HmdWarp(vec2 texIn) { 
     |   vec2 theta = (texIn - LensCenter) * ScaleIn;
     |   float rSq = theta.x * theta.x + theta.y * theta.y;
     |   vec2 theta1 = theta * (HmdWarpParam.x + HmdWarpParam.y * rSq + HmdWarpParam.z * rSq * rSq + HmdWarpParam.w * rSq * rSq * rSq);
     |   return LensCenter + Scale * theta1;
     |}
     |
-    |void main()
-    |{
+    |void main() {
     |   vec2 tc = HmdWarp(gl_TexCoord[0].xy);
-    |   if (any(notEqual(clamp(tc, ScreenCenter-vec2(0.25,0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
+    |   if(any(notEqual(clamp(tc, ScreenCenter-vec2(0.25,0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
     |       gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     |   else
     |       gl_FragColor = texture2D(tex, tc);
@@ -90,18 +88,18 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     (framebufferID, colorTextureID, depthRenderBufferID)
   }
 
-  def beginOffScreenRenderPass() {        
+  def beginOffScreenRenderPass(): Unit = {        
     glBindTexture(GL_TEXTURE_2D, 0)
     Util.checkGLError()
     glBindFramebuffer(GL_FRAMEBUFFER, framebufferID)
     Util.checkGLError()
   }
   
-  def endOffScreenRenderPass() {
+  def endOffScreenRenderPass(): Unit = {
     // nop
   }
   
-  def renderToScreen() {
+  def renderToScreen(): Unit = {
     Util.checkGLError()
     glUseProgram(shader)
     Util.checkGLError()
@@ -127,7 +125,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
   val K2 = 0.24f
   val K3 = 0.0f
   
-  def renderDistortedEye(eye: Int, x: Float, y: Float, w: Float, h: Float) {
+  def renderDistortedEye(eye: Int, x: Float, y: Float, w: Float, h: Float): Unit = {
     val as = w/h
     val scaleFactor = 1.0f
     val eyeHoleScale = 1.75f
@@ -193,7 +191,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     (shader, vertShader, fragShader)
   }
 
-  def validate() {
+  def validate(): Unit = {
     glValidateProgram(shader)
     if(glGetProgrami(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
       printLogInfo(shader)
@@ -218,10 +216,10 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
 
   def createFragShader(fragCode: String): Int = {
     val fragShader = glCreateShader(GL_FRAGMENT_SHADER)
-    if (fragShader != 0) {
+    if(fragShader != 0) {
       glShaderSource(fragShader, fragCode)
       glCompileShader(fragShader)
-      if (glGetShaderi(fragShader, GL_COMPILE_STATUS) == GL_FALSE) {
+      if(glGetShaderi(fragShader, GL_COMPILE_STATUS) == GL_FALSE) {
         printLogInfo(fragShader)
         return 0
       }
@@ -230,7 +228,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     fragShader
   }
 
-  def printLogInfo(obj:Int) {
+  def printLogInfo(obj: Int): Unit = {
     val iVal = BufferUtils.createIntBuffer(1)
     glGetShader(obj, GL_INFO_LOG_LENGTH, iVal)
 

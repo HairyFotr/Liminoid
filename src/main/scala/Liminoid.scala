@@ -2,16 +2,14 @@ package org.ljudmila.liminoid
 
 import org.lwjgl.opengl.{Display,PixelFormat,DisplayMode,Util}
 import org.lwjgl.input.{Keyboard, Mouse}
-import collection.mutable.{HashMap,HashSet,ListBuffer,LinkedHashMap}
+import collection.mutable
 import collection.parallel.mutable.ParArray
 import java.nio._
 import scala.actors.Futures._
 import scala.util.Random._
 import math._
 import Utils._
-import org.lwjgl.opengl.GL11
-import org.lwjgl.opengl.GL12
-import org.lwjgl.opengl.GL13
+import org.lwjgl.opengl.{GL11,GL12,GL13,GL14}
 import org.lwjgl.opengl.GL11._
 import hardware.{RiftTracker,Rotation,PulseSensor}
 
@@ -39,7 +37,7 @@ final object Liminoid {
   /**
    * Initializes display and enters main loop
    */
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     initDisplay()
     PulseSensor.init()
     RiftTracker.init()
@@ -56,7 +54,7 @@ final object Liminoid {
 
   var (winWidth, winHeight) = (1920, 1080)
   val (forceWidth, forceHeight) = (1920, 1080)
-  def initDisplay() {
+  def initDisplay(): Unit = {
     Display.setTitle(project)
 
     val bestMode = 
@@ -84,7 +82,7 @@ final object Liminoid {
   /**
    * Game loop: renders and processes input events
    */
-  def mainLoop() {
+  def mainLoop(): Unit = {
     setupView()  // setup camera and lights
     val shader = new RiftShader(winWidth, winHeight)
 
@@ -140,7 +138,7 @@ final object Liminoid {
   /**
   * Initial setup of projection of the scene onto screen, lights etc.
   */
-  def setupView() {
+  def setupView(): Unit = {
     glClearColor(0,0,0,1)
 
     glEnable(GL_DEPTH_TEST) // enable depth buffer (off by default)
@@ -180,7 +178,7 @@ final object Liminoid {
   /**
   * Resets the view of current frame
   */
-  def resetView() {
+  def resetView(): Unit = {
     // clear color and depth buffer
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -206,16 +204,16 @@ final object Liminoid {
   var phase = Setup // Current phase
   var phaseChanged = true
   
-  def gotoPhase(i: Int) {
+  def gotoPhase(i: Int): Unit = {
     phase = i
     phaseChanged = true
   }
-  def nextPhase() {
+  def nextPhase(): Unit = {
     if(phaseChanged || phase >= PhaseTerminator) return
     phase += 1
     phaseChanged = true
   }
-  def previousPhase() {
+  def previousPhase(): Unit = {
     if(phaseChanged || phase <= Setup) return
     phase -= 1
     phaseChanged = true
@@ -230,8 +228,8 @@ final object Liminoid {
   // Cameras
   //val cams = Array(hardware.Camera(camId = 0, 1920, 1080), hardware.Camera(camId = 1, 1920, 1080), hardware.Camera(camId = 2, 1280, 720), hardware.Camera(camId = 3, 1280, 720))
   //val stereoCameras = cams.takeRight(2).reverse
-  val backCamera = hardware.Camera(camId = 0, 1920, 1080) //cams(0)
-  val frontCamera = hardware.Camera(camId = 1, 1280, 720)
+  val backCamera = hardware.Camera(camId = 1, 1920, 1080) //cams(0)
+  val frontCamera = hardware.Camera(camId = 0, 1280, 720)
 
   val eyeCorrection = -64 // Eye shift for 2D rift view
   var testNum = 0;
@@ -243,7 +241,7 @@ final object Liminoid {
   val wallZ = 600 // z position of wall
   var radioBasePosVec = Vec(0,0,-0.11) // basic z movement vector
   val startPos = Vec(0,0,wallZ+15) // central starting point
-  def basicRot = Vec.random11/3
+  def basicRot(): Vec = Vec.random11/3
   
   // The rock inside radiolarians
   lazy val core = OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.2,0.2,0.2))
@@ -377,7 +375,7 @@ final object Liminoid {
   var zoom = 0d
 
   /// CircleSpace phase objects ///
-  def newStar = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
+  def newStar(): Model.Model = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
     transform = Transform(rot = Vec.random, size = (Vec1/2) + (Vec.random/3)),
     transformVector = Transform(rot = Vec.random),
     color = Color(0.2,0.2,0.2),
@@ -408,8 +406,8 @@ final object Liminoid {
   var fadeSpeed2 = 0.04
 
   // have a small bump for movement
-  var shakeBump = 3
-  def shakeBumpN = 50
+  val shakeBump = 3
+  val shakeBumpN = 50
 
 
   // Oculus rift head tracking
@@ -423,7 +421,7 @@ final object Liminoid {
   var lastEnd = false
 
   var frames = 0L
-  def renderFrame() {
+  def renderFrame(): Unit = {
     frames += 1
 
     /*
@@ -493,11 +491,11 @@ final object Liminoid {
       
     */
     
-    def glClear(g: Double) {
+    def glClear(g: Double): Unit = {
       GL11.glClearColor(g.toFloat,g.toFloat,g.toFloat,1)
       GL11.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     }
-    def drawFrontCam() {
+    def drawFrontCam(): Unit = {
       val img = frontCamera.getTextureID
       val camScale = -1030
       val camhCorrect = 650
@@ -529,7 +527,7 @@ final object Liminoid {
     //def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
 
     //def oscillator(i: Double, phi: Double) = sin(i + phi)
-    def oscillator(i: Double = Utils.now*0.002, phi: Double) = sin(i + phi)
+    def oscillator(i: Double = Utils.now*0.002, phi: Double): Double = sin(i + phi)
 
     val osc1 = oscillator(phi = 0)
     val osc2 = oscillator(phi = 1*Pi/4)
@@ -562,6 +560,12 @@ final object Liminoid {
       case Setup => /////////////////////////////////////////////////////////////////////////////////////////////
         glClear(0)
 
+        //Mandala debug
+        //blackMandala.preload(50); whiteMandala.preload(50)
+        //blackHeartMandala; blackHeartDustMandala; whiteHeartMandala; println("Mandalas preloaded")
+        //gotoPhase(Radiolarians)
+        //.............
+
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
         quad(Coord(winWidth/2-940/2,winHeight/2-550/2,940,550), liminoidTitle, alpha = 1)
@@ -570,15 +574,15 @@ final object Liminoid {
         println("Time" + (frames-1) + ": " + Utils.time((frames-1) match {
           case 0 => 
           case 1 => 
-          case 2 => radiolarian
-          case 3 => quasiradiolarians
-          case 4 => rocks; guardRocks 
-          case 5 => blackMandala.preload(25); whiteMandala.preload(25)
-          case 6 => blackHeartMandala; blackHeartDustMandala; whiteHeartMandala
+          case 2 => radiolarian; println("Radiolarians1 loaded")
+          case 3 => quasiradiolarians; println("Radiolarians2 loaded")
+          case 4 => rocks; guardRocks; println("Rocks loaded")
+          case 5 => blackMandala.preload(50); whiteMandala.preload(50)
+          case 6 => blackHeartMandala; blackHeartDustMandala; whiteHeartMandala; println("Mandalas preloaded")
           case 7 => //wall
           case 8 => //magnets
           case 9 => //startLiminoid = true
-          case _ => if(startLiminoid) gotoPhase(Radiolarians)
+          case _ => if(startLiminoid) gotoPhase(Radiolarians) else Thread.sleep(100)
         }))
         
         System.gc()
@@ -662,6 +666,10 @@ final object Liminoid {
         }
         glClear(0)
         drawFrontCam()
+        
+        // Lines
+        //val clr = 0.75 + 0.25 * nextDouble
+        //for(y <- 0 to 10) quad(Coord(0,camy,10000,2), color = Color(clr, clr, clr), alpha = 0.8)
 
         radiolarian.transformVector.rot = Vec0
         radiolarian.transform.rot = Vec(90,0,0)
@@ -849,6 +857,10 @@ final object Liminoid {
           quad(Coord(0,0,2000,2000), alpha = fade)
         }
 
+        GL14.glBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT)
+        quad(Coord(0,0, winWidth, winHeight) + zoom, color = Color(0,0.125,0.25), alpha = 0.1, blend = (GL_ONE, GL_ONE))
+        GL14.glBlendEquation(GL14.GL_FUNC_ADD)
+
       case CircleSpace => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
           fade = 0
@@ -864,16 +876,12 @@ final object Liminoid {
         val ddd = 4
         Model.cam.rot = Vec3(-rotation.pitch/ddd, rotation.yaw/ddd, rotation.roll/ddd)
 
-        def getVec(phi: Double, theta: Double) = {
-          Vec(
-            x = (cos(theta)*cos(phi)) * radius,
-            y = (cos(theta)*sin(phi)) * radius,
-            z = (sin(theta)) * radius)
-        }
-        def getDiff(phi: Double, theta0: Double, theta1: Double) = {
-          getVec(phi,theta1) - getVec(phi,theta0)
-        }
-        def zeroDist(v: Vec) = v distance Vec(0,0,0)
+        def getVec(phi: Double, theta: Double): Vec = Vec(
+          x = (cos(theta)*cos(phi)) * radius,
+          y = (cos(theta)*sin(phi)) * radius,
+          z = (sin(theta)) * radius)
+        def getDiff(phi: Double, theta0: Double, theta1: Double): Vec = getVec(phi,theta1) - getVec(phi,theta0)
+        def zeroDist(v: Vec): Double = v distance Vec(0,0,0)
 
         for(magnet <- magnets) {
           val phi = magnet.phi
@@ -1031,7 +1039,7 @@ final object Liminoid {
     }
   }
   
-  def processInput() {
+  def processInput(): Unit = {
     import Keyboard._
 
     if(isKeyDown(KEY_X)) Sound.play("jump")
@@ -1042,7 +1050,10 @@ final object Liminoid {
     if(isKeyDown(KEY_PERIOD)) testNum3 -= 1
     if(isKeyDown(KEY_COMMA))  testNum3 += 1
     
-    if(isKeyDown(KEY_RETURN)) startLiminoid = true
+    if(isKeyDown(KEY_RETURN)) {
+      println("Liminoid started!")
+      startLiminoid = true
+    }
 
     /*if(isKeyDown(KEY_W)) Model.cam.pos.z += 1
     if(isKeyDown(KEY_S)) Model.cam.pos.z -= 1
@@ -1065,9 +1076,9 @@ final object Liminoid {
     if(isKeyDown(KEY_RIGHT)) Model.cam.pos.y += 1
 
     /*if(isKeyDown(KEY_SPACE)) println(modelSeq)
-    if(isKeyDown(KEY_UP)) modelSeq.pos = modelSeq.pos.copy(z = modelSeq.pos.z + 1)
-    if(isKeyDown(KEY_DOWN)) modelSeq.pos = modelSeq.pos.copy(z = modelSeq.pos.z - 1)
-    if(isKeyDown(KEY_LEFT)) modelSeq.pos = modelSeq.pos.copy(x = modelSeq.pos.x + 1)
+    if(isKeyDown(KEY_UP))    modelSeq.pos = modelSeq.pos.copy(z = modelSeq.pos.z + 1)
+    if(isKeyDown(KEY_DOWN))  modelSeq.pos = modelSeq.pos.copy(z = modelSeq.pos.z - 1)
+    if(isKeyDown(KEY_LEFT))  modelSeq.pos = modelSeq.pos.copy(x = modelSeq.pos.x + 1)
     if(isKeyDown(KEY_RIGHT)) modelSeq.pos = modelSeq.pos.copy(x = modelSeq.pos.x - 1)
 
     if(isKeyDown(KEY_W)) modelSeq.rot = modelSeq.rot.copy(z = modelSeq.rot.z + 2)
@@ -1075,8 +1086,7 @@ final object Liminoid {
     if(isKeyDown(KEY_A)) modelSeq.rot = modelSeq.rot.copy(y = modelSeq.rot.y + 2)
     if(isKeyDown(KEY_D)) modelSeq.rot = modelSeq.rot.copy(y = modelSeq.rot.y - 2)
     if(isKeyDown(KEY_Q)) modelSeq.rot = modelSeq.rot.copy(x = modelSeq.rot.x + 2)
-    if(isKeyDown(KEY_E)) modelSeq.rot = modelSeq.rot.copy(x = modelSeq.rot.x -s 2)
-    */
+    if(isKeyDown(KEY_E)) modelSeq.rot = modelSeq.rot.copy(x = modelSeq.rot.x - 2)*/
 
     if(isKeyDown(KEY_NEXT)) nextPhase
     if(isKeyDown(KEY_PRIOR)) previousPhase
@@ -1095,9 +1105,9 @@ final object Liminoid {
       finished = false
     }
     if(isKeyDown(KEY_Z)) { 
-      backCamera.getTextureIDWait;
-      backCamera.saveImage("img/Image.png");
-      backPixels = Vector.empty;
+      backCamera.getTextureIDWait
+      backCamera.saveImage("img/Image.png")
+      backPixels = Vector.empty
       phaseTimer = now
       backCamSnap = Texture.getImage("img/Image.png")
       backCamSnapTex = Texture("img/Image.png")//backCamera.getTextureIDWait

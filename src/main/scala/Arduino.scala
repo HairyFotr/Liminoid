@@ -8,21 +8,19 @@ object PulseSensor {
 
   var port: SerialPort = null
   var init_ = false
-  def init() {
+  def init(): Unit = {
     if(!init_) try {
       port = new SerialPort("/dev/ttyACM0")
-      port.openPort()
+      port.openPort
       port.setParams(BAUDRATE_115200, DATABITS_8, STOPBITS_1, PARITY_NONE)
-      port.addEventListener(new SerialPortReader(), MASK_RXCHAR)
+      port.addEventListener(new SerialPortReader, MASK_RXCHAR)
       init_ = true
     } catch {
       case e: Exception =>        
     }
   }
 
-  def close() {
-    if(init_) { port.closePort() }
-  }
+  def close(): Unit = if(init_) port.closePort
 
   /* //Untested code!
   var lastS,lastB,lastQ = 0
@@ -83,7 +81,7 @@ object PulseSensor {
   }
 
   class SerialPortReader extends SerialPortEventListener {
-    override def serialEvent(event: SerialPortEvent) {
+    override def serialEvent(event: SerialPortEvent): Unit = {
       if(event.isRXCHAR()) {//If data is available
         val data = port.readString()
         if(data contains "B") synchronized { beat = true }

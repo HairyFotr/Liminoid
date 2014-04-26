@@ -15,9 +15,10 @@ sealed trait Sequence[T] {
   var direction = 1
   var cursor = 0
   val files = 
-    (new File(path)).listFiles
-    .filter { _.isFile }
-    .filter { _.toString endsWith ext }
+    (new File(path))
+      .listFiles
+      .filter { _.isFile }
+      .filter { _.toString endsWith ext }
 
   val frames = files.map { _.toString }.sorted
 
@@ -82,7 +83,7 @@ case class TexSequence(
   }
 
   var last = ""
-  override def get() = {
+  override def get(): Int = {
     val name = frames(cursor)
     val out = Texture(name)
     if(selfDestruct && name != last) {
@@ -91,9 +92,9 @@ case class TexSequence(
     }
     out
   }
-  override def preload() { Texture.preload(files) }
-  def preload(i: Int) { Texture.preload(files, i) }
-  override def delete(d: String) { Texture.delete(d) }
+  override def preload(): Unit = { Texture.preload(files) }
+  def preload(i: Int): Unit = { Texture.preload(files, i) }
+  override def delete(d: String): Unit = { Texture.delete(d) }
 }
 
 import Model._
@@ -111,10 +112,10 @@ case class OBJSequence(
     val ext: String = ".obj") extends Sequence[Model] { 
 
   val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform, color = color, coreTransform = coreTransform) }
-  override def get() = models(cursor)
-  override def preload() { OBJModel.preload(files) }
-  def preload(i: Int) { OBJModel.preload(files, i) }
-  override def delete(d: String) { /*foo*/ }
+  override def get(): Model = models(cursor)
+  override def preload(): Unit = { OBJModel.preload(files) }
+  def preload(i: Int): Unit = { OBJModel.preload(files, i) }
+  override def delete(d: String): Unit = { /*foo*/ }
 }
 
 

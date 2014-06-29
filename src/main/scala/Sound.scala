@@ -3,8 +3,8 @@ package org.ljudmila.liminoid
 import java.io.FileInputStream
 import java.io.BufferedInputStream
 import javazoom.jl.player.Player
-import Utils.{thread, getFile}
-import scala.collection.mutable.{Map, SynchronizedMap}
+import Utils.{ thread, getFile }
+
 object Sound {
   val folder = "snd/"
   private var muted = false

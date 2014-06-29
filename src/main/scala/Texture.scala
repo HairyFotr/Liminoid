@@ -29,7 +29,8 @@ object Texture {
       throw e
   }
 
-  def loadBuffer(filename: String): Buffer = try {//TODO: could I avoid OOM if I reused buffer and marked synchronized (have another method for mass preload)
+  def loadBuffer(filename: String): Buffer = try { 
+    //TODO: could I avoid OOM if I reused buffer and marked synchronized (have another method for mass preload)
     // Open the PNG file as an InputStream
     val in = new FileInputStream(filename)
     // Link the PNG decoder to this stream
@@ -72,15 +73,15 @@ object Texture {
     // MipMap
     /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
     //Send texel data to OpenGL
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.w, buffer.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.buffer)
-    GL30.glGenerateMipmap(GL_TEXTURE_2D);*/
+    GL30.glGenerateMipmap(GL_TEXTURE_2D)*/
 
     // Linear
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
     //Send texel data to OpenGL
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer.w, buffer.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.buffer)
 
     buffer.buffer.clear()

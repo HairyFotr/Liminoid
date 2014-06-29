@@ -44,7 +44,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     |
     |void main() {
     |   vec2 tc = HmdWarp(gl_TexCoord[0].xy);
-    |   if(any(notEqual(clamp(tc, ScreenCenter-vec2(0.25,0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
+    |   if(any(notEqual(clamp(tc, ScreenCenter-vec2(0.25, 0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
     |       gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     |   else
     |       gl_FragColor = texture2D(tex, tc);
@@ -72,23 +72,23 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     // Initialize color texture
     glBindTexture(GL_TEXTURE_2D, colorTextureID)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, screenWidth, screenHeight, 0,GL_RGBA, GL_INT, null: IntBuffer)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, screenWidth, screenHeight, 0, GL_RGBA, GL_INT, null: IntBuffer)
     //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
     //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, colorTextureID, 0)
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTextureID, 0)
 
     // Initialize depth renderbuffer
     glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBufferID)
     glRenderbufferStorage(GL_RENDERBUFFER, GL14.GL_DEPTH_COMPONENT24, screenWidth, screenHeight)
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER, depthRenderBufferID)
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBufferID)
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     (framebufferID, colorTextureID, depthRenderBufferID)
   }
 
-  def beginOffScreenRenderPass(): Unit = {        
+  def beginOffScreenRenderPass(): Unit = {
     glBindTexture(GL_TEXTURE_2D, 0)
     Util.checkGLError()
     glBindFramebuffer(GL_FRAMEBUFFER, framebufferID)
@@ -111,7 +111,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     glClearColor (1.0f, 0.0f, 0.0f, 0.5f)
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-    glBindTexture(GL_TEXTURE_2D, colorTextureID);  
+    glBindTexture(GL_TEXTURE_2D, colorTextureID)
 
     renderDistortedEye(Left, 0.0f, 0.0f, 0.5f, 1.0f)
     renderDistortedEye(Right, 0.5f, 0.0f, 0.5f, 1.0f)

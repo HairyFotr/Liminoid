@@ -1,7 +1,7 @@
 package org.ljudmila.liminoid.hardware
 
-import java.io.{BufferedReader, InputStreamReader, OutputStream}
-import jssc._;
+import java.io.{ BufferedReader, InputStreamReader, OutputStream }
+import jssc._
 
 object PulseSensor {
   import jssc.SerialPort._
@@ -16,17 +16,17 @@ object PulseSensor {
       port.addEventListener(new SerialPortReader, MASK_RXCHAR)
       init_ = true
     } catch {
-      case e: Exception =>        
+      case e: Exception => 
     }
   }
 
   def close(): Unit = if(init_) port.closePort
 
   /* //Untested code!
-  var lastS,lastB,lastQ = 0
+  var lastS, lastB, lastQ = 0
   class SerialPortReader extends SerialPortEventListener {
     override def serialEvent(event: SerialPortEvent) {
-      if(event.isRXCHAR()) {//If data is available
+      if(event.isRXCHAR()) { // If data is available
         val data = port.readString()
         if(data.endsWith("\n")) synchronized {
           val sReg = "S([0-9]+)"
@@ -44,11 +44,11 @@ object PulseSensor {
 
   var beat = false
 
-  import org.ljudmila.liminoid.Utils.{now, since}
+  import org.ljudmila.liminoid.Utils.{ now, since }
 
   var lastBeat = now-1000
-  var avgBeat = 1000d //rolling average beat
-  var lastBeatAlien = false //was last beat alien
+  var avgBeat = 1000d // rolling average beat
+  var lastBeatAlien = false // was last beat alien
 
   def takeBeat(): Boolean = synchronized {
     val sinceLastBeat = since(lastBeat)
@@ -82,7 +82,7 @@ object PulseSensor {
 
   class SerialPortReader extends SerialPortEventListener {
     override def serialEvent(event: SerialPortEvent): Unit = {
-      if(event.isRXCHAR()) {//If data is available
+      if(event.isRXCHAR()) { // If data is available
         val data = port.readString()
         if(data contains "B") synchronized { beat = true }
       }

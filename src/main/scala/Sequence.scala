@@ -37,6 +37,7 @@ sealed trait Sequence[T] {
 
   def delete(d: String): Unit
 
+  def reset(): Unit = rewind
   def rewind(): Unit = {
     cursor = 0
     direction = 1
@@ -100,8 +101,8 @@ case class TexSequence(
 import Model._
 case class OBJSequence(
     val path: String,
-    val transform: MutableTransform = Transform001,
-    val transformVector: MutableTransform = Transform000,
+    val transform: MutableTransform = transform001,
+    val transformVector: MutableTransform = transform000,
     var oscillatorPhase: Double = 0,
     var active: Boolean = true,
     var delay: Double = 80,

@@ -3,7 +3,7 @@ package org.ljudmila.liminoid
 object Utils {
   /*def cleanBuffer(b: java.io.ByteBuffer) {
     import sun.misc.Cleaner
-    import java.lang.reflect.Field;
+    import java.lang.reflect.Field
 
     val cleanerField: Field = b.getClass.getDeclaredField("cleaner")
     cleanerField.setAccessible(true)
@@ -13,6 +13,9 @@ object Utils {
 
   implicit class D(val d: Double) { def prob(): Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
   implicit class F(val f: Float) { def prob(): Boolean = util.Random.nextFloat < f }
+
+  @inline def min(a: Double, b: Double, c: Double): Double = math.min(math.min(a, b), c)
+  @inline def max(a: Double, b: Double, c: Double): Double = math.max(math.max(a, b), c)
 
   def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}
   def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
@@ -60,5 +63,5 @@ object Utils {
   }
 
   def pad(i: Int, p: Int = 4): String = "0"*(p-i.toString.size)+i.toString
-  val (inf,ninf) = (Double.PositiveInfinity, Double.NegativeInfinity)
+  val (inf, ninf) = (Double.PositiveInfinity, Double.NegativeInfinity)
 }

@@ -2,22 +2,23 @@ package org.ljudmila.liminoid
 
 import org.lwjgl.opengl.GL11._
 import math._
-import Liminoid.{winWidth, winHeight, renderMode, RenderMode, Normal, Stereo, eyeCorrection}
+import Liminoid.{ winWidth, winHeight, renderMode, RenderMode, Normal, Stereo, eyeCorrection }
 import scala.collection.mutable
 import java.io.File
 import util.Random._
 import scala.language.implicitConversions
+import scala.annotation.switch
 
-object Model {
-  private[this] val rawcache = mutable.AnyRefMap[String, RawModel]()
+final object Model {
+  private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
 
   type Vertices = Vector[Vec]
   type Faces = Vector[Array[(Int, Int, Int)]] //Array of indices vertex,tex,normal
   type UVVertices = Vector[UV]
   type Normals = Vector[Vec]
 
-  object OBJModel {
-    def apply(fileStr: String): RawModel = rawcache.getOrElseUpdate(fileStr, {
+  final object OBJModel {
+    def apply(fileStr: String): DisplayModel = modelCache.getOrElseUpdate(fileStr, {
       val file = io.Source.fromFile(fileStr)
 
       var vertices: Vertices     = Vector.empty
@@ -25,41 +26,46 @@ object Model {
       var normals: Normals       = Vector.empty
       var uvVertices: UVVertices = Vector.empty
 
-      file.getLines.buffered foreach { line =>
+      for(line <- file.getLines.buffered) {
         val x = line.split(" ")
         
-        x(0) match {
-          case "v"  => vertices :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
-          case "vn" => normals  :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
-          case "f"  => faces :+= (x.tail.map { face =>
+        (line.charAt(0): @switch) match {
+          case 'v' => (line.charAt(1): @switch) match {
+            case ' ' => vertices  :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
+            case 'n' => normals   :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
+            case 't' => uvVertices :+= UV(x(1).toDouble, x(2).toDouble)
+          }
+          
+          case 'f' => 
+            faces :+= (x.tail.map { face =>
               val fs = face.split("/")
-              if(fs.length == 1)      (fs(0).toInt-1,            -1, -1)
-              else if(fs.length == 2) (fs(0).toInt-1, fs(1).toInt-1, -1)
+              if(fs.length == 1)      (fs(0).toInt-1,            -1,            -1)
+              else if(fs.length == 2) (fs(0).toInt-1, fs(1).toInt-1,            -1)
               else if(fs(1).isEmpty)  (fs(0).toInt-1,            -1, fs(2).toInt-1)
               else                    (fs(0).toInt-1, fs(1).toInt-1, fs(2).toInt-1)
             })
 
-          case "vt" => uvVertices :+= UV(x(1).toDouble, x(2).toDouble)
-          case _    => // nop
+          case _ => // nop
         }
       }
 
       file.close
 
-      new RawModel(vertices, uvVertices, normals, faces)
+      (new RawModel(vertices, uvVertices, normals, faces)).toDisplayModel
     })
 
     def preload(files: Array[File], max: Int = -1): Unit = {
       (if(max == -1) files else files.take(max))
-        .filterNot { file => rawcache.contains(file.toString) }
+        .filterNot { file => modelCache.contains(file.toString) }
         .par.map { file => 
-          val rawModel = apply(file.toString)
-          rawcache(file.toString) = rawModel
-          rawModel
+          apply(file.toString)
+          //val rawModel = apply(file.toString)
+          //modelCache(file.toString) = rawModel
+          //rawModel
         }
-        .seq.foreach { rawModel => 
-          rawModel.displayList
-        }
+        //.seq.foreach { rawModel => 
+        //  rawModel.displayList
+        //}
     }
   }
 
@@ -74,36 +80,42 @@ object Model {
     def *(f: Double): Vec = Vec(x*f, y*f, z*f)
     def /(f: Double): Vec = Vec(x/f, y/f, z/f)
     def distance(v: Vec): Double = sqrt(pow(x-v.x, 2) + pow(y-v.y, 2) + pow(z-v.z, 2))
-    def minCoord(v: VecLike): Vec = Vec(min(x,v.x), min(y,v.y), min(z,v.z))
-    def maxCoord(v: VecLike): Vec = Vec(max(x,v.x), max(y,v.y), max(z,v.z))
+    def minCoord(v: VecLike): Vec = Vec(min(x, v.x), min(y, v.y), min(z, v.z))
+    def maxCoord(v: VecLike): Vec = Vec(max(x, v.x), max(y, v.y), max(z, v.z))
     def span(v: VecLike): Vec = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
     def avg(): Double = (x+y+z)/3d
-    def setX(d: Double): Vec = Vec(d,y,z)
-    def setY(d: Double): Vec = Vec(x,d,z)
-    def setZ(d: Double): Vec = Vec(x,y,d)
-    def zeroX(): Vec = Vec(0,y,z)
-    def zeroY(): Vec = Vec(x,0,z)
-    def zeroZ(): Vec = Vec(x,y,0)
+    def setX(d: Double): Vec = Vec(d, y, z)
+    def setY(d: Double): Vec = Vec(x, d, z)
+    def setZ(d: Double): Vec = Vec(x, y, d)
+    def zeroX(): Vec = Vec(0, y, z)
+    def zeroY(): Vec = Vec(x, 0, z)
+    def zeroZ(): Vec = Vec(x, y, 0)
     def normalize(): Vec = {
-      val m = max(max(abs(x),abs(y)),abs(z))
+      val m = max(abs(x), max(abs(y), abs(z)))
       Vec(x/m, y/m, z/m)
     }
   }
-  object Vec {
+  final object Vec {
     def random(): Vec = random01
     def random360(): Vec = random01 * 360
-    def random01(): Vec = Vec(nextDouble,nextDouble,nextDouble)
-    def random11(): Vec = Vec(nextGaussian,nextGaussian,nextGaussian)
-    def randomUniform01(): Vec = { val r = nextDouble; Vec(r,r,r) } 
+    def random01(): Vec = Vec(nextDouble, nextDouble, nextDouble)
+    def random11(): Vec = Vec(nextGaussian, nextGaussian, nextGaussian)
+    def randomUniform01(): Vec = { val rnd = nextDouble; Vec(rnd, rnd, rnd) }
   }
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
-  implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x,it.y,it.z)
+  implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x, it.y, it.z)
   case class MutableVec(var x: Double, var y: Double, var z: Double) extends VecLike {
     //def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
-    def *=(f: Double): Unit = { x *= f; y *= f; z *= f; }
+    def *=(f: Double): Unit = { x *= f; y *= f; z *= f }
   }
-  final val Vec0 = Vec(0,0,0)
-  final val Vec1 = Vec(1,1,1)
+  final val vec0 = Vec(0, 0, 0)
+  final val vec05 = Vec(0.5, 0.5, 0.5)
+  final val vec1 = Vec(1, 1, 1)
+  final val vec2 = Vec(2, 2, 2)
+  final val vec3 = Vec(3, 3, 3)
+  final val vec4 = Vec(4, 4, 4)
+  final val vec5 = Vec(5, 5, 5)
+  final val vec90x = Vec(90, 0, 0)
 
   sealed trait TransformLike {
     def pos: Vec
@@ -112,10 +124,10 @@ object Model {
 
     def **(d: Double): Transform = Transform(this.pos * d, this.rot * d, this.size * d)
   }
-  case class Transform(val pos: Vec = Vec0, val rot: Vec = Vec0, val size: Vec = Vec0) extends TransformLike
-  implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos,it.rot,it.size) //meh
-  implicit def imutableTransform(mt: MutableTransform): Transform = Transform(mt.pos,mt.rot,mt.size) //meh
-  case class MutableTransform(var pos: Vec = Vec0, var rot: Vec = Vec0, var size: Vec = Vec0) extends TransformLike {
+  case class Transform(val pos: Vec = vec0, val rot: Vec = vec0, val size: Vec = vec0) extends TransformLike
+  implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos, it.rot, it.size) //meh
+  implicit def imutableTransform(mt: MutableTransform): Transform = Transform(mt.pos, mt.rot, mt.size) //meh
+  case class MutableTransform(var pos: Vec = vec0, var rot: Vec = vec0, var size: Vec = vec0) extends TransformLike {
     def setPosX(d: Double): Unit = { pos = pos.setX(d) }
     def setPosY(d: Double): Unit = { pos = pos.setY(d) }
     def setPosZ(d: Double): Unit = { pos = pos.setZ(d) }
@@ -126,31 +138,44 @@ object Model {
       size = size + vector.size
     }
   }
-  final val Transform001 = Transform(Vec0, Vec0, Vec1)
-  final val Transform000 = Transform(Vec0, Vec0, Vec0)
+  final val transform001 = Transform(vec0, vec0, vec1)
+  final val transform000 = Transform(vec0, vec0, vec0)
 
   case class UV(u: Double, v: Double)
 
+  case class Rotation(yaw: Float, pitch: Float, roll: Float) {
+    def +(r: Rotation): Rotation = Rotation(yaw+r.yaw, pitch+r.pitch, roll+r.roll)
+    def -(r: Rotation): Rotation = Rotation(yaw-r.yaw, pitch-r.pitch, roll-r.roll)
+    def *(f: Float): Rotation = Rotation(yaw*f, pitch*f, roll*f)
+  }
+  final val rotation0 = Rotation(0, 0, 0)
+  
   case class Color(var r: Double, var g: Double, var b: Double) {
-    def -=(f: Double): Unit = { r -= f; g -= f; b -= f; }
-    def *=(f: Double): Unit = { r *= f; g *= f; b *= f; }
+    def -=(f: Double): Unit = { r -= f; g -= f; b -= f }
+    def *=(f: Double): Unit = { r *= f; g *= f; b *= f }
   }
   object Color {
-    def apply(d: Double): Color = Color(d,d,d)
+    def apply(d: Double): Color = Color(d, d, d)
     def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
     def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
   }
 
-  val cam = new Camera
-  cam.setViewPort(0,0,winWidth,winHeight)
-  cam.setOrtho(0,winHeight,winWidth,0,1f,-1f)
-  cam.setPerspective(50, (winWidth)/winHeight.toFloat, 0.25f, 700f)
-  cam.setPosition(0,0,0);
-  cam.lookAt(Vec3(0,0,200))
+  class DisplayModel(val displayList: Int) extends AnyVal {
+    def toModel( //TODO: Ouch, this sucks, but gets around mutability of the memoization cache
+        transform: MutableTransform = transform001,
+        transformVector: MutableTransform = transform000,
+        tex: Int = -1,
+        color: Color,
+        alpha: Double = 1d,
+        phi: Double = 2*Pi*nextDouble,
+        theta: Double = 0,
+        baseVector: Vec = vec0,
+        coreTransform: MutableTransform = transform000): Model = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
+  }
   
-  class RawModel(var vertices: Vertices, var uvVertices: UVVertices, var normals: Normals, var faces: Faces) {
+  class RawModel(vertices: Vertices, uvVertices: UVVertices, normals: Normals, faces: Faces) {
     // Compile model to display list for faster drawing
-    lazy val displayList = {
+    def toDisplayModel = {
       val displayList = glGenLists(1)
       glNewList(displayList, GL_COMPILE)
       var n = -1
@@ -158,13 +183,13 @@ object Model {
         if(f.length != n || f.length >= 5) {
           if(n != -1) glEnd
           n = f.length
-          n match {
-            case 1 => glBegin(GL_POINTS)
-            case 2 => glBegin(GL_LINES)
-            case 3 => glBegin(GL_TRIANGLES)
-            case 4 => glBegin(GL_QUADS)
-            case _ => glBegin(GL_POLYGON)
-          }
+          glBegin((n: @switch) match {
+            case 1 => GL_POINTS
+            case 2 => GL_LINES
+            case 3 => GL_TRIANGLES
+            case 4 => GL_QUADS
+            case _ => GL_POLYGON
+          })
         }
 
         for((vi, vti, vni) <- f) {
@@ -177,7 +202,7 @@ object Model {
       
       //wireframe experiment
       /*if(lines) for(f <- faces) {
-        glColor4d(0,0,0,1)
+        glColor4d(0, 0, 0, 1)
         glBegin(GL_LINE_STRIP)
         for((vi, vti, vni) <- f) {
           glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
@@ -186,24 +211,13 @@ object Model {
       }*/
       glEndList()
 
-      vertices = Vector.empty
+      /*vertices = Vector.empty
       uvVertices = Vector.empty
       normals = Vector.empty
-      faces = Vector.empty
+      faces = Vector.empty*/
 
-      displayList
+      new DisplayModel(displayList)
     }
-
-    def toModel( // TODO: Ouch, this sucks, but gets around mutability of the memoization cache
-        transform: MutableTransform = Transform001,
-        transformVector: MutableTransform = Transform000,
-        tex: Int = -1,
-        color: Color,
-        alpha: Double = 1d,
-        phi: Double = 2*Pi*nextDouble,
-        theta: Double = 0,
-        baseVector: Vec = Vec0,
-        coreTransform: MutableTransform = Transform000): Model = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
   }
 
   case class Model(
@@ -237,11 +251,11 @@ object Model {
 
         glPushMatrix()
           glTranslated(pos.x, pos.y, pos.z)
-          glRotated(rot.x, 1,0,0)
-          glRotated(rot.y, 0,1,0)
-          glRotated(rot.z, 0,0,1)
+          glRotated(rot.x, 1, 0, 0)
+          glRotated(rot.y, 0, 1, 0)
+          glRotated(rot.z, 0, 0, 1)
           glScaled(size.x, size.y, size.z)
-          glColor4d(color.r,color.g,color.b,alpha)
+          glColor4d(color.r, color.g, color.b, alpha)
           glCallList(displayList)
         glPopMatrix()
 
@@ -271,7 +285,7 @@ object Model {
         var i = take.toDouble
         for(v <- points.reverse) {
           val vec = v //+ (error * (take-i))
-          glColor4d(0,0,0,i/take)
+          glColor4d(0, 0, 0, i/take)
           glVertex3d(vec.x, vec.y, vec.z)
           //glVertex3d(vec.x+1, vec.y+1, vec.z+1)
           i -= 1
@@ -284,7 +298,7 @@ object Model {
     }
   }
 
-  case class Pixel(var x: Double, var y: Double, var transformVector: Vec = Vec0,
+  case class Pixel(var x: Double, var y: Double, var transformVector: Vec = vec0,
     color: Color, var colorg: Double = 70,
     var dead: Boolean = false, var g: Double = 0, var acc: Double = 0.77) {
 
@@ -343,38 +357,53 @@ object Model {
     }
   }
 
+  lazy val cam = {
+    val cam = new Camera
+    cam.setViewPort(0,0, winWidth,winHeight)
+    cam.setOrtho(0,winHeight,winWidth,0, 1f,-1f)
+    cam.setPerspective(50, winWidth/winHeight.toFloat, 0.25f, 700f)
+    cam.setPosition(0, 0, 0)
+    cam.lookAt(Vec3(0, 0, 200))
+    
+    cam
+  }
+
   // See dis? I need dis rendered
   def render3D(r: => Unit): Unit = {
     renderMode match {
-      case Normal() => 
+      case Normal => 
         r
-      case Stereo() =>
-        val x = 0.5f//Liminoid.testNum
-        val x2 = 126+30+22//+Liminoid.testNum
+      case Stereo =>
+        val x = 0.5f //+ Liminoid.testNum
+        val x2 = 126+30+22 //+ Liminoid.testNum
         glEnable(GL_SCISSOR_TEST)
         glPushMatrix
-          glScissor(0,0,winWidth/2, winHeight);
-          cam.look(Vec3(-x,0,0), Vec3(-x2,0,0))
+          glScissor(0,0, winWidth/2,winHeight)
+          cam.look(Vec3(-x, 0, 0), Vec3(-x2, 0, 0))
           r
         glPopMatrix
         glPushMatrix
-          glScissor(winWidth/2,0,winWidth/2, winHeight);
-          cam.look(Vec3(x,0,0), Vec3(x2,0,0))
+          glScissor(winWidth/2,0, winWidth/2,winHeight)
+          cam.look(Vec3(+x, 0, 0), Vec3(+x2, 0, 0))
           r
         glPopMatrix
         glDisable(GL_SCISSOR_TEST)
     }
   }
   
-  val cam2D = new Camera
-  cam2D.setViewPort(0,0,winWidth,winHeight)
-  cam2D.setOrtho(0,winHeight,winWidth,0,1f,-1f)
+  lazy val cam2D = {
+    val cam2D = new Camera
+    cam2D.setViewPort(0,0, winWidth,winHeight)
+    cam2D.setOrtho(0,winHeight,winWidth,0, 1f,-1f)
+    
+    cam2D
+  }
   
   case class Coord(x: Double, y: Double, w: Double, h: Double) {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
 
-  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = Color(1,1,1), blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
+  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = Color(1, 1, 1), blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
     render2D {
       glDisable(GL_DEPTH_TEST)
       glDisable(GL_LIGHTING)
@@ -387,18 +416,17 @@ object Model {
         glBindTexture(GL_TEXTURE_2D, texture)
       }
 
-      glPushMatrix()
-        glTranslated(coord.x,coord.y,0)
-        glColor4d(color.r,color.g,color.b,alpha)
-        val (v0,v1) = if(flipy) (0f,1f) else (1f,0f)
-        val (h0,h1) = if(flipx) (0f,1f) else (1f,0f)
+      glTranslated(+coord.x, +coord.y, 0)
+        glColor4d(color.r, color.g, color.b, alpha)
+        val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
+        val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
         glBegin(GL_QUADS)
-          glTexCoord2f(h1,v0); glVertex3d(0,       coord.h, 0)
-          glTexCoord2f(h0,v0); glVertex3d(coord.w, coord.h, 0)
-          glTexCoord2f(h0,v1); glVertex3d(coord.w, 0,       0)
-          glTexCoord2f(h1,v1); glVertex3d(0,       0,       0)
+          glTexCoord2f(h1, v0); glVertex3d(0,       coord.h, 0)
+          glTexCoord2f(h0, v0); glVertex3d(coord.w, coord.h, 0)
+          glTexCoord2f(h0, v1); glVertex3d(coord.w, 0,       0)
+          glTexCoord2f(h1, v1); glVertex3d(0,       0,       0)
         glEnd()
-      glPopMatrix()
+      glTranslated(-coord.x, -coord.y, 0)
 
       glDisable(GL_TEXTURE_2D)
 
@@ -421,19 +449,19 @@ object Model {
 
         glPushMatrix()
           if(rotate90) {
-            glTranslated(coord.x,coord.y,0)
-            glRotated(90, 0,0,1)
-            glTranslated(-coord.x,-coord.y,0)
+            glTranslated(+coord.x, +coord.y, 0)
+            glRotated(90, 0, 0, 1)
+            glTranslated(-coord.x, -coord.y, 0)
           }
-          glTranslated(coord.x,coord.y,0)
-          glColor4d(1,1,1,alpha)
-          val (v0,v1) = if(flipy) (0f,1f) else (1f,0f)
-          val (h0,h1) = if(flipx) (0f,1f) else (1f,0f)
+          glTranslated(coord.x, coord.y, 0)
+          glColor4d(1, 1, 1, alpha)
+          val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
+          val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
           glBegin(GL_QUADS)
-            glTexCoord2f(h1,v0); glVertex3d(0,       coord.h, 0)
-            glTexCoord2f(h0,v0); glVertex3d(coord.w, coord.h, 0)
-            glTexCoord2f(h0,v1); glVertex3d(coord.w, 0,       0)
-            glTexCoord2f(h1,v1); glVertex3d(0,       0,       0)
+            glTexCoord2f(h1, v0); glVertex3d(0,       coord.h, 0)
+            glTexCoord2f(h0, v0); glVertex3d(coord.w, coord.h, 0)
+            glTexCoord2f(h0, v1); glVertex3d(coord.w, 0,       0)
+            glTexCoord2f(h1, v1); glVertex3d(0,       0,       0)
           glEnd()
         glPopMatrix()
 
@@ -455,19 +483,19 @@ object Model {
 
         glPushMatrix()
           if(rotate90) {
-            glTranslated(coord.x,coord.y,0)
-            glRotated(90, 0,0,1)
-            glTranslated(-coord.x,-coord.y,0)
+            glTranslated(+coord.x, +coord.y, 0)
+            glRotated(90, 0, 0, 1)
+            glTranslated(-coord.x, -coord.y, 0)
           }
-          glTranslated(coord.x,coord.y,0)
-          glColor4d(1,1,1,alpha)
-          val (v0,v1) = if(flipy) (0f,1f) else (1f,0f)
-          val (h0,h1) = if(flipx) (0f,1f) else (1f,0f)
+          glTranslated(+coord.x, +coord.y, 0)
+          glColor4d(1, 1, 1, alpha)
+          val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
+          val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
           glBegin(GL_QUADS)
-            glTexCoord2f(h1,v0); glVertex3d(0,       coord.h, 0)
-            glTexCoord2f(h0,v0); glVertex3d(coord.w, coord.h, 0)
-            glTexCoord2f(h0,v1); glVertex3d(coord.w, 0,       0)
-            glTexCoord2f(h1,v1); glVertex3d(0,       0,       0)
+            glTexCoord2f(h1, v0); glVertex3d(0,       coord.h, 0)
+            glTexCoord2f(h0, v0); glVertex3d(coord.w, coord.h, 0)
+            glTexCoord2f(h0, v1); glVertex3d(coord.w, 0,       0)
+            glTexCoord2f(h1, v1); glVertex3d(0,       0,       0)
           glEnd()
         glPopMatrix()
 
@@ -480,55 +508,55 @@ object Model {
       })
   }
 
-  def render2D(r: => Unit): Unit = {
+  def render2D(toRender: => Unit): Unit = {
     renderMode match {
-      case Normal() => 
+      case Normal => 
         cam2D.render
-        r
-      case Stereo() =>
+        toRender
+      case Stereo =>
         cam2D.render
         glEnable(GL_SCISSOR_TEST)
         glPushMatrix
-          glScissor(0,0,winWidth/2, winHeight);
-          glTranslated(-winWidth/4-eyeCorrection,0,0)
-          r
+          glScissor(0,0, winWidth/2,winHeight)
+          glTranslated(-winWidth/4-eyeCorrection, 0, 0)
+          toRender
         glPopMatrix
         glPushMatrix
-          glScissor(winWidth/2,0,winWidth/2, winHeight);
-          glTranslated(winWidth/4+eyeCorrection,0,0)
-          r
+          glScissor(winWidth/2,0, winWidth/2,winHeight)
+          glTranslated(+winWidth/4+eyeCorrection, 0, 0)
+          toRender
         glPopMatrix
         glDisable(GL_SCISSOR_TEST)
     }
   }
 
   val eyeCorrection2 = 85
-  def render2D2(r1: => Unit, r2: => Unit): Unit = {
+  def render2D2(toRender1: => Unit, toRender2: => Unit): Unit = {
     renderMode match {
-      case Normal() => 
+      case Normal => 
         cam2D.render
-        r1
-      case Stereo() =>
+        toRender1
+      case Stereo =>
         cam2D.render
         glEnable(GL_SCISSOR_TEST)
         glPushMatrix
-          glScissor(0,0,winWidth/2, winHeight);
-          glTranslated(-winWidth/4-eyeCorrection+eyeCorrection2+Liminoid.testNum2,0,0)
-          r1
+          glScissor(0,0, winWidth/2,winHeight)
+          glTranslated(-winWidth/4-eyeCorrection+eyeCorrection2+Liminoid.testNum2, 0, 0)
+          toRender1
         glPopMatrix
         glPushMatrix
-          glScissor(winWidth/2,0,winWidth/2, winHeight);
-          glTranslated(winWidth/4+eyeCorrection-eyeCorrection2-Liminoid.testNum2,0,0)
-          r2
+          glScissor(winWidth/2,0, winWidth/2,winHeight)
+          glTranslated(+winWidth/4+eyeCorrection-eyeCorrection2-Liminoid.testNum2, 0, 0)
+          toRender2
         glPopMatrix
         glDisable(GL_SCISSOR_TEST)
     }
   }
 
-  /*def displayList(r: => Unit): Int = {
+  /*def displayList(toRender: => Unit): Int = {
     val displayList = glGenLists(1)
     glNewList(displayList, GL_COMPILE)
-    r
+    toRender
     glEndList()
 
     displayList

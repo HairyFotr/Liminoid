@@ -5,10 +5,17 @@ import org.lwjgl.util.glu.GLU
 
 object gluQuadrics {
   import org.lwjgl.util.glu.{ Sphere, Cylinder, Disk, PartialDisk }
-  lazy val sphere = {
+  lazy val sphereTex = {
     val sphere = new Sphere
     sphere.setNormals(GLU.GLU_SMOOTH)
     sphere.setTextureFlag(true)
+    
+    sphere
+  }
+  lazy val sphere = {
+    val sphere = new Sphere
+    sphere.setNormals(GLU.GLU_SMOOTH)
+    sphere.setTextureFlag(false)
     
     sphere
   }
@@ -58,7 +65,7 @@ trait OldModel {
 }
 
 class Camera extends OldModel {
-  // default projection 
+  // default projection
   var perspective = false
   var (near, far) = (1f, 30f) // near, far clipping plane
   var (fov, aspectRatio) = (45f, 4/3f) // perspective stuff
@@ -111,18 +118,18 @@ class Camera extends OldModel {
         // perspective projection
         GLU.gluPerspective(fov, aspectRatio, near,far)
       } else {
-        // orthographic projection 
+        // orthographic projection
         GL11.glOrtho(minX,maxX, minY,maxY, near,far)
       }
     //}
 
-    // model view stack 
+    // model view stack
     GL11.glMatrixMode(GL11.GL_MODELVIEW)
     GL11.glLoadIdentity()
     if(perspective) {
       GLU.gluLookAt(pos.x, pos.y, pos.z,             // camera position
                     lookAtV.x, lookAtV.y, lookAtV.z, // look-at vector
-                    0, 1, 0)                         // up vector 
+                    0, 1, 0)                         // up vector
     }
   }
   def look(v: Vec3, a: Vec3): Unit = {
@@ -130,7 +137,7 @@ class Camera extends OldModel {
     val aa = lookAtV + a
     GLU.gluLookAt(v.x, v.y, v.z,    // camera position
                   aa.x, aa.y, aa.z, // look-at vector
-                  0, 1, 0)          // up vector 
+                  0, 1, 0)          // up vector
     GL11.glRotated(rot.x, 1, 0, 0)
     GL11.glRotated(rot.y, 0, 1, 0)
     GL11.glRotated(rot.z, 0, 0, 1)

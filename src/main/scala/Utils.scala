@@ -21,7 +21,7 @@ object Utils {
   def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
 
   def thread(x: => Unit): Unit = {
-    (new Thread(new Runnable { 
+    (new Thread(new Runnable {
       def run(): Unit = { x }
     })).start
   }

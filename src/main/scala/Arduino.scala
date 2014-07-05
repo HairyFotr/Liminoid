@@ -16,7 +16,7 @@ object PulseSensor {
       port.addEventListener(new SerialPortReader, MASK_RXCHAR)
       init_ = true
     } catch {
-      case e: Exception => 
+      case e: Exception =>
     }
   }
 
@@ -50,35 +50,48 @@ object PulseSensor {
   var avgBeat = 1000d // rolling average beat
   var lastBeatAlien = false // was last beat alien
 
-  def takeBeat(): Boolean = synchronized {
-    val sinceLastBeat = since(lastBeat)
+  // just beat it... just beat it
+  var fakeTimer = 0
+  var fake = false
 
-    var out = beat
-    beat = false
-    
-    // Ignore alien heartbeats (sorry aliens)
-    if(lastBeatAlien) {
-      lastBeatAlien = false
-    } else {
-      avgBeat = avgBeat*0.99 + sinceLastBeat*0.01
-      if(avgBeat < 400) avgBeat = 400
-      if(avgBeat < 1300) avgBeat = 1300
+  def takeBeat(): Boolean =
+    if(fake) {
+      if(since(fakeTimer) > 900) {
+        fakeTimer = now
+        
+        true
+      } else {
+        false
+      }
+    } else synchronized {
+      val sinceLastBeat = since(lastBeat)
+
+      var out = beat
+      beat = false
+      
+      // Ignore alien heartbeats (sorry aliens)
+      if(lastBeatAlien) {
+        lastBeatAlien = false
+      } else {
+        avgBeat = avgBeat*0.99 + sinceLastBeat*0.01
+        if(avgBeat < 400) avgBeat = 400
+        if(avgBeat < 1300) avgBeat = 1300
+      }
+
+      if(sinceLastBeat < avgBeat*0.65) {
+        out = false
+        lastBeatAlien = true
+      } else if(sinceLastBeat > avgBeat * 2) {
+        out = true
+        lastBeatAlien = true
+      }
+
+      if(out) lastBeat = now
+
+      //println((out, lastBeatAlien, avgBeat))
+
+      out
     }
-
-    if(sinceLastBeat < avgBeat*0.65) {
-      out = false
-      lastBeatAlien = true
-    } else if(sinceLastBeat > avgBeat * 2) {
-      out = true
-      lastBeatAlien = true
-    }
-
-    if(out) lastBeat = now
-
-    //println((out, lastBeatAlien, avgBeat))
-
-    out
-  }
 
   class SerialPortReader extends SerialPortEventListener {
     override def serialEvent(event: SerialPortEvent): Unit = {

@@ -36,7 +36,7 @@ final object Model {
             case 't' => uvVertices :+= UV(x(1).toDouble, x(2).toDouble)
           }
           
-          case 'f' => 
+          case 'f' =>
             faces :+= (x.tail.map { face =>
               val fs = face.split("/")
               if(fs.length == 1)      (fs(0).toInt-1,            -1,            -1)
@@ -57,13 +57,13 @@ final object Model {
     def preload(files: Array[File], max: Int = -1): Unit = {
       (if(max == -1) files else files.take(max))
         .filterNot { file => modelCache.contains(file.toString) }
-        .par.map { file => 
+        .par.map { file =>
           apply(file.toString)
           //val rawModel = apply(file.toString)
           //modelCache(file.toString) = rawModel
           //rawModel
         }
-        //.seq.foreach { rawModel => 
+        //.seq.foreach { rawModel =>
         //  rawModel.displayList
         //}
     }
@@ -99,7 +99,8 @@ final object Model {
     def random(): Vec = random01
     def random360(): Vec = random01 * 360
     def random01(): Vec = Vec(nextDouble, nextDouble, nextDouble)
-    def random11(): Vec = Vec(nextGaussian, nextGaussian, nextGaussian)
+    def randomGaussian(): Vec = Vec(nextGaussian, nextGaussian, nextGaussian)
+    def randomGaussian(d: Double): Vec = Vec(nextGaussian*d, nextGaussian*d, nextGaussian*d)
     def randomUniform01(): Vec = { val rnd = nextDouble; Vec(rnd, rnd, rnd) }
   }
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
@@ -108,13 +109,14 @@ final object Model {
     //def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
     def *=(f: Double): Unit = { x *= f; y *= f; z *= f }
   }
-  final val vec0 = Vec(0, 0, 0)
-  final val vec05 = Vec(0.5, 0.5, 0.5)
-  final val vec1 = Vec(1, 1, 1)
-  final val vec2 = Vec(2, 2, 2)
-  final val vec3 = Vec(3, 3, 3)
-  final val vec4 = Vec(4, 4, 4)
-  final val vec5 = Vec(5, 5, 5)
+  @inline final def vec(d: Double) = Vec(d, d, d)
+  final val vec0 = vec(0)
+  final val vec05 = vec(0.5)
+  final val vec1 = vec(1)
+  final val vec2 = vec(2)
+  final val vec3 = vec(3)
+  final val vec4 = vec(4)
+  final val vec5 = vec(5)
   final val vec90x = Vec(90, 0, 0)
 
   sealed trait TransformLike {
@@ -155,10 +157,12 @@ final object Model {
     def *=(f: Double): Unit = { r *= f; g *= f; b *= f }
   }
   object Color {
-    def apply(d: Double): Color = Color(d, d, d)
     def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
     def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
   }
+  final val color0 = Color(0, 0, 0)
+  final val color1 = Color(1, 1, 1)
+  @inline final def color(d: Double): Color = Color(d, d, d)
 
   class DisplayModel(val displayList: Int) extends AnyVal {
     def toModel( //TODO: Ouch, this sucks, but gets around mutability of the memoization cache
@@ -230,8 +234,7 @@ final object Model {
       var phi: Double,
       var theta: Double,
       var baseVector: Vec,
-      var coreTransform: MutableTransform,
-      var trail: Trail = new Trail()) {
+      var coreTransform: MutableTransform) {
 
     def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha): Unit = {
       render3D {
@@ -269,18 +272,17 @@ final object Model {
     }
   }
 
-  class Trail(var points: Vector[Vec] = Vector.empty) {
+  /*class Trail(var points: Vector[Vec] = Vector.empty) {
     def +=(t: Vec): Unit = { points :+= t }
 
     def render(): Unit = {
+      glEnable(GL_BLEND)
+      glEnable(GL_DEPTH_TEST)
+      glEnable(GL_LIGHTING)
       render3D {
         val take = 100
-        val ratio = 1/take.toDouble
-        val error = Vec.random11 * 0.2
+        val error = Vec.randomGaussian(0.2)
         points = points.takeRight(take)
-        glEnable(GL_BLEND)
-        glEnable(GL_DEPTH_TEST)
-        glEnable(GL_LIGHTING)
         glBegin(GL_LINE_STRIP)
         var i = take.toDouble
         for(v <- points.reverse) {
@@ -291,26 +293,28 @@ final object Model {
           i -= 1
         }
         glEnd()
-        glDisable(GL_BLEND)
-        glDisable(GL_DEPTH_TEST)
-        glDisable(GL_LIGHTING)
       }
+      glDisable(GL_BLEND)
+      glDisable(GL_DEPTH_TEST)
+      glDisable(GL_LIGHTING)
     }
-  }
+  }*/
 
   case class Pixel(var x: Double, var y: Double, var transformVector: Vec = vec0,
     color: Color, var colorg: Double = 70,
-    var dead: Boolean = false, var g: Double = 0, var acc: Double = 0.77) {
+    var isDead: Boolean = false, var g: Double = 0, var acc: Double = 0.75) {
 
-    var ssize = nextGaussian*2.5
+    val ssize = nextGaussian*2.5
 
     def render(): Unit = {
-      var randVecr = (Vec.random11 * 0.007)
-      val randVec = 
-        if(Liminoid.frames % Liminoid.shakeBumpN > Liminoid.shakeBumpN/3d) 
-          randVecr.setX(randVecr.x*5.0).setY(randVecr.y*3.4)
+      val randVec = {
+        val randVec = Vec.randomGaussian(0.007)
+
+        if(Liminoid.frames % Liminoid.shakeBumpN > Liminoid.shakeBumpN/3d)
+          Vec(randVec.x*5.0, randVec.y*3.4, randVec.z)
         else
-          randVecr
+          randVec
+      }
       
 
       transformVector = transformVector * 0.995 + randVec
@@ -322,24 +326,25 @@ final object Model {
         g += acc
       }
       colorg += acc
-      if(y > 5080) dead = true
+      if(y > 2080) isDead = true //TODO: Why not 1080? Can they flow back?
 
       val size: Double = (ssize + nextGaussian*0.4)/2
+      val colorDiv = (colorg/50)
       if(y <= 1080) {
-        glColor4d(color.r/(colorg/50), color.g/(colorg/50), color.b/(colorg/50), 1)
-        glVertex3d(x, y, 0)
-        glVertex3d(x+size, y, 0)
-        glVertex3d(x+size, y+size, 0)
-        glVertex3d(x,      y+size, 0)
+        glColor3d(color.r/colorDiv, color.g/colorDiv, color.b/colorDiv)
+        glVertex2d(x,      y)
+        glVertex2d(x+size, y)
+        glVertex2d(x+size, y+size)
+        glVertex2d(x,      y+size)
       }
       /*def tryset(x: Int, y: Int): Boolean = {
         if(!Liminoid.backpixelBuffer(x)(y)) {
           Liminoid.backpixelBuffer(x)(y) = true
           glColor4d(color.r/(g/10), color.g/(g/10), color.b/(g/10), 1)
-          glVertex3d(x, y, 0)
-          glVertex3d(x+g, y, 0)
-          glVertex3d(x+g, y+g, 0)
-          glVertex3d(x,   y+g, 0)
+          glVertex2d(x,   y)
+          glVertex2d(x+g, y)
+          glVertex2d(x+g, y+g)
+          glVertex2d(x,   y+g)
           true
         } else {
           false
@@ -347,13 +352,13 @@ final object Model {
       }
 
       if(y < 1080-1 && y >= 0+1 && x >= 0+1 && x < 1920-1) {
-        (tryset(x.toInt, y.toInt) 
-          || tryset(x.toInt+1, y.toInt) || tryset(x.toInt-1, y.toInt) 
+        (tryset(x.toInt, y.toInt)
+          || tryset(x.toInt+1, y.toInt) || tryset(x.toInt-1, y.toInt)
           || tryset(x.toInt, y.toInt+1) || tryset(x.toInt, y.toInt-1)
-          || tryset(x.toInt+1, y.toInt+1) || tryset(x.toInt-1, y.toInt-1) 
+          || tryset(x.toInt+1, y.toInt+1) || tryset(x.toInt-1, y.toInt-1)
           || tryset(x.toInt-1, y.toInt+1) || tryset(x.toInt+1, y.toInt-1)
         )
-      }*/  
+      }*/
     }
   }
 
@@ -371,10 +376,11 @@ final object Model {
   // See dis? I need dis rendered
   def render3D(r: => Unit): Unit = {
     renderMode match {
-      case Normal => 
+      case Normal =>
         r
       case Stereo =>
-        val x = 0.5f //+ Liminoid.testNum
+        //TODO: name these
+        val x = 0.5f       //+ Liminoid.testNum
         val x2 = 126+30+22 //+ Liminoid.testNum
         glEnable(GL_SCISSOR_TEST)
         glPushMatrix
@@ -403,152 +409,55 @@ final object Model {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
 
-  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = Color(1, 1, 1), blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
-    render2D {
-      glDisable(GL_DEPTH_TEST)
-      glDisable(GL_LIGHTING)
-      
-      glEnable(GL_BLEND)
-      glBlendFunc(blend._1, blend._2)
-      
-      if(texture != -1) {
-        glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, texture)
-      }
-
-      glTranslated(+coord.x, +coord.y, 0)
-        glColor4d(color.r, color.g, color.b, alpha)
-        val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
-        val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
-        glBegin(GL_QUADS)
-          glTexCoord2f(h1, v0); glVertex3d(0,       coord.h, 0)
-          glTexCoord2f(h0, v0); glVertex3d(coord.w, coord.h, 0)
-          glTexCoord2f(h0, v1); glVertex3d(coord.w, 0,       0)
-          glTexCoord2f(h1, v1); glVertex3d(0,       0,       0)
-        glEnd()
-      glTranslated(-coord.x, -coord.y, 0)
-
-      glDisable(GL_TEXTURE_2D)
-
-      glDisable(GL_BLEND)
-
-      glEnable(GL_LIGHTING)
-      glEnable(GL_DEPTH_TEST)
+  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = color1, blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
+    glDisable(GL_DEPTH_TEST)
+    glDisable(GL_LIGHTING)
+    
+    glEnable(GL_BLEND)
+    glBlendFunc(blend._1, blend._2)
+    
+    if(texture != -1) {
+      glEnable(GL_TEXTURE_2D)
+      glBindTexture(GL_TEXTURE_2D, texture)
     }
-  }
-  def quadStereo(coord: Coord, texture1: Int = -1, texture2: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, rotate90: Boolean = false): Unit = {
-    render2D2({
-        glDisable(GL_DEPTH_TEST)
-        glDisable(GL_LIGHTING)
-        
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        
-        glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, texture1)
+    glColor4d(color.r, color.g, color.b, alpha)
 
-        glPushMatrix()
-          if(rotate90) {
-            glTranslated(+coord.x, +coord.y, 0)
-            glRotated(90, 0, 0, 1)
-            glTranslated(-coord.x, -coord.y, 0)
-          }
-          glTranslated(coord.x, coord.y, 0)
-          glColor4d(1, 1, 1, alpha)
-          val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
-          val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
-          glBegin(GL_QUADS)
-            glTexCoord2f(h1, v0); glVertex3d(0,       coord.h, 0)
-            glTexCoord2f(h0, v0); glVertex3d(coord.w, coord.h, 0)
-            glTexCoord2f(h0, v1); glVertex3d(coord.w, 0,       0)
-            glTexCoord2f(h1, v1); glVertex3d(0,       0,       0)
-          glEnd()
-        glPopMatrix()
+    val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
+    val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
+    
+    render2D {
+      glBegin(GL_QUADS)
+        glTexCoord2f(h1, v0); glVertex2d(coord.x,         coord.y+coord.h)
+        glTexCoord2f(h0, v0); glVertex2d(coord.x+coord.w, coord.y+coord.h)
+        glTexCoord2f(h0, v1); glVertex2d(coord.x+coord.w, coord.y)
+        glTexCoord2f(h1, v1); glVertex2d(coord.x,         coord.y)
+      glEnd()
+    }
+    if(texture != -1) glDisable(GL_TEXTURE_2D)
 
-        glDisable(GL_TEXTURE_2D)
+    glDisable(GL_BLEND)
 
-        glDisable(GL_BLEND)
-
-        glEnable(GL_LIGHTING)
-        glEnable(GL_DEPTH_TEST)
-      }, {
-        glDisable(GL_DEPTH_TEST)
-        glDisable(GL_LIGHTING)
-        
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        
-        glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, texture2)
-
-        glPushMatrix()
-          if(rotate90) {
-            glTranslated(+coord.x, +coord.y, 0)
-            glRotated(90, 0, 0, 1)
-            glTranslated(-coord.x, -coord.y, 0)
-          }
-          glTranslated(+coord.x, +coord.y, 0)
-          glColor4d(1, 1, 1, alpha)
-          val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
-          val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
-          glBegin(GL_QUADS)
-            glTexCoord2f(h1, v0); glVertex3d(0,       coord.h, 0)
-            glTexCoord2f(h0, v0); glVertex3d(coord.w, coord.h, 0)
-            glTexCoord2f(h0, v1); glVertex3d(coord.w, 0,       0)
-            glTexCoord2f(h1, v1); glVertex3d(0,       0,       0)
-          glEnd()
-        glPopMatrix()
-
-        glDisable(GL_TEXTURE_2D)
-
-        glDisable(GL_BLEND)
-
-        glEnable(GL_LIGHTING)
-        glEnable(GL_DEPTH_TEST)
-      })
+    glEnable(GL_LIGHTING)
+    glEnable(GL_DEPTH_TEST)
   }
 
   def render2D(toRender: => Unit): Unit = {
     renderMode match {
-      case Normal => 
+      case Normal =>
         cam2D.render
         toRender
       case Stereo =>
         cam2D.render
         glEnable(GL_SCISSOR_TEST)
-        glPushMatrix
+          val eyeOffset = (winWidth/4+eyeCorrection)
           glScissor(0,0, winWidth/2,winHeight)
-          glTranslated(-winWidth/4-eyeCorrection, 0, 0)
+          glTranslated(-eyeOffset, 0, 0)
           toRender
-        glPopMatrix
-        glPushMatrix
-          glScissor(winWidth/2,0, winWidth/2,winHeight)
-          glTranslated(+winWidth/4+eyeCorrection, 0, 0)
-          toRender
-        glPopMatrix
-        glDisable(GL_SCISSOR_TEST)
-    }
-  }
 
-  val eyeCorrection2 = 85
-  def render2D2(toRender1: => Unit, toRender2: => Unit): Unit = {
-    renderMode match {
-      case Normal => 
-        cam2D.render
-        toRender1
-      case Stereo =>
-        cam2D.render
-        glEnable(GL_SCISSOR_TEST)
-        glPushMatrix
-          glScissor(0,0, winWidth/2,winHeight)
-          glTranslated(-winWidth/4-eyeCorrection+eyeCorrection2+Liminoid.testNum2, 0, 0)
-          toRender1
-        glPopMatrix
-        glPushMatrix
           glScissor(winWidth/2,0, winWidth/2,winHeight)
-          glTranslated(+winWidth/4+eyeCorrection-eyeCorrection2-Liminoid.testNum2, 0, 0)
-          toRender2
-        glPopMatrix
+          glTranslated(2*eyeOffset, 0, 0)
+          toRender
+          glTranslated(-eyeOffset, 0, 0)
         glDisable(GL_SCISSOR_TEST)
     }
   }

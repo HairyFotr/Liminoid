@@ -14,7 +14,8 @@ sealed trait Sequence[T] {
 
   var direction = 1
   var cursor = 0
-  val files = 
+  var startTime = -1
+  val files =
     (new File(path))
       .listFiles
       .filter { _.isFile }
@@ -22,11 +23,9 @@ sealed trait Sequence[T] {
 
   val frames = files.map { _.toString }.sorted
 
-  private var time = -1 // for simple animation where timing doesn't matter that much
-
   def preload(): Unit
   def get(): T
-  def apply(): T = 
+  def apply(): T =
     (if(active) {
       val out = get()
       moveCursor()
@@ -41,47 +40,66 @@ sealed trait Sequence[T] {
   def rewind(): Unit = {
     cursor = 0
     direction = 1
+    startTime = -1
   }
 
-  def moveCursor(): Unit = {
-    val currCursor = cursor
-    if(Utils.now - time >= delay) {
-      cursor = (cursor + direction) % frames.size
-      if(currCursor == frames.size - 1 && stopAtEnd) {
-        cursor = frames.size - 1
-        active = false
-      } else if(bounce) {
-        if(currCursor == frames.size - 1 && cursor == 0) {
-          cursor = frames.size - 2
-          direction = -1
-        } else if(currCursor == 0 && cursor == -1) {
-          cursor = 1
-          direction = 1
+  def moveCursor(): Unit = synchronized {
+    if(startTime == -1) startTime = now
+    val framesm1 = (frames.size-1)
+
+    //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+    if(direction > 0) {
+      //TODO: just calculate it... also, cursor + 1 or first frame gets skipped?
+      while(since(startTime) > cursor * delay) cursor += 1
+      if(cursor >= framesm1) {
+        val diff = cursor - framesm1
+        if(bounce) {
+          cursor = math.max(0, framesm1 - diff) //TODO: Possible multiple bounces, but meh
+          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+          direction = -direction
+          startTime = now //TODO: not right
+        } else { // if(loop)
+          cursor = math.min(diff, framesm1)
+          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+        }
+        
+        if(stopAtEnd) {
+          cursor = framesm1
+          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+          active = false
         }
       }
-      time = Utils.now
+    } else if(direction < 0) {
+      while(since(startTime) > (framesm1 - cursor) * delay) cursor -= 1
+      if(cursor <= 0) {
+        if(bounce) {
+          cursor = math.min(-cursor, framesm1)
+          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+          direction = -direction
+          startTime = now
+        } else { // if(loop)
+          cursor = math.max(framesm1 + cursor, 0)
+          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+        }
+        
+        if(stopAtEnd) {
+          cursor = 0
+          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+          active = false
+        }
+      }
     }
   }
 }
 
 case class TexSequence(
-    val path: String, 
+    val path: String,
     var active: Boolean = true,
     var delay: Double = 1000/24d, //24fps
     var bounce: Boolean = false,
     var stopAtEnd: Boolean = false,
     var selfDestruct: Boolean = false,
-    val ext: String = ".png") extends Sequence[Int] { 
-
-  private var startTime = -1 //for playing the whole thing through
-  override def moveCursor(): Unit = { //breaks bouncing and things like that
-    if(startTime == -1) startTime = now
-    while(since(startTime) > cursor * delay) cursor += 1
-    if(cursor >= frames.size) {
-      cursor = frames.size - 1
-      active = false
-    }
-  }
+    val ext: String = ".png") extends Sequence[Int] {
 
   var last = ""
   override def get(): Int = {
@@ -110,7 +128,7 @@ case class OBJSequence(
     var coreTransform: MutableTransform,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
-    val ext: String = ".obj") extends Sequence[Model] { 
+    val ext: String = ".obj") extends Sequence[Model] {
 
   val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform, color = color, coreTransform = coreTransform) }
   override def get(): Model = models(cursor)

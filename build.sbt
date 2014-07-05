@@ -19,7 +19,6 @@ fork := true
 javaOptions += "-Xmx4G"
 
 scalacOptions ++= Seq(
-  "-J-Xmx4G",
   "-optimise",
   "-Yinline",
   "-Yclosure-elim")

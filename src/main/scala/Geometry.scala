@@ -2,9 +2,9 @@ package org.ljudmila.liminoid
 
 import math._
 
-object Vec3 { 
+object Vec3 {
   def apply(): Vec3 = new Vec3
-  def apply(x: Float, y: Float, z: Float): Vec3 = new Vec3(x, y, z) 
+  def apply(x: Float, y: Float, z: Float): Vec3 = new Vec3(x, y, z)
 }
 class Vec3(var x: Float, var y: Float, var z: Float) {
   def this() = this(0f, 0f, 0f)
@@ -64,12 +64,12 @@ class BoundingBox(vec: Vec3) {
     }
     
     def boxCollide(b: BoundingBox, offset: Vec3 = Vec3()): Boolean = { // offset = tolerance
-        ((min.x+offset.x <= b.max.x) && (max.x+offset.x >= b.min.x) && 
+        ((min.x+offset.x <= b.max.x) && (max.x+offset.x >= b.min.x) &&
          (min.y+offset.y <= b.max.y) && (max.y+offset.y >= b.min.y) &&
          (min.z+offset.z <= b.max.z) && (max.z+offset.z >= b.min.z))
     }
     def pointCollide(v: Vec3, offset: Vec3 = Vec3()): Boolean = {
-        ((min.x+offset.x <= v.x) && (max.x+offset.x >= v.x) && 
+        ((min.x+offset.x <= v.x) && (max.x+offset.x >= v.x) &&
          (min.y+offset.y <= v.y) && (max.y+offset.y >= v.y) &&
          (min.z+offset.z <= v.z) && (max.z+offset.z >= v.z))
     }

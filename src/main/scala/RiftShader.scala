@@ -15,10 +15,10 @@ import org.lwjgl.opengl._
 // Adapted from https://developer.oculusvr.com/forums/viewtopic.php?f=20&t=88&start=10
 
 class RiftShader(screenWidth: Int, screenHeight: Int) {
-  val Left = -1
+  val Left  = -1
   val Right = +1
   
-  val vertexShader = 
+  val vertexShader =
     """
     |void main() {
     |   gl_TexCoord[0] = gl_MultiTexCoord0;
@@ -26,7 +26,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     |}
     """.stripMargin
   
-  val fragmentShader = 
+  val fragmentShader =
     """
     |uniform sampler2D tex;
     |uniform vec2 LensCenter;
@@ -34,8 +34,8 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     |uniform vec2 Scale;
     |uniform vec2 ScaleIn;
     |uniform vec4 HmdWarpParam;
-    | 
-    |vec2 HmdWarp(vec2 texIn) { 
+    |
+    |vec2 HmdWarp(vec2 texIn) {
     |   vec2 theta = (texIn - LensCenter) * ScaleIn;
     |   float rSq = theta.x * theta.x + theta.y * theta.y;
     |   vec2 theta1 = theta * (HmdWarpParam.x + HmdWarpParam.y * rSq + HmdWarpParam.z * rSq * rSq + HmdWarpParam.w * rSq * rSq * rSq);
@@ -72,7 +72,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     // Initialize color texture
     glBindTexture(GL_TEXTURE_2D, colorTextureID)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, screenWidth, screenHeight, 0, GL_RGBA, GL_INT, null: IntBuffer)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, screenWidth,screenHeight, 0, GL_RGBA, GL_INT, null: IntBuffer)
     //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
     //glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
 
@@ -108,12 +108,12 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     glDisable(GL_DEPTH_TEST)
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-    glClearColor (1.0f, 0.0f, 0.0f, 0.5f)
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glClearColor(1.0f, 0.0f, 0.0f, 0.5f)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     glBindTexture(GL_TEXTURE_2D, colorTextureID)
 
-    renderDistortedEye(Left, 0.0f, 0.0f, 0.5f, 1.0f)
+    renderDistortedEye(Left,  0.0f, 0.0f, 0.5f, 1.0f)
     renderDistortedEye(Right, 0.5f, 0.0f, 0.5f, 1.0f)
 
     glUseProgram(0)

@@ -14,8 +14,9 @@ import org.lwjgl.opengl.GL11._
 import hardware.{ RiftTracker, PulseSensor }
 import scala.annotation.switch
 
-import Model.{ Transform, OBJModel, Color, Trail, quad, Coord }
-import Model.{ Vec, vec0, vec05, vec1, vec2, vec3, vec4, vec5, vec90x }
+import Model.{ Transform, OBJModel, quad, Coord }
+import Model.{ Color, color, color0, color1 }
+import Model.{ Vec, vec, vec0, vec05, vec1, vec2, vec3, vec4, vec5, vec90x }
 import Model.{ Rotation, rotation0 }
 
 // General tasks:
@@ -34,7 +35,6 @@ final object Liminoid {
 
   var isMainLoopRunning = false
   var renderTime = 0d
-  var lastFPS = 0f
   var pause = false
 
   /**
@@ -60,7 +60,7 @@ final object Liminoid {
   def initDisplay(): Unit = {
     Display.setTitle(project)
 
-    val bestMode = 
+    val bestMode =
       Display
         .getAvailableDisplayModes
         .filter(mode => mode.isFullscreenCapable && mode.getWidth == forceWidth && mode.getHeight == forceHeight)
@@ -76,6 +76,7 @@ final object Liminoid {
     
     Display.create()
     //Display.create(new PixelFormat(24, 8, 16, 8, 8))
+    //Display.create(new PixelFormat(8, 0, 0, 8))
 
     Mouse.setGrabbed(true)
   }
@@ -92,7 +93,7 @@ final object Liminoid {
 
     // FPS counter
     var frameCounter = 0
-    val second = 1000000000L
+    val second = 1000000000L // ns -> s
     val FPSseconds = 1
     var FPStimer = currentTime
     frameTime = currentTime
@@ -100,16 +101,15 @@ final object Liminoid {
     isMainLoopRunning = true
     while(isMainLoopRunning) {
       processInput() // process keyboard input
-      
-      resetView()   // clear view and reset transformations
+      resetView()    // clear view and reset transformations
 
       renderMode match {
-        case Normal => 
-          renderFrame()
+        case Normal =>
+          renderFrame()    // draw stuff
           Display.update() // update window contents and process input messages
         case Stereo =>
           shader.beginOffScreenRenderPass()
-          renderFrame()  // draw stuff
+          renderFrame()    // draw stuff
           shader.endOffScreenRenderPass()
           shader.renderToScreen()
           Display.update() // update window contents and process input messages
@@ -121,14 +121,13 @@ final object Liminoid {
         val FPS = frameCounter/FPSseconds.toFloat
 
         println("FPS: "+FPS)
-        println("testNum1: "+testNum1)
-        println("testNum2: "+testNum2)
-        println("testNum3: "+testNum3)
         println("sinceStart: "+since(phaseTimer))
-        println("radiolarian: "+radiolarian.transform)
+        if(testNum1 != 0) println("testNum1: "+testNum1)
+        if(testNum2 != 0) println("testNum2: "+testNum2)
+        if(testNum3 != 0) println("testNum3: "+testNum3)
+        if(phase == Radiolarians) println("radiolarian: "+radiolarian.transform)
         println("rotation:"+rotation)
 
-        lastFPS = FPS
         frameCounter = 0
         FPStimer = currentTime
       }
@@ -195,6 +194,7 @@ final object Liminoid {
   */
 
   lazy val liminoidTitle = Texture("img/liminoid.png")
+  lazy val liminoidTitleLoading = Texture("img/liminoidLoading.png")
   
   /// Liminoid phases ///
   val Setup = 0
@@ -222,11 +222,11 @@ final object Liminoid {
     phase -= 1
     phaseChanged = true
   }
-  def initPhase(f: => Unit): Unit = if(phaseChanged) {
+  @inline def initPhase(f: => Unit): Unit = if(phaseChanged) {
     phaseTimer = now
     phaseChanged = false
     f
-    System.gc() //best place to do it...
+    System.gc() // best place to do it...
   }
 
   // Cameras
@@ -238,131 +238,135 @@ final object Liminoid {
   val eyeCorrection = -64 // Eye shift for 2D rift view
   var testNum1, testNum2, testNum3 = 0
 
+  val winCoord = Coord(0,0, winWidth,winHeight)
+  val coord2000 = Coord(0,0, 2000,2000)
   /// Radiolarians phase objects ///
-  val white = Color(0.9)
+  val whiteish = color(0.9)
+  val blackish = color(0.15)
+
   val wallZ = 600 // z position of wall
   var radioBasePosVec = Vec(0, 0, -0.11) // basic z movement vector
   val startPos = Vec(0, 0, wallZ+15) // central starting point
-  def basicRot(): Vec = Vec.random11/3
+  def basicRot(): Vec = Vec.randomGaussian(1d/3d)
   
   // The rock inside radiolarians
   lazy val core = OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.2, 0.2, 0.2))
 
   // The radiolarian that opens up
-  lazy val radiolarian = 
+  lazy val radiolarian =
     OBJSequence(
-      path = "obj/OBJ_the_radiolarian_normale", 
+      path = "obj/OBJ_the_radiolarian_normale",
       active = false,
       stopAtEnd = true,
       delay = 80,
-      color = white,
+      color = whiteish,
       coreTransform = Transform(pos = vec3),
       transform = Transform(pos = startPos + Vec(0, 0, -5)),
       transformVector = Transform(pos = radioBasePosVec, rot = vec0))
     
   // The other radiolaria
-  lazy val quasiradiolarians = 
+  lazy val quasiradiolarians =
     Array(
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
-        transform = Transform(pos = startPos + Vec(-45, 21, 2), size = vec1*0.6),
+        transform = Transform(pos = startPos + Vec(-45, 21, 2), size = vec(0.6)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
-        color = white),
+        color = whiteish),
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
-        transform = Transform(pos = startPos + Vec(25, -19, 9), size = vec1*0.7),
+        transform = Transform(pos = startPos + Vec(25, -19, 9), size = vec(0.7)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
-        color = white),
+        color = whiteish),
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel( // Same as radiolarian
-        transform = Transform(pos = startPos + Vec(48, -33, 5), size = vec1*0.9),
+        transform = Transform(pos = startPos + Vec(48, -33, 5), size = vec(0.9)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec3),
-        color = white), //majhen
+        color = whiteish), //majhen
       //OBJModel("obj/Ogromni_modeli/Plascek_normale_IV.obj").toModel( // Same ??
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel(
-        transform = Transform(pos = startPos + Vec(30, 25, 5), size = vec1*0.9),
+        transform = Transform(pos = startPos + Vec(30, 25, 5), size = vec(0.9)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec3),
-        color = white), //majhen
+        color = whiteish), //majhen
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel( // Edgy one
-        transform = Transform(pos = startPos + Vec(-53, -18, 9), size = vec1*0.7),
+        transform = Transform(pos = startPos + Vec(-53, -18, 9), size = vec(0.7)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
-        color = white),
+        color = whiteish),
       OBJModel("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel( // Edgy one
-        transform = Transform(pos = startPos + Vec(-15, -24, 8), size = vec1*0.6),
+        transform = Transform(pos = startPos + Vec(-15, -24, 8), size = vec(0.6)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
-        color = white) //,
+        color = whiteish) //,
       /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // Big holes
         transform = Transform(pos = startPos + Vec(35, 15, 8), size = vec1),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
-        color = white)*///,
+        color = whiteish)*///,
       /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel( // High-poly version: obj/Ogromni_modeli/Plascek_normale_IX_velik.obj
         transform = Transform(pos = startPos + Vec(-15, 37, 63), size = vec1),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec3),
-        color = white)*///, //test it
+        color = whiteish)*///, //test it
       /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel( // The thick one
         transform = Transform(pos = startPos + Vec(-5, -14, 82), size = vec1),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec3),
-        color = white)*/)
+        color = whiteish)*/)
 
   // Some rocks just floating around
   lazy val rocks = Array(
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
       transform = Transform(pos = startPos + Vec(-25, 22, 12), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = whiteish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
       transform = Transform(pos = startPos + Vec(-40, -4, 4), size = vec4),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = blackish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(-67, 18, 1), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white), ///////////////////////////////////////////////////////////////////duplication
+      color = whiteish), ///////////////////////////////////////////////////////////////////duplication
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
       transform = Transform(pos = startPos + Vec(-75, -27, 13), size = vec4),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = blackish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(-35, -35, 17), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = whiteish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel( // I has a cube and too many vertices
       transform = Transform(pos = startPos + Vec(35, 12, 11), size = vec2),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = whiteish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(48, 5, 8), size = Vec(2.6, 2.6, 2.6)),
+      transform = Transform(pos = startPos + Vec(48, 5, 8), size = vec(2.6)),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = blackish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
       transform = Transform(pos = startPos + Vec(72, -15, 12), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = whiteish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
       transform = Transform(pos = startPos + Vec(65, -45, 15), size = vec2),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = whiteish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(4, 35, 12), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white))
+      color = blackish))
 
   // rocks that fly with the radiolarian
   lazy val guardRocks = Array(
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(-29, -13, 0), size = Vec(2.2, 2.2, 2.2)),
+      transform = Transform(pos = startPos + Vec(-29, -13, 0), size = vec(2.2)),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white),
+      color = whiteish),
     OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(7, -32, 0), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = white))
+      color = whiteish))
 
   /// Mandalas phase objects ///
   lazy val blackMandala = TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
@@ -377,6 +381,13 @@ final object Liminoid {
   var zoom = 0d
 
   /// CircleSpace phase objects ///
+  lazy val sphereTex = Texture("img/sphere.png")
+  lazy val sphereMandala =
+    TexSequence("seq/optipng_Sfera_plasc_I",
+    delay = 1000/10d,
+    stopAtEnd = false,
+    bounce = true)
+    
   def newStar(): Model.Model = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
     transform = Transform(rot = Vec.random, size = vec05 + (Vec.random/3)),
     transformVector = Transform(rot = Vec.random),
@@ -391,12 +402,13 @@ final object Liminoid {
       OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
         transform = Transform(rot = Vec.random, size = vec2),
         transformVector = Transform(rot = Vec.random),
-        color = Color(0.3, 0.3, 0.3),
+        color = color(0.3),
         phi = nextDouble*math.Pi*2, theta = nextDouble*math.Pi*2))
 
   // BackSpace phase objects
   var wall = -1
-  var backCamSnap = Texture.getImage("img/Image.png")
+  var backCamSnapSeq = TexSequence("seq/BackSpace/", delay = 1000/15d, stopAtEnd = false, bounce = true)
+  var backCamSnap = Texture.getImage("seq/BackSpace/1.png")
   var backCamSnapTex = backCamera.getTextureIDWait
   var backPixels = Vector.empty[Model.Pixel]
   var backpixelBuffer = Array[Array[Boolean]]()
@@ -420,6 +432,27 @@ final object Liminoid {
   var lastRadioOpen = false
   var lastEnd = false
 
+  def glClear(c: Double): Unit = {
+    GL11.glClearColor(c.toFloat, c.toFloat, c.toFloat, 1)
+    GL11.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  }
+  def drawFrontCam(): Unit = {
+    val img = frontCamera.getTextureID
+    val camScale = -1030
+    val camhCorrect = 650
+    val (camw, camh) = ((winHeight*16/9d).toInt, (winHeight+camhCorrect).toInt)
+    val (camx, camy) = (winWidth/2-camw/2, -camhCorrect/2)
+    quad(Coord(camx,camy, camw,camh)+camScale, img, flipy = true, flipx = true)
+  }
+
+  val backBlend = (GL_ONE, GL_ONE)
+  val backBlendColor = Color(0, 0.1, 0.2)
+  def backBlendRender(): Unit = {
+    GL14.glBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT)
+    quad(winCoord, color = backBlendColor, alpha = 0.1, blend = backBlend)
+    GL14.glBlendEquation(GL14.GL_FUNC_ADD)
+  }
+
   var frames = 0L
   def renderFrame(): Unit = {
     frames += 1
@@ -432,7 +465,7 @@ final object Liminoid {
       radiolarians -> radiolarian comes close, opens, black screen ->
       mandalas -> the whole thing plays ->
       circlespace -> utrinek comes close and flashes ->
-      backspace -> 
+      backspace ->
 
       reorganization
         start opengl, then go onto app -> get rid of some lazy loading
@@ -454,13 +487,13 @@ final object Liminoid {
       pulz opacity layers
 
       cameras
-        2x Logitech c270 hacking  
+        2x Logitech c270 hacking
           Bus 003 Device 013: ID 046d:0825 Logitech, Inc. Webcam C270
           Bus 003 Device 012: ID 046d:0825 Logitech, Inc. Webcam C270
           Focus hacking http://www.youtube.com/watch?v=v-gYgBeiOVI
 
         1x Logitech c615
-          Bus 003 Device 014: ID 046d:082c Logitech, Inc. 
+          Bus 003 Device 014: ID 046d:082c Logitech, Inc.
           http://www.linux-hardware-guide.com/2013-04-20-logitech-hd-webcam-c615
 
         add timeout to camera to prevent old frames
@@ -491,37 +524,18 @@ final object Liminoid {
       
     */
     
-    def glClear(g: Double): Unit = {
-      GL11.glClearColor(g.toFloat, g.toFloat, g.toFloat, 1)
-      GL11.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    }
-    def drawFrontCam(): Unit = {
-      val img = frontCamera.getTextureID
-      val camScale = -1030
-      val camhCorrect = 650
-      val (camw, camh) = ((winHeight*16/9d).toInt, (winHeight+camhCorrect).toInt)
-      val (camx, camy) = (winWidth/2-camw/2, -camhCorrect/2)
-      quad(Coord(camx,camy, camw,camh)+camScale, img, alpha = 1, flipy = true, flipx = true)
-    }
-
-
     // Generate/Get oscilators, and heart signals
+    if(!PulseSensor.init_) {
+      println("Using fake pulse")
+      PulseSensor.fake = true
+      PulseSensor.init_ = true
+    }
     var beat = PulseSensor.takeBeat
-    if(!PulseSensor.init_) beat = (frames % 70) == 0
     val heart = if(beat) 1d else 0d
-    
-    /*val harhar = 20
-    var beat = (frames % 70) == 0
-    val heart = (frames % 70) match {
-      case 0 => 1
-      case x if x < harhar => pow(0.6, x)
-      case x if x > harhar => pow(0.75, 70-x)
-      case _ => 0
-    }*/
 
     // http://www.dspguru.com/dsp/howtos/how-to-create-oscillators-in-software
     // f = desired oscillator frequency
-    // w = 2 pi f / Fs 
+    // w = 2 pi f / Fs
     // phi = initial phase
     // y = ouput array containing the oscillator signal
     //def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
@@ -529,7 +543,7 @@ final object Liminoid {
     //def oscillator(i: Double, phi: Double) = sin(i + phi)
     def oscillator(i: Double = Utils.now*0.002, phi: Double): Double = sin(i + phi)
 
-    val osc1 = oscillator(phi = 0)
+    val osc1 = oscillator(phi = 0*Pi/4)
     val osc2 = oscillator(phi = 1*Pi/4)
     val osc3 = oscillator(phi = 2*Pi/4)
     val osc4 = oscillator(phi = 3*Pi/4)
@@ -568,49 +582,8 @@ final object Liminoid {
 
         val (camw, camh) = (winHeight*4/3d, winHeight)
         val (camx, camy) = (winWidth/2-camw/2, 0)
-        quad(Coord(winWidth/2-940/2,winHeight/2-550/2, 940,550), liminoidTitle, alpha = 1)
+        quad(Coord(winWidth/2-940/2,winHeight/2-550/2, 940,550), if(frames <= 10 && !startLiminoid) liminoidTitleLoading else liminoidTitle)
         
-        var firstPhase = Radiolarians
-        //firstPhase = CircleSpace
-        //startLiminoid = true
-
-        // Triggers the lazy compute or preload sequence
-        println("Time" + (frames-1) + ": " + Utils.time(
-          ((frames-1): @switch) match {
-            case 0 => 
-            case 1 => 
-            case 2 if(firstPhase <= Radiolarians) => radiolarian; println("Radiolarians1 loaded")
-            case 3 if(firstPhase <= Radiolarians) => quasiradiolarians; println("Radiolarians2 loaded")
-            case 4 if(firstPhase <= Radiolarians) => rocks; guardRocks; println("Rocks loaded")
-            case 5 if(firstPhase <= Mandalas) => blackMandala.preload(150); whiteMandala.preload(150)
-            case 6 if(firstPhase <= Mandalas) => blackHeartMandala; blackHeartDustMandala; whiteHeartMandala; println("Mandalas preloaded")
-            case 7 => //wall
-            case 8 if(firstPhase == CircleSpace) => magnets
-            case 9 => //
-            case _ => if(startLiminoid) gotoPhase(firstPhase) else Thread.sleep(50)
-          }))
-        
-        System.gc()
-        System.gc() // JVM, just do it, please
-
-      case -1 => /////////////////////////////////////////////////////////////////////////////////////////////
-        //Limbo phase :)
-        glClear(1)
-
-        drawFrontCam()
-
-        //TODO: stereo cam
-        //val (camw, camh) = (winWidth, winHeight)
-        //val (camx, camy) = (winWidth/2+528+Model.cam.pos.y, -388+Model.cam.pos.z)
-        //println(Model.cam.pos)
-
-        //Model.quadStereo(Coord(camx,camy, camw,camh)+testNum, stereoCameras(0).getTextureID, stereoCameras(1).getTextureID, alpha = 1, rotate90 = true, flipy = true, flipx = true)
-
-
-      case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
-        initPhase {
-          Sound.play("intro")
-        }
         //
         // senzor magnetometer absolute or rolling average during loading phase
         //1
@@ -622,34 +595,68 @@ final object Liminoid {
         /// Pulse sensor
         /// Zoom <n> seconds before end (at circle)
         //
-        //3 
+        //3
         /// Fade white to camera
         /// Tweakanje
         //
 
+        var firstPhase = Radiolarians
+        //startLiminoid = true
+        //firstPhase = Mandalas
+
+        // Triggers the lazy compute or preload sequence
+        println("Time" + frames + ": " + Utils.time(
+          (frames: @switch) match {
+            case 1 =>
+            case 2 => radiolarian; println("Radiolarians1 loaded")
+            case 3 => quasiradiolarians; println("Radiolarians2 loaded")
+            case 4 => rocks; guardRocks; println("Rocks loaded")
+            case 5 => blackMandala.preload(150); whiteMandala.preload(150)
+            case 6 => //blackHeartMandala; blackHeartDustMandala; whiteHeartMandala; println("Mandalas preloaded")
+            case 7 => //wall
+            case 8 if(firstPhase == CircleSpace) => magnets
+            case 9 => //
+            case _ => if(startLiminoid) gotoPhase(firstPhase) else Thread.sleep(50)
+          }))
+        
+        System.gc()
+        System.gc() // JVM, just do it, please
+
+      case -1 => /////////////////////////////////////////////////////////////////////////////////////////////
+        //Limbo phase, should never happen :)
+        glClear(1)
+
+        drawFrontCam()
+
+      case Radiolarians => /////////////////////////////////////////////////////////////////////////////////////////////
+        initPhase {
+          Sound.play("intro")
+        }
+
         // According to scenario
-        val izSteneTimeProper = (17)*1000
-        val tresenjeTimeProper = (35)*1000
-        val radioVectorTimeProper = (60+25)*1000
-        val radioOpenTimeProper = (60+43)*1000 // Fall down?
-        val endTimeProper = (120+8)*1000
+        val s = 1000
+        val izSteneTimeProper = (17)*s
+        val tresenjeTimeProper = (35)*s
+        val radioVectorTimeProper = (60+25)*s
+        val radioOpenTimeProper = (60+43)*s // Fall down?
+        val endTimeProper = (120+8)*s
         
         val test = false
-        val testTime = 1000
+        val testTime = 1*s
 
         val izSteneTime = if(test) 0 else izSteneTimeProper
         var izStene = since(phaseTimer) > izSteneTime
-        val firstIzStene = (!lastIzStene && izStene) 
+        val firstIzStene = (!lastIzStene && izStene)
 
         // Start shaking elements
         val tresenjeTime = if(test) izSteneTime + testTime else tresenjeTimeProper
         val tresenje = since(phaseTimer) > tresenjeTime
-        val firstTresenje = (!lastTresenje && tresenje) 
+        val firstTresenje = (!lastTresenje && tresenje)
 
         // Pull radiolarian towards view
         val radioVectorTime = if(test) tresenjeTime + testTime else radioVectorTimeProper
         val radioVector = since(phaseTimer) > radioVectorTime
-        val firstRadioVector = (!lastRadioVector && radioVector) 
+        val firstRadioVector = (!lastRadioVector && radioVector)
 
         // Activate radiolarian shell open animation
         val radioOpenTime = if(test) radioVectorTime + testTime else radioOpenTimeProper
@@ -657,14 +664,14 @@ final object Liminoid {
         if(radioOpen) {
           radiolarian.active = true
         }
-        val firstRadioOpen = (!lastRadioOpen && radioOpen) 
+        val firstRadioOpen = (!lastRadioOpen && radioOpen)
 
         // End phase
         val endTime = if(test) radioOpenTime + testTime else endTimeProper
         val end = since(phaseTimer) > endTime
         if(end) {
         }
-        val firstEnd = (!lastEnd && end) 
+        val firstEnd = (!lastEnd && end)
 
         if((radiolarian.transform.pos distance vec0) < 1 || radiolarian.transform.pos.z < -1) {
           gotoPhase(Mandalas)
@@ -676,11 +683,11 @@ final object Liminoid {
         //val clr = 0.75 + 0.25 * nextDouble
         //for(y <- 0 to 10) quad(Coord(0,camy, 10000,2), color = Color(clr, clr, clr), alpha = 0.8)
 
-        //radiolarian.transformVector.rot = Vec0
+        //radiolarian.transformVector.rot = vec0
         radiolarian.transform.rot = vec90x //Vec(90, 0, 0)
 
-        val posVec = 
-          if(testNum1 == 0 && testNum2 == 0 && testNum3 == 0) vec0 else 
+        val posVec =
+          if(testNum1 == 0 && testNum2 == 0 && testNum3 == 0) vec0 else
           Vec(testNum1*5, testNum2*5, testNum3*5)
           
         radiolarian.transform.pos = radiolarian.transform.pos + posVec
@@ -695,17 +702,17 @@ final object Liminoid {
         Model.cam.rot = Vec3(-rotation.pitch/rotationCalibration, rotation.yaw/rotationCalibration, rotation.roll/rotationCalibration)
 
         if(izStene) {
-          // Draw invisible wall
+          // Draw invisible wobbly wall
           Model.render3D {
             glEnable(GL_DEPTH_TEST)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             glColor4f(1, 1, 1, 0)
             glBegin(GL_QUADS)
-              glVertex3d(-1000, -1000, wallZ+osc1*10)
-              glVertex3d(+1000, -1000, wallZ+osc1*10)
-              glVertex3d(+1000, +1000, wallZ+osc1*10)
-              glVertex3d(-1000, +1000, wallZ+osc1*10)
+              glVertex3d(-1000, -1000, wallZ+osc1*25)
+              glVertex3d(+1000, -1000, wallZ+osc2*25)
+              glVertex3d(+1000, +1000, wallZ+osc3*25)
+              glVertex3d(-1000, +1000, wallZ+osc4*25)
             glEnd()
             glDisable(GL_DEPTH_TEST)
             glDisable(GL_BLEND)
@@ -715,13 +722,13 @@ final object Liminoid {
             fade1 = 0
           }
           def shake(m: Model.Model): Transform = {
-            val newPos = 
+            val newPos =
               if(tresenje) // && ((frames % shakeBumpN) > shakeBumpN/3d))
                 m.transform.pos + Vec(
                   (nextGaussian/5)*fade1*abs(oscillator(phi = m.phi)),
                   (nextGaussian/8)*fade1*abs(oscillator(phi = m.phi)),
                   (nextGaussian/15)*fade1*abs(oscillator(phi = m.phi)))
-              else 
+              else
                 m.transform.pos
 
             m.transform.copy(pos = newPos)
@@ -743,7 +750,7 @@ final object Liminoid {
             val scale = 1.6
             
             (if(radioOpen) {
-              (((radiolarianSize * scale) * (1 - fade1)) + (Vec(scale + 1/oscDiv, scale + 1/oscDiv, scale + 1/oscDiv) * fade1))
+              ((radiolarianSize * scale) * (1 - fade1)) + vec((scale + 1/oscDiv) * fade1)
             } else {
               radiolarianSize * scale
             })
@@ -792,6 +799,8 @@ final object Liminoid {
         lastRadioVector = radioVector
         lastRadioOpen = radioOpen
         lastEnd = end
+        
+        backBlendRender
 
       case Mandalas => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
@@ -800,18 +809,16 @@ final object Liminoid {
           fade2 = 0
         }
 
-        //if(beat) Sound.play("heart")
-
         val div = 1.75d
         val (w, h) = (640*0.85, 800*0.85)
-        val posx = winWidth/2d-w/2d + rotx/div
-        val posy = winHeight/2d-h/2d + roty/div //don't forget the duplication below...
+        val posx = winWidth/2-w/2d + rotx/div
+        val posy = winHeight/2-h/2d + roty/div //don't forget the duplication below...
         var dust = false
 
         if(blackMandala.active) {
           glClear(0)
-          quad(Coord(posx,posy, w,h), blackMandala(), alpha = 1)
-          if(fade2 < 1) quad(Coord(0,0, 2000,2000), alpha = 1 - fade2, color = Color(0, 0, 0))
+          quad(Coord(posx,posy, w,h), blackMandala())
+          if(fade2 < 1) quad(coord2000, alpha = 1 - fade2, color = color0)
 
           fade1 = 0
           //blackMandala.active = false
@@ -827,12 +834,19 @@ final object Liminoid {
             dust = true
           } else {
             glClear(fade2)
-            beat = false 
+            beat = false
           }
 
-          if(whiteMandala.cursor > 1445) zoom += 2
+          if(whiteMandala.cursor > 1440) {
+            zoom += 1
+            if(whiteMandala.cursor > 1450)
+              zoom += 1
+            
+            quad(Coord(posx,posy, w,h) + zoom, whiteMandala())
+          } else {
+            quad(Coord(posx,posy, w,h), whiteMandala())
+          }
 
-          quad(Coord(posx,posy, w,h) + zoom, whiteMandala(), alpha = 1)
 
           //if(fade < 1) quad(Coord(posx,posy, w,h), blackHeartDustMandala, alpha = 1-fade*2+heart/5)
         } else {
@@ -864,13 +878,10 @@ final object Liminoid {
         if(whiteMandala.cursor > 1445 && whiteMandala.cursor < 1600) {
           fade1 = 0
         } else if(whiteMandala.cursor > 1600) {
-          glColor3f(1, 1, 1)
-          quad(Coord(0,0, 2000,2000), alpha = fade1)
+          quad(coord2000, alpha = fade1)
         }
 
-        GL14.glBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT)
-        quad(Coord(0,0, winWidth,winHeight) + zoom, color = Color(0, 0.125, 0.25), alpha = 0.1, blend = (GL_ONE, GL_ONE))
-        GL14.glBlendEquation(GL14.GL_FUNC_ADD)
+        backBlendRender
 
       case CircleSpace => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
@@ -878,31 +889,47 @@ final object Liminoid {
           frames = 0
           stars = Vector.fill(30)(newStar)
           blackMandala.reset
+          blackMandala.active = true
+          //sphereMandala.reset
+          sphereMandala.active = true
         }
         val radius = 400
         glClear(1)
         
         //Model.cam.lookAt(Vec3(testNum1, 0, 0))
-        Model.cam.lookAt(Vec3(Model.cam.pos.x, Model.cam.pos.y, Model.cam.pos.z+500))
+        Model.cam.setPerspective(50, winWidth/winHeight.toFloat, 0.25f, 7000f)
+        Model.cam.lookAt(Vec3(Model.cam.pos.x, Model.cam.pos.y, Model.cam.pos.z+500+testNum3))
         Model.cam.render
         Model.render3D {
           glColor4d(1, 1, 1, 1)
           glEnable(GL_TEXTURE_2D)
-          glBindTexture(GL_TEXTURE_2D, blackMandala())
+          glBindTexture(GL_TEXTURE_2D, sphereMandala())//sphereTex)//
           glPushMatrix
-            glRotatef(testNum1-90, 1, 0, 0)
-            glRotatef(testNum2,    0, 1, 0)
-            glRotatef(testNum3,    0, 0, 1)
-            if(frames == 0) {
+            glRotatef(testNum1*0-90, 1, 0, 0)
+            glRotatef(testNum2*0,    0, 1, 0)
+            glRotatef(testNum3*0,    0, 0, 1)
+            //glScaled(testNum3*0.01+1, testNum3*0.01+1, testNum3*0.01+1)
+            import org.lwjgl.util.glu.GLU
+            def render() = {
+              gluQuadrics.sphereTex.draw(645+testNum1*10, 100, 100)
+              //glDisable(GL_LIGHTING)
+              glColor4d(1, 1, 1, 1)
+              gluQuadrics.sphere.setDrawStyle(GLU.GLU_LINE)
+              gluQuadrics.sphere.draw(635+testNum1*10, 100, 100)
+              ///glEnable(GL_LIGHTING)
+            }
+
+            render
+            /*if(testNum1 != 0 || testNum2 != 0) {
+            } else if(frames == 0) {
               displayListSphere = glGenLists(1)
               glNewList(displayListSphere, GL_COMPILE)
-                import org.lwjgl.util.glu.GLU
-                gluQuadrics.sphere.setDrawStyle(GLU.GLU_LINE)
-                gluQuadrics.sphere.draw(50, 100, 100)
+                render
+                //gluQuadrics.sphere.draw(645, 100, 100)
               glEndList()
             } else {
               glCallList(displayListSphere)
-            }
+            }*/
           glPopMatrix
           glDisable(GL_TEXTURE_2D)
         }
@@ -914,12 +941,12 @@ final object Liminoid {
           y = (cos(theta)*sin(phi)) * radius,
           z = (sin(theta)) * radius)
           
-        def getDiff(phi: Double, theta0: Double, theta1: Double): Vec = 
+        def getDiff(phi: Double, theta0: Double, theta1: Double): Vec =
           getVec(phi, theta1) - getVec(phi, theta0)
           
         def zeroDist(v: Vec): Double = v distance vec0
 
-        for(magnet <- magnets) {
+        /*for(magnet <- magnets) {
           val phi = magnet.phi
           val theta0 = magnet.theta
           val theta1 = magnet.theta + 0.1
@@ -935,14 +962,14 @@ final object Liminoid {
             magnet.transform.pos = magnet.transform.pos * (radius/zeroDist)
           }
 
-          magnet.render(color = Color(0, 0, 0))
-        }
+          magnet.render(color = color0)
+        }*/
 
         if(frames % 30 == 0) {
           //stars :+= newStar
         }
 
-        for(star <- stars) {
+        /*for(star <- stars) {
           // Great circles: http://paulbourke.net/geometry/circlesphere/
           val phi = star.phi
           val theta0 = star.theta
@@ -971,10 +998,10 @@ final object Liminoid {
             star.theta = theta1
             star.phi += nextDouble*0.005
           }
-          star.render(color = Color(0, 0, 0))
+          star.render(color = color0)
           star.trail += star.transform.pos.copy()
           star.trail.render()
-        }
+        }*/
 
         //quasiradiolarians.head.render(color = Color(0.5, 0.5, 0.5), alpha = 0.25, transform = Transform(pos = Vec0, size = Vec05))
         Model.render3D {
@@ -998,18 +1025,20 @@ final object Liminoid {
           glEnd
         }
         
+        backBlendRender
+
       case BackSpace => /////////////////////////////////////////////////////////////////////////////////////////////
         initPhase {
           fade1 = 0
-
           fade2 = 0
 
           //backCamera.saveImage("img/Image.png")
           backPixels = Vector.empty
           phaseTimer = now
-          backCamSnap = Texture.getImage("img/Image.png")
-          backCamSnapTex = Texture("img/Image.png")//backCamera.getTextureIDWait
+          //backCamSnap = Texture.getImage("img/Image.png")
+          //backCamSnapTex = Texture("img/Image.png")
           backPixelDrop = true
+          for(i <- 1 to 5) backCamera.getTextureIDWait
           Sound.play("razpad")
         }
         
@@ -1019,20 +1048,19 @@ final object Liminoid {
         val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
         val (camx, camy) = (rotx*0.7-camw/7, roty*0.7-camh/7)
 
-        val backDrop = 
-          if((backPixels.isEmpty && backPixelDrop == true && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I)) 
+        //TODO: lock in backCamSnapTex and do a Future[blob]
+
+        val backDrop =
+          if((backPixels.isEmpty && backPixelDrop && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I))
             backCamera.getTextureID
           else
-            backCamSnapTex
+            backCamSnapSeq()
         
-        quad(Coord(camx,camy, camw,camh), backDrop, alpha = 1, flipx = false)
+        quad(Coord(camx,camy, camw,camh), backDrop, flipx = false)
 
-        if((backPixelDrop == true && since(phaseTimer) >= 15*1000 && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I)) {
-          //if(backPixels.isEmpty || Keyboard.isKeyDown(Keyboard.KEY_I)) {
-          val blob = backCamera.getDiffBlob(backCamSnap)
-          backPixels = blob //++ blob.map { _.copy() } ++ blob.map { _.copy() }
-          //backCamera.saveImage("img/Image.png"); backCamSnap = Texture.getImage("img/Image.png"); wall = Texture("img/Image.png");
-          val cv = {
+        if((backPixelDrop && since(phaseTimer) >= 15*1000 && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I)) {
+          backPixels = backCamera.getDiffBlob(backCamSnap)
+          val center = {
             var x, y = 0d
             for(bp <- backPixels) {
               x += bp.x
@@ -1043,15 +1071,14 @@ final object Liminoid {
           }
 
           for(bp <- backPixels) {
-            bp.transformVector = (Vec(bp.x, bp.y, 0) - cv)/200
+            bp.transformVector = Vec((bp.x - center.x)/200, (bp.y - center.y)/200, 0)
           }
           Sound.play("razpadheart1")
 
           backPixelDrop = false
           phaseTimer = now
-          //}
         }
-        if(backPixelDrop == false && since(phaseTimer) >= 15*1000) {
+        if(!backPixelDrop && since(phaseTimer) >= 15*1000) {
           backPixelDrop = true
           finished = true
           phaseTimer = now
@@ -1065,15 +1092,16 @@ final object Liminoid {
           glColor4d(0, 0, 0, 1)
           //glBegin(GL_POINTS)
           glBegin(GL_QUADS)
-          backPixels.foreach(_.render())
+          // filter and render at the same time
+          backPixels = backPixels.filterNot { pixel => pixel.render(); pixel.isDead }
           glEnd
         }
-        backPixels = backPixels.filterNot(_.dead)
 
         if(fade1 < 1) {
-          glColor3f(1, 1, 1)
-          quad(Coord(0,0, 2000,2000), alpha = 1-fade1)
+          quad(coord2000, alpha = 1-fade1)
         }
+
+        backBlendRender
 
       case _ =>
     }
@@ -1082,7 +1110,7 @@ final object Liminoid {
   def processInput(): Unit = {
     import Keyboard._
 
-    if(isKeyDown(KEY_X)) Sound.play("jump")
+    //if(isKeyDown(KEY_X)) Sound.play("jump")
     if(isKeyDown(KEY_1)) testNum1 -= 1
     if(isKeyDown(KEY_2)) testNum1 += 1
     if(isKeyDown(KEY_3)) testNum2 -= 1
@@ -1134,25 +1162,33 @@ final object Liminoid {
     if(isKeyDown(KEY_END)) gotoPhase(PhaseTerminator)
     if(isKeyDown(KEY_P)) { pause = !pause; Thread.sleep(200) }
 
-    if(isKeyDown(KEY_C)) { 
-      backCamera.getTextureIDWait
+    if(isKeyDown(KEY_C)) {
+      // Takes about 5 frames to set exposure, let's wait 20...
+      for(i <- 1 to 20) backCamera.getTextureIDWait
       //backCamera.saveImage("img/Image.png")
       backPixels = Vector.empty
       phaseTimer = now
-      backCamSnap = Texture.getImage("img/Image.png")
-      backCamSnapTex = Texture("img/Image.png")//backCamera.getTextureIDWait
+      backCamSnapSeq.rewind()
       backPixelDrop = true
       finished = false
+      Sound.play("razpad")
     }
-    if(isKeyDown(KEY_Z)) { 
-      backCamera.getTextureIDWait
-      backCamera.saveImage("img/Image.png")
+    if(isKeyDown(KEY_Z)) {
+      // Takes about 5 frames to set exposure, let's wait 20...
+      for(i <- 1 to 20) backCamera.getTextureIDWait
+      val n = 100
+      for(i <- 1 to n) {
+        backCamera.saveImage(s"seq/BackSpace/$i.png")
+      }
       backPixels = Vector.empty
       phaseTimer = now
-      backCamSnap = Texture.getImage("img/Image.png")
-      backCamSnapTex = Texture("img/Image.png")//backCamera.getTextureIDWait
+      backCamSnap = Texture.getImage("seq/BackSpace/1.png")
+      backCamSnapSeq.preload(n)
+      backCamSnapSeq.rewind()
+      backCamSnapTex = Texture("seq/BackSpace/1.png")
       backPixelDrop = true
       finished = false
+      Sound.play("razpad")
     }
     if(isKeyDown(KEY_M)) { renderMode = (if(renderMode == Normal) Stereo else Normal); Thread.sleep(200) }
 

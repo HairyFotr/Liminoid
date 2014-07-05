@@ -15,7 +15,7 @@ object Sound {
   def unmute(): Unit = synchronized {
     muted = false
   }
-  val soundMap = getFile(folder + "list.txt").map { line => 
+  val soundMap = getFile(folder + "list.txt").map { line =>
     val name :: file :: _ = line.split(" ").toList
     (name, folder + file)
   }.toMap
@@ -38,7 +38,7 @@ object Sound {
     if(!muted) {
       thread {
         val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
-        synchronized { 
+        synchronized {
           players += player
         }
 
@@ -48,7 +48,7 @@ object Sound {
           players -= player
           player.close
         }
-      } 
+      }
     }
   }
 }

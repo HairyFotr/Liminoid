@@ -7,6 +7,7 @@ import collection.mutable
 import scala.actors.Futures._
 import System.err
 import org.ljudmila.liminoid.Model
+import org.ljudmila.liminoid.Utils.thread
 
 object Camera {
   val FrameGrabbers = mutable.HashMap[Int, OpenCVFrameGrabber]()
@@ -23,7 +24,7 @@ object Camera {
   
   def getFrameGrabber(camId: Int = 0, width: Int = 640, height: Int = 480): Option[OpenCVFrameGrabber] = {
     try {
-      val cam = new OpenCVFrameGrabber(camId) 
+      val cam = new OpenCVFrameGrabber(camId)
       cam.setImageWidth(width)
       cam.setImageHeight(width)
       cam.start
@@ -31,7 +32,7 @@ object Camera {
       FrameGrabbers += camId -> cam
       Some(cam)
     } catch {
-      case e: Exception => 
+      case e: Exception =>
       err.println("Failed to initialize camera "+camId+" @ "+width+"x"+height)
       None
     }
@@ -53,7 +54,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     if(img == null) return lastTextureID // fixes ocassional dropped frame
     
     //Generate texture and bind ID
-    val textureID = glGenTextures 
+    val textureID = glGenTextures
     glBindTexture(GL_TEXTURE_2D, textureID)
     
     //Setup wrap mode
@@ -73,9 +74,10 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     textureID
   }
 
-  def saveImage(filename: String): Unit = { 
+  def saveImage(filename: String): Unit = {
     try {
-      cvSaveImage(filename, captureFrameImg())
+      val img = captureFrameImg()
+      thread { cvSaveImage(filename, img) }
     } catch {
       case e: Exception =>
         println(filename)
@@ -101,7 +103,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     ) /// 3
 
     var pix = Vector.empty[Model.Pixel]
-    for(i <- 0 until size by 2) if((i/w)%2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) 
+    for(i <- 0 until size by 2) if((i/w)%2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold)
       pix :+= Model.Pixel(x = i%w, y = i/w, color = Model.Color.BGR(pixels2(i)))
 
     pix

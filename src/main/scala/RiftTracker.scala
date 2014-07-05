@@ -15,7 +15,7 @@ object RiftTracker {
   
   withInit { OculusRift.LoadLibrary(new File(System.getProperty("java.io.tmpdir"))); }
 
-  private[this] val oculusRift = withInit { 
+  private[this] val oculusRift = withInit {
     val or = new OculusRift
     or.init
     or

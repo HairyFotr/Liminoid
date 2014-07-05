@@ -15,7 +15,7 @@ import hardware.{ RiftTracker, PulseSensor }
 import scala.annotation.switch
 
 import Model.{ Transform, OBJModel, quad, Coord }
-import Model.{ Color, color, color0, color1 }
+import Model.{ Color, grey, grey0, grey1 }
 import Model.{ Vec, vec, vec0, vec05, vec1, vec2, vec3, vec4, vec5, vec90x }
 import Model.{ Rotation, rotation0 }
 
@@ -241,8 +241,8 @@ final object Liminoid {
   val winCoord = Coord(0,0, winWidth,winHeight)
   val coord2000 = Coord(0,0, 2000,2000)
   /// Radiolarians phase objects ///
-  val whiteish = color(0.9)
-  val blackish = color(0.15)
+  val whiteish = grey(0.9)
+  val blackish = grey(0.15)
 
   val wallZ = 600 // z position of wall
   var radioBasePosVec = Vec(0, 0, -0.11) // basic z movement vector
@@ -402,7 +402,7 @@ final object Liminoid {
       OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
         transform = Transform(rot = Vec.random, size = vec2),
         transformVector = Transform(rot = Vec.random),
-        color = color(0.3),
+        color = grey(0.3),
         phi = nextDouble*math.Pi*2, theta = nextDouble*math.Pi*2))
 
   // BackSpace phase objects
@@ -541,7 +541,7 @@ final object Liminoid {
     //def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
 
     //def oscillator(i: Double, phi: Double) = sin(i + phi)
-    def oscillator(i: Double = Utils.now*0.002, phi: Double): Double = sin(i + phi)
+    @inline def oscillator(i: Double = Utils.now*0.002, phi: Double): Double = sin(i + phi)
 
     val osc1 = oscillator(phi = 0*Pi/4)
     val osc2 = oscillator(phi = 1*Pi/4)
@@ -703,20 +703,20 @@ final object Liminoid {
 
         if(izStene) {
           // Draw invisible wobbly wall
+          glEnable(GL_DEPTH_TEST)
+          glEnable(GL_BLEND)
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+          glColor4f(1, 1, 1, 0)
           Model.render3D {
-            glEnable(GL_DEPTH_TEST)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glColor4f(1, 1, 1, 0)
             glBegin(GL_QUADS)
               glVertex3d(-1000, -1000, wallZ+osc1*25)
               glVertex3d(+1000, -1000, wallZ+osc2*25)
               glVertex3d(+1000, +1000, wallZ+osc3*25)
               glVertex3d(-1000, +1000, wallZ+osc4*25)
             glEnd()
-            glDisable(GL_DEPTH_TEST)
-            glDisable(GL_BLEND)
           }
+          glDisable(GL_DEPTH_TEST)
+          glDisable(GL_BLEND)
 
           if(firstTresenje) {
             fade1 = 0
@@ -725,9 +725,9 @@ final object Liminoid {
             val newPos =
               if(tresenje) // && ((frames % shakeBumpN) > shakeBumpN/3d))
                 m.transform.pos + Vec(
-                  (nextGaussian/5)*fade1*abs(oscillator(phi = m.phi)),
-                  (nextGaussian/8)*fade1*abs(oscillator(phi = m.phi)),
-                  (nextGaussian/15)*fade1*abs(oscillator(phi = m.phi)))
+                  (TableRandom.nextGaussian/5)  * fade1 * abs(oscillator(phi = m.phi)),
+                  (TableRandom.nextGaussian/8)  * fade1 * abs(oscillator(phi = m.phi)),
+                  (TableRandom.nextGaussian/15) * fade1 * abs(oscillator(phi = m.phi)))
               else
                 m.transform.pos
 
@@ -750,7 +750,7 @@ final object Liminoid {
             val scale = 1.6
             
             (if(radioOpen) {
-              ((radiolarianSize * scale) * (1 - fade1)) + vec((scale + 1/oscDiv) * fade1)
+              (radiolarianSize * (scale * (1 - fade1))) + vec((scale + 1/oscDiv) * fade1)
             } else {
               radiolarianSize * scale
             })
@@ -775,7 +775,7 @@ final object Liminoid {
               radio.transformVector.pos = radio.transformVector.pos.setZ(radio.transformVector.pos.z*0.85)  //((Vec0 - radiolarian.transform.pos).normalize)
             }
 
-            core.render(color = Color(0.15, 0.15, 0.15), transform = shaked.copy(size = radio.transform.size * radio.coreTransform.pos.x))
+            core.render(color = blackish, transform = shaked.copy(size = radio.transform.size * radio.coreTransform.pos.x))
           }
 
           // Draw rocks
@@ -818,7 +818,7 @@ final object Liminoid {
         if(blackMandala.active) {
           glClear(0)
           quad(Coord(posx,posy, w,h), blackMandala())
-          if(fade2 < 1) quad(coord2000, alpha = 1 - fade2, color = color0)
+          if(fade2 < 1) quad(coord2000, alpha = 1 - fade2, color = grey0)
 
           fade1 = 0
           //blackMandala.active = false
@@ -865,8 +865,8 @@ final object Liminoid {
             if(!blackMandala.active && dust) fade2 = 0
             if(since(startDustHeart) > 15*1000 || dust) { // 15s
               val (ww, hh) = (w*0.8, h*0.8)
-              val posx = winWidth/2d-ww/2d + rotx/div
-              val posy = winHeight/2d-hh/2d + roty/div
+              val posx = winWidth/2-ww/2d + rotx/div
+              val posy = winHeight/2-hh/2d + roty/div
               quad(Coord(posx,posy, ww,hh), blackHeartMandala, alpha = heart*0.7)
             }
 
@@ -1003,7 +1003,7 @@ final object Liminoid {
           star.trail.render()
         }*/
 
-        //quasiradiolarians.head.render(color = Color(0.5, 0.5, 0.5), alpha = 0.25, transform = Transform(pos = Vec0, size = Vec05))
+        //quasiradiolarians.head.render(color = grey(0.5), alpha = 0.25, transform = Transform(pos = Vec0, size = Vec05))
         Model.render3D {
           glBegin(GL_LINES)
             glColor3f(1, 0, 0)

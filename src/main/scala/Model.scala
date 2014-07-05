@@ -8,6 +8,7 @@ import java.io.File
 import util.Random._
 import scala.language.implicitConversions
 import scala.annotation.switch
+import Utils.TableRandom
 
 final object Model {
   private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
@@ -99,8 +100,8 @@ final object Model {
     def random(): Vec = random01
     def random360(): Vec = random01 * 360
     def random01(): Vec = Vec(nextDouble, nextDouble, nextDouble)
-    def randomGaussian(): Vec = Vec(nextGaussian, nextGaussian, nextGaussian)
-    def randomGaussian(d: Double): Vec = Vec(nextGaussian*d, nextGaussian*d, nextGaussian*d)
+    def randomGaussian(): Vec = Vec(TableRandom.nextGaussian, TableRandom.nextGaussian, TableRandom.nextGaussian)
+    def randomGaussian(d: Double): Vec = Vec(TableRandom.nextGaussian*d, TableRandom.nextGaussian*d, TableRandom.nextGaussian*d)
     def randomUniform01(): Vec = { val rnd = nextDouble; Vec(rnd, rnd, rnd) }
   }
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
@@ -160,9 +161,9 @@ final object Model {
     def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
     def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
   }
-  final val color0 = Color(0, 0, 0)
-  final val color1 = Color(1, 1, 1)
-  @inline final def color(d: Double): Color = Color(d, d, d)
+  @inline final def grey(d: Double): Color = Color(d, d, d)
+  final val grey0 = grey(0)
+  final val grey1 = grey(1)
 
   class DisplayModel(val displayList: Int) extends AnyVal {
     def toModel( //TODO: Ouch, this sucks, but gets around mutability of the memoization cache
@@ -304,7 +305,7 @@ final object Model {
     color: Color, var colorg: Double = 70,
     var isDead: Boolean = false, var g: Double = 0, var acc: Double = 0.75) {
 
-    val ssize = nextGaussian*2.5
+    val ssize = TableRandom.nextGaussian2*2.5
 
     def render(): Unit = {
       val randVec = {
@@ -328,7 +329,7 @@ final object Model {
       colorg += acc
       if(y > 2080) isDead = true //TODO: Why not 1080? Can they flow back?
 
-      val size: Double = (ssize + nextGaussian*0.4)/2
+      val size: Double = (ssize + TableRandom.nextGaussian2*0.4)/2
       val colorDiv = (colorg/50)
       if(y <= 1080) {
         glColor3d(color.r/colorDiv, color.g/colorDiv, color.b/colorDiv)
@@ -409,7 +410,7 @@ final object Model {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
 
-  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1, color: Color = color1, blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
+  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1d, color: Color = grey1, blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
     glDisable(GL_DEPTH_TEST)
     glDisable(GL_LIGHTING)
     

@@ -1,6 +1,8 @@
 package org.ljudmila.liminoid
 
-object Utils {
+import scala.util.Random
+
+final object Utils {
   /*def cleanBuffer(b: java.io.ByteBuffer) {
     import sun.misc.Cleaner
     import java.lang.reflect.Field
@@ -16,7 +18,21 @@ object Utils {
 
   @inline def min(a: Double, b: Double, c: Double): Double = math.min(math.min(a, b), c)
   @inline def max(a: Double, b: Double, c: Double): Double = math.max(math.max(a, b), c)
-
+  
+  object TableRandom {
+    private[this] var index = 0
+    private[this] val length = 10000
+    private[this] val intTable   = Array.fill(length)(Random.nextInt(length))
+    private[this] val gaussTable = Array.fill(length)(Random.nextGaussian)
+    @inline def nextGaussian: Double = gaussTable(Random.nextInt(length))
+    @inline def nextGaussian2: Double = {
+      index += 1
+      if(index >= length) index = 0
+      gaussTable(intTable(index))
+    }
+  }
+  
+  
   def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}
   def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
 

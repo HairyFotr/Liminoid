@@ -1,6 +1,6 @@
 #### [Liminoid](http://projectliminoid.wordpress.com/) | augmented and virtual experience of disintegrating subjectivity ####
 
-Images, objects, sounds, docs, etc. will be made available, also check the [website](http://projectliminoid.wordpress.com/).
+Images, objects, sounds, docs, etc. will be made available. Please check the [website](http://projectliminoid.wordpress.com/).
 
 #### Tech ####
 

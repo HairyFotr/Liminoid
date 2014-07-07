@@ -23,7 +23,7 @@ resolvers += "linter" at "http://hairyfotr.github.io/linteRepo/releases"
 
 addCompilerPlugin("com.foursquare.lint" %% "linter" % "0.1-SNAPSHOT")
 
-scalacOptions += "-P:linter:disable:UseHypot+CloseSourceFile"
+scalacOptions += "-P:linter:disable:UseHypot"
 
 // Scalastyle
 ScalastylePlugin.Settings
@@ -32,8 +32,6 @@ PluginKeys.config <<= baseDirectory { base => base / "sca" / "scalastyle-config.
 
 // Findbugs (optionally put findbugs plugins (such as fb-contrib and findsecbugs) jars into ~/.findbugs/plugin)
 findbugsSettings
-
-//findbugsEffort := Effort.Maximum
 
 findbugsReportPath <<= baseDirectory { base => Some(base / "sca" / "findbugsoutput.xml") }
 

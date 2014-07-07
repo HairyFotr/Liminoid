@@ -1,5 +1,3 @@
-name := "Liminoid"
-
 scalaVersion := "2.11.1"
 
 javaOptions += "-Djava.library.path=lib"
@@ -11,7 +9,7 @@ resolvers ++= Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
 libraryDependencies <++= scalaVersion(v => Seq(
   "org.scala-lang" % "scala-actors" % v//,
   //"org.rxtx" % "rxtxcomm" % "2.0-7pre1"
-  //"org.rxtx" % "rxtx" % "2.1.7")
+  //"org.rxtx" % "rxtx" % "2.1.7"
 ))
 
 fork := true

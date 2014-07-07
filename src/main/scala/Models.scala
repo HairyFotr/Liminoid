@@ -68,8 +68,8 @@ class Camera extends OldModel {
   // default projection
   var perspective = false
   var (near, far) = (1f, 30f) // near, far clipping plane
-  var (fov, aspectRatio) = (45f, 4/3f) // perspective stuff
-  var (minX, minY, maxX, maxY) = (-1f, -1f, 1f, 1f) // ortho stuff
+  var (fov, aspectRatio) = (45f, 4f/3f) // perspective stuff //TODO: is 4/3 right?
+  var (minX, minY, maxX, maxY) = (-1d, -1d, 1d, 1d) // ortho stuff
   var projectionChanged = true // do we need to remake projection matrix
   var vector = Vec3()
   var angle = Vec3()
@@ -91,7 +91,7 @@ class Camera extends OldModel {
   }
   
   // set an ortographic projection
-  def setOrtho(mx: Float, my: Float, Mx: Float, My: Float, n: Float, f: Float): Unit = {
+  def setOrtho(mx: Double, my: Double, Mx: Double, My: Double, n: Float, f: Float): Unit = {
     perspective = false
     minX = mx
     minY = my
@@ -138,8 +138,8 @@ class Camera extends OldModel {
     GLU.gluLookAt(v.x, v.y, v.z,    // camera position
                   aa.x, aa.y, aa.z, // look-at vector
                   0, 1, 0)          // up vector
-    GL11.glRotated(rot.x, 1, 0, 0)
-    GL11.glRotated(rot.y, 0, 1, 0)
-    GL11.glRotated(rot.z, 0, 0, 1)
+    GL11.glRotatef(rot.x, 1, 0, 0)
+    GL11.glRotatef(rot.y, 0, 1, 0)
+    GL11.glRotatef(rot.z, 0, 0, 1)
   }
 }

@@ -452,13 +452,13 @@ final object Model {
         glEnable(GL_SCISSOR_TEST)
           val eyeOffset = (winWidth/4+eyeCorrection)
           glScissor(0,0, winWidth/2,winHeight)
-          glTranslated(-eyeOffset, 0, 0)
+          glTranslatef(-eyeOffset, 0, 0)
           toRender
 
           glScissor(winWidth/2,0, winWidth/2,winHeight)
-          glTranslated(2*eyeOffset, 0, 0)
+          glTranslatef(2*eyeOffset, 0, 0)
           toRender
-          glTranslated(-eyeOffset, 0, 0)
+          glTranslatef(-eyeOffset, 0, 0)
         glDisable(GL_SCISSOR_TEST)
     }
   }

@@ -440,7 +440,7 @@ final object Liminoid {
     val img = frontCamera.getTextureID
     val camScale = -1030
     val camhCorrect = 650
-    val (camw, camh) = ((winHeight*16/9d).toInt, (winHeight+camhCorrect).toInt)
+    val (camw, camh) = ((winHeight*(16d/9d)).toInt, winHeight+camhCorrect)
     val (camx, camy) = (winWidth/2-camw/2, -camhCorrect/2)
     quad(Coord(camx,camy, camw,camh)+camScale, img, flipy = true, flipx = true)
   }

@@ -1,7 +1,12 @@
 package org.ljudmila.liminoid.hardware
 
-import java.io.{ BufferedReader, InputStreamReader, OutputStream }
 import jssc._
+import jssc.SerialPort.BAUDRATE_115200
+import jssc.SerialPort.DATABITS_8
+import jssc.SerialPort.MASK_RXCHAR
+import jssc.SerialPort.PARITY_NONE
+import jssc.SerialPort.STOPBITS_1
+import org.ljudmila.liminoid.Utils.{ now, since }
 
 object PulseSensor {
   import jssc.SerialPort._
@@ -43,8 +48,6 @@ object PulseSensor {
   }*/
 
   var beat = false
-
-  import org.ljudmila.liminoid.Utils.{ now, since }
 
   var lastBeat = now-1000
   var avgBeat = 1000d // rolling average beat

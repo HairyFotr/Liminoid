@@ -114,6 +114,7 @@ case class TexSequence(
   override def preload(): Unit = { Texture.preload(files) }
   def preload(i: Int): Unit = { Texture.preload(files, i) }
   override def delete(d: String): Unit = { Texture.delete(d) }
+  def clear(): Unit = { for(f <- frames) delete(f) }
 }
 
 import Model._

@@ -86,9 +86,6 @@ object Texture {
 
     buffer.buffer.clear()
 
-    //println(textureID)
-    //Voodoo magic to prevent OOM errors with buffers
-
     textureID
   }
   
@@ -107,7 +104,9 @@ object Texture {
   }
 
   def delete(a: String): Unit = {
-    glDeleteTextures(cache(a))
-    cache -= a
+    if(cache contains a) {
+      glDeleteTextures(cache(a))
+      cache -= a
+    }
   }
 }

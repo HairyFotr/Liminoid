@@ -1,8 +1,8 @@
 package org.ljudmila.liminoid.hardware
 
-import com.googlecode.javacv._
-import com.googlecode.javacv.cpp.opencv_core._
-import com.googlecode.javacv.cpp.opencv_highgui._
+import org.bytedeco.javacv._
+import org.bytedeco.javacpp.opencv_core._
+import org.bytedeco.javacpp.opencv_highgui._
 import collection.mutable
 import scala.actors.Futures._
 import System.err
@@ -104,7 +104,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
 
     var pix = Vector.empty[Model.Pixel]
     for(i <- 0 until size by 2) if((i/w)%2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold)
-      pix :+= Model.Pixel(x = i%w, y = i/w, color = Model.Color.BGR(pixels2(i)))
+      pix :+= Model.Pixel(sx = i%w, sy = i/w, color = Model.Color.BGR(pixels2(i)))
 
     pix
   }

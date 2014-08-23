@@ -5,7 +5,7 @@ import org.scalastyle.sbt.{ ScalastylePlugin, PluginKeys }
 
 scalacOptions ++= Seq(
   "-feature",
-  //"-deprecation",
+  "-deprecation",
   "-unchecked",
   "-Xlint",
   //"-Xstrict-inference",
@@ -24,6 +24,11 @@ resolvers += "linter" at "http://hairyfotr.github.io/linteRepo/releases"
 addCompilerPlugin("com.foursquare.lint" %% "linter" % "0.1-SNAPSHOT")
 
 scalacOptions += "-P:linter:disable:UseHypot"
+
+// Scapegoat
+// add this to project/plugins.sbt
+//addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "0.93.1")
+scapegoatDisabledInspections := Seq("VarUse", "NullParameter", "NullAssignment", "WildcardImport")
 
 // Scalastyle
 ScalastylePlugin.Settings

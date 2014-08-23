@@ -3,27 +3,6 @@ package org.ljudmila.liminoid
 import org.lwjgl.opengl.GL11
 import org.lwjgl.util.glu.GLU
 
-object gluQuadrics {
-  import org.lwjgl.util.glu.{ Sphere, Cylinder, Disk, PartialDisk }
-  lazy val sphereTex = {
-    val sphere = new Sphere
-    sphere.setNormals(GLU.GLU_SMOOTH)
-    sphere.setTextureFlag(true)
-    
-    sphere
-  }
-  lazy val sphere = {
-    val sphere = new Sphere
-    sphere.setNormals(GLU.GLU_SMOOTH)
-    sphere.setTextureFlag(false)
-    
-    sphere
-  }
-  lazy val cylinder = new Cylinder
-  lazy val disk = new Disk
-  lazy val partialdisk = new PartialDisk
-}
-
 // Deprecated, see Model.scala
 
 trait OldModel {

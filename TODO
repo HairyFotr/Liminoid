@@ -1,0 +1,67 @@
+TASKS
+  0
+    sensors calibration (visual or magnetometer?)
+    circular opening up on center-stare 
+  1
+    Position rocks onto the center sphere
+    Encourage user to face center during radiolarian opening
+      could use: sound, fade out if looking around, slow down cam movement 
+  2
+    Pulse sensor filtering or close average instead of direct input
+  3
+    Disintegration and reintegration
+    Thread network with Liminal being nodes
+    Liminal being transformation
+
+// General tasks:
+/// split setup / rendering, as to get rid of lazy vals, and things like that
+/// check things for frame dependence instead of time dependence
+/// check for resolution dependence (especially 2D, I think)
+/// some things belong in config files (which?)
+/// make camera setup app / autodetect
+
+SOME NOTES
+  prehod med fazami
+  setup -> heartbeat works, rift view is forward, images preloaded ->
+  radiolarians -> radiolarian comes close, opens, black screen ->
+  mandalas -> the whole thing plays ->
+  backspace ->
+
+  refactor
+    start opengl, then go onto app -> get rid of some false lazy loading
+  optimizations, ideas, ...
+    preload images while fps >= 60
+  details
+    call camtex when switching to a camera phase
+    menger sponge feathered texture on radiolarians!!!
+
+  realne koordinate stene
+  senca na steni
+  floaterji so bolj na mestu
+  radiolarians gredo na pogled proti tebi
+  radiolarian s kuglo
+
+  Cameras
+    Front camera (Logitech c270)
+      Bus 003 Device 013: ID 046d:0825 Logitech, Inc. Webcam C270
+      Focus hacking http://www.youtube.com/watch?v=v-gYgBeiOVI
+
+      one camera  - move image for each eye [Done]
+      two cameras - figure out the spacing, FOV, etc
+
+    Back camera (Logitech c615) 
+      Bus 003 Device 014: ID 046d:082c Logitech, Inc.
+      http://www.linux-hardware-guide.com/2013-04-20-logitech-hd-webcam-c615
+
+    Take a few frames before showing
+      prevents user from seeing
+        old frames
+        focusing
+        brightness adjusting
+
+  Libraries
+    find sbt versions of libs
+      opencv/javacv
+      PNGDecoder (part of lwjgl?)
+      jlplayer
+    I've compiled a custom lib rift, that skips display detection (and then lost it?)

@@ -12,6 +12,8 @@ import org.lwjgl.LWJGLException
 import org.lwjgl.input.Keyboard
 import org.lwjgl.opengl._
 
+import GLAddons._
+
 // Adapted from https://developer.oculusvr.com/forums/viewtopic.php?f=20&t=88&start=10
 
 class RiftShader(screenWidth: Int, screenHeight: Int) {
@@ -145,20 +147,20 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
 
     glUniform4f(HmdWarpParamLocation, K0, K1, K2, K3)
     
-    glBegin(GL_TRIANGLE_STRIP)
-    eye match {
-      case Left =>
-        glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f)
-        glTexCoord2f(0.5f, 0.0f); glVertex2f( 0.0f, -1.0f)
-        glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, +1.0f)
-        glTexCoord2f(0.5f, 1.0f); glVertex2f( 0.0f, +1.0f)
-      case Right =>
-        glTexCoord2f(0.5f, 0.0f); glVertex2f(0.0f, -1.0f)
-        glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, -1.0f)
-        glTexCoord2f(0.5f, 1.0f); glVertex2f(0.0f, +1.0f)
-        glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, +1.0f)
+    glPrimitive(GL_TRIANGLE_STRIP) {
+      eye match {
+        case Left =>
+          glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f)
+          glTexCoord2f(0.5f, 0.0f); glVertex2f( 0.0f, -1.0f)
+          glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, +1.0f)
+          glTexCoord2f(0.5f, 1.0f); glVertex2f( 0.0f, +1.0f)
+        case Right =>
+          glTexCoord2f(0.5f, 0.0f); glVertex2f(0.0f, -1.0f)
+          glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, -1.0f)
+          glTexCoord2f(0.5f, 1.0f); glVertex2f(0.0f, +1.0f)
+          glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, +1.0f)
+      }
     }
-    glEnd
   }
   
   def initShaders(): (Int, Int, Int) = {

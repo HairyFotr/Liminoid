@@ -2,30 +2,28 @@ package org.ljudmila.liminoid
 
 import scala.util.Random
 
+import org.lwjgl.opengl.GL11
+
 final object Utils {
-  /*def cleanBuffer(b: java.io.ByteBuffer) {
-    import sun.misc.Cleaner
-    import java.lang.reflect.Field
-
-    val cleanerField: Field = b.getClass.getDeclaredField("cleaner")
-    cleanerField.setAccessible(true)
-    val cleaner: Cleaner = cleanerField.get(b).asInstanceOf[Cleaner]
-    cleaner.clean
-  }*/
-
   implicit class D(val d: Double) { def prob(): Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
   implicit class F(val f: Float) { def prob(): Boolean = util.Random.nextFloat < f }
-
-  @inline def min(a: Double, b: Double, c: Double): Double = math.min(math.min(a, b), c)
-  @inline def max(a: Double, b: Double, c: Double): Double = math.max(math.max(a, b), c)
+  implicit class I(val i: Int) { 
+    def second(): Int = if(i == 1) i*1000 else throw new IllegalArgumentException
+    def seconds(): Int = i*1000
+  }
+  
+  def min(a: Double, b: Double, c: Double): Double = math.min(math.min(a, b), c)
+  def max(a: Double, b: Double, c: Double): Double = math.max(math.max(a, b), c)
+  def pow2(d: Double): Double = d*d
+  def getRatio(p: Double): (Double, Double) = (p, 1 - p)
   
   object TableRandom {
     private[this] var index = 0
     private[this] val length = 10000
     private[this] val intTable   = Array.fill(length)(Random.nextInt(length))
     private[this] val gaussTable = Array.fill(length)(Random.nextGaussian)
-    @inline def nextGaussian: Double = gaussTable(Random.nextInt(length))
-    @inline def nextGaussian2: Double = {
+    def nextGaussian: Double = gaussTable(Random.nextInt(length))
+    def nextGaussianUnsafe: Double = { // Thread Unsafe //TODO: Measure with synchronization
       index += 1
       if(index >= length) index = 0
       gaussTable(intTable(index))

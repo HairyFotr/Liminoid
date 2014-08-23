@@ -2,13 +2,15 @@ package org.ljudmila.liminoid
 
 import org.lwjgl.opengl.GL11._
 import math._
-import Liminoid.{ winWidth, winHeight, renderMode, RenderMode, Normal, Stereo, eyeCorrection }
+import Liminoid.{ winWidth, winHeight, renderMode, eyeCorrection, testNum1, osc1 }
 import scala.collection.mutable
 import java.io.File
 import util.Random._
 import scala.language.implicitConversions
 import scala.annotation.switch
-import Utils.TableRandom
+import Render.{ render3D, render2D }
+import Utils.{ TableRandom, pow2, getRatio }
+import GLAddons._
 
 final object Model {
   private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
@@ -58,7 +60,7 @@ final object Model {
     def preload(files: Array[File], max: Int = -1): Unit = {
       (if(max == -1) files else files.take(max))
         .filterNot { file => modelCache.contains(file.toString) }
-        .par.map { file =>
+        .par.foreach { file =>
           apply(file.toString)
           //val rawModel = apply(file.toString)
           //modelCache(file.toString) = rawModel
@@ -110,7 +112,10 @@ final object Model {
     //def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
     def *=(f: Double): Unit = { x *= f; y *= f; z *= f }
   }
-  @inline final def vec(d: Double) = Vec(d, d, d)
+  final def vec(d: Double) = Vec(d, d, d)
+  final def vecx(d: Double) = Vec(d, 0, 0)
+  final def vecy(d: Double) = Vec(0, d, 0)
+  final def vecz(d: Double) = Vec(0, 0, d)
   final val vec0 = vec(0)
   final val vec05 = vec(0.5)
   final val vec1 = vec(1)
@@ -118,7 +123,7 @@ final object Model {
   final val vec3 = vec(3)
   final val vec4 = vec(4)
   final val vec5 = vec(5)
-  final val vec90x = Vec(90, 0, 0)
+  final val vec90x = vecx(90)
 
   sealed trait TransformLike {
     def pos: Vec
@@ -161,7 +166,7 @@ final object Model {
     def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
     def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
   }
-  @inline final def grey(d: Double): Color = Color(d, d, d)
+  final def grey(d: Double): Color = Color(d, d, d)
   final val grey0 = grey(0)
   final val grey1 = grey(1)
 
@@ -207,19 +212,14 @@ final object Model {
       
       //wireframe experiment
       /*if(lines) for(f <- faces) {
-        glColor4d(0, 0, 0, 1)
-        glBegin(GL_LINE_STRIP)
-        for((vi, vti, vni) <- f) {
-          glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
+        glColor3d(0, 0, 0)
+        glPrimitive(GL_LINE_STRIP) {
+          for((vi, vti, vni) <- f) {
+            glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
+          }
         }
-        glEnd()
       }*/
       glEndList()
-
-      /*vertices = Vector.empty
-      uvVertices = Vector.empty
-      normals = Vector.empty
-      faces = Vector.empty*/
 
       new DisplayModel(displayList)
     }
@@ -240,72 +240,231 @@ final object Model {
     def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha): Unit = {
       render3D {
         import transform._
-        glEnable(GL_DEPTH_TEST)
-        glEnable(GL_LIGHTING)
-        
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        
-        if(tex != -1) {
-          glEnable(GL_TEXTURE_2D)
-          glBindTexture(GL_TEXTURE_2D, tex)
-        } else {
+        glCapability(GL_DEPTH_TEST, GL_LIGHTING, GL_BLEND) {
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+          
+          if(tex != -1) {
+            glEnable(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, tex)
+          } else {
+            glDisable(GL_TEXTURE_2D)
+          }
+  
+          glMatrix {
+            glTranslated(pos.x, pos.y, pos.z)
+            glRotated(rot.x, 1, 0, 0)
+            glRotated(rot.y, 0, 1, 0)
+            glRotated(rot.z, 0, 0, 1)
+            glScaled(size.x, size.y, size.z)
+            glColor4d(color.r, color.g, color.b, alpha)
+            glCallList(displayList)
+          }
+  
           glDisable(GL_TEXTURE_2D)
         }
-
-        glPushMatrix()
-          glTranslated(pos.x, pos.y, pos.z)
-          glRotated(rot.x, 1, 0, 0)
-          glRotated(rot.y, 0, 1, 0)
-          glRotated(rot.z, 0, 0, 1)
-          glScaled(size.x, size.y, size.z)
-          glColor4d(color.r, color.g, color.b, alpha)
-          glCallList(displayList)
-        glPopMatrix()
-
-        glDisable(GL_TEXTURE_2D)
-
-        glDisable(GL_BLEND)
-
-        glEnable(GL_LIGHTING)
-        glEnable(GL_DEPTH_TEST)
       }
     }
   }
 
-  /*class Trail(var points: Vector[Vec] = Vector.empty) {
-    def +=(t: Vec): Unit = { points :+= t }
+  case class RenderProcessData(
+      beat: Boolean = false)
+      
+  trait RenderObject {
+    def init(): Unit
+    def process(implicit data: RenderProcessData): Unit
+    def render(): Unit
+  }
 
-    def render(): Unit = {
-      glEnable(GL_BLEND)
-      glEnable(GL_DEPTH_TEST)
-      glEnable(GL_LIGHTING)
-      render3D {
-        val take = 100
-        val error = Vec.randomGaussian(0.2)
-        points = points.takeRight(take)
-        glBegin(GL_LINE_STRIP)
-        var i = take.toDouble
-        for(v <- points.reverse) {
-          val vec = v //+ (error * (take-i))
-          glColor4d(0, 0, 0, i/take)
-          glVertex3d(vec.x, vec.y, vec.z)
-          //glVertex3d(vec.x+1, vec.y+1, vec.z+1)
-          i -= 1
-        }
-        glEnd()
-      }
-      glDisable(GL_BLEND)
-      glDisable(GL_DEPTH_TEST)
-      glDisable(GL_LIGHTING)
+  case class ThreadNetwork(nodes: Seq[ThreadNode]) extends RenderObject {
+    def init(): Unit = {
+      nodes.foreach(_.init());
+      val noparentThreads = nodes.flatMap(_.ins).toSet &~ nodes.flatMap(_.outs).toSet;
+      noparentThreads.foreach(_.init());
     }
-  }*/
+    def process(implicit data: RenderProcessData): Unit = {
+      nodes.foreach(_.process);
+    }
+    def render(): Unit = {
+      nodes.foreach(_.render());
+    }
+  }
 
-  case class Pixel(var x: Double, var y: Double, var transformVector: Vec = vec0,
+  case class ThreadNode(
+      position: Point,
+      ins: Seq[Thread],
+      outs: Seq[Thread],
+      texture: Int) extends RenderObject {
+    
+    def visible = ins.map{ thread => min(thread.visible/2d, 1d) }.sum
+    def fullyVisible = ins.minBy{ thread => thread.visible }.visible >= 1d
+    
+    def init(): Unit = {
+      //
+    }
+    
+    def process(implicit data: RenderProcessData) {
+      if (fullyVisible) {
+        for(out <- outs) out.init()
+      }
+    }
+    
+    def render() {
+      quad(Coord(position.x, position.y, 100, 100), texture, false, false, visible)      
+    }
+  }
+  
+  
+  case class Point(x: Double, y: Double) {
+    def toTuple() = (x, y)
+  }
+  object ThreadPoint {
+    val visibilityThreshold = 0.0001d
+    val visibilityVelocity = 0.003d
+  }
+  case class ThreadPoint(var desiredx: Double, var desiredy: Double) {
+    var x: Double = desiredx
+    var y: Double = desiredy
+    var i: Double = 0.5d
+    var xv: Double = 0d
+    var yv: Double = 0d
+    var iv: Double = 0d
+    var ivv: Double = 0d
+    var visible: Double = 0d
+    var visiblev: Double = 0d
+    var ratio = 0.1
+    var paused = false
+    
+    def isVisible(): Boolean = visible > ThreadPoint.visibilityThreshold
+    def fullyVisible(): Boolean = visible >= 1d
+    
+    def pause() = { paused = true }
+    def unPause() = { paused = false }
+    
+    def init(): Unit = {
+      visiblev = ThreadPoint.visibilityVelocity
+      visible = ThreadPoint.visibilityThreshold + visiblev
+    }
+    
+    var children: Vector[ThreadPoint] = Vector.empty
+        
+    def dist(that: ThreadPoint): Double = sqrt(pow2(this.x-that.x) + pow2(this.y-that.y))
+  }
+  
+  case class Line(p1: Point, p2: Point) {
+    def line = Vector(p1, p2)
+  }
+  //case class Line(line: Vector[Point], after: Line*)
+
+  object Thread {
+    def generateMultiThread(n: Int)(l: Line): Vector[Thread] = {
+      Vector.fill(n)(generateThread(l))
+    }
+    def generateThread(l: Line): Thread = {
+      val thread = 
+        Thread(l.line.sliding(2).flatMap { case s =>
+          val (sx, sy) = s(0).toTuple
+          val (dx, dy) = s(1).toTuple
+          val segments = 40d
+          var last: Option[ThreadPoint] = None
+          Vector.tabulate(segments.toInt){ i => 
+            val (ratio1, ratio2) = getRatio(1 - i/segments)
+            val out = ThreadPoint(sx*ratio1+dx*ratio2, sy*ratio1+dy*ratio2)
+            if(i == segments.toInt-1) out.pause
+            last.foreach { _.children = Vector(out) }
+            last = Some(out)
+            out
+          }
+        }.toVector)
+        
+      thread.init()
+      
+      thread
+    }
+  }
+  case class Thread(var nodes: Vector[ThreadPoint]) {
+    var currentLength = 1
+    
+    def visible(): Double = nodes.last.visible
+    def fullyVisible(): Boolean = nodes.last.fullyVisible
+    
+    def init(): Unit = nodes.head.init()
+    
+    def process(beat: Boolean): Unit = {
+      var i = 0
+      do {        
+        val node = nodes(i)
+        //node.x += node.xv
+        //node.y += node.yv
+        node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussian/9d
+        node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussian/9d
+        node.desiredx = node.desiredx*0.96 + node.x*0.04
+        node.desiredy = node.desiredy*0.96 + node.y*0.04
+        if(i > 0) {
+          val prev = nodes(i-1)
+          val dx = (node.desiredx-node.x)
+          val dy = (node.desiredy-node.y)
+          prev.x = prev.x + dx/10d
+          prev.y = prev.y + dy/10d
+        }
+        node.i += node.iv
+        node.iv += node.ivv
+        node.visible += node.visiblev
+        if(node.i > 0.9)      node.ivv = -0.01
+        else if(node.i < 0.75) node.ivv = +0.01
+        if(node.i < 0.6) node.i = 0.6
+        
+        /*if(i < nodes.length) {
+          if(nodes(i-1) dist node > 5) {
+            //TODO: point it back or add nodes
+          }
+        }*/
+        
+        i += 1
+      } while(i < currentLength && !nodes(i).paused)
+      if(beat && i < nodes.length && (i >= currentLength || nodes(i).paused)) { 
+        if(nodes(i).paused) {
+          if(nodes(i-1).visible > 0.9) {
+            nodes(i).unPause
+          }
+        } else {
+          // Init next node
+          currentLength += 1
+          if(currentLength >= nodes.length) currentLength = nodes.length-1
+          nodes(i).init()
+        }
+      }
+    }
+    
+    def render(): Unit = {
+      glLineWidth((2d + (testNum1/10d)*(osc1+1)).toFloat)
+      glPrimitive(GL_LINE_STRIP) {
+        var i = 0
+        while(i < nodes.length && nodes(i).isVisible) {
+          val node = nodes(i)
+          if(i > 0 && node.visible < 1d) {
+            val prevNode = nodes(i-1)
+            glColor4d(node.i, node.i, node.i, node.visible)
+            val (ratio1, ratio2) = getRatio(node.visible)
+            glVertex2d(node.x*ratio1 + prevNode.x*ratio2, node.y*ratio1 + prevNode.y*ratio2)
+          } else {
+            glColor3d(node.i, node.i, node.i)
+            glVertex2d(node.x, node.y)
+          }
+          
+          i += 1
+        }
+      }
+    }
+  }
+
+  case class Pixel(val sx: Double, val sy: Double, var transformVector: Vec = vec0,
     color: Color, var colorg: Double = 70,
     var isDead: Boolean = false, var g: Double = 0, var acc: Double = 0.75) {
+      
+    var x = sx
+    var y = sy
 
-    val ssize = TableRandom.nextGaussian2*2.5
+    val ssize = TableRandom.nextGaussianUnsafe*2.5
 
     def render(): Unit = {
       val randVec = {
@@ -316,20 +475,25 @@ final object Model {
         else
           randVec
       }
-      
 
       transformVector = transformVector * 0.995 + randVec
-      val actualTransformVector = transformVector
+      //val actualTransformVector = transformVector
 
-      x += actualTransformVector.x
-      y += actualTransformVector.y + g
-      if(Liminoid.backPixelDrop) {
-        g += acc
+      x += transformVector.x
+      y += transformVector.y + g
+      //if(Liminoid.backPixelDrop) g += acc
+      if(Liminoid.backPixelMerge || !Liminoid.backPixelMerged) {
+        x = x*0.95 + sx*0.05
+        y = y*0.95 + sy*0.05
+        transformVector = transformVector*0.95
+        colorg -= acc
+      } else {
+        colorg += acc
       }
-      colorg += acc
-      if(y > 2080) isDead = true //TODO: Why not 1080? Can they flow back?
+      if(colorg <= 75) colorg = 75
+      if(y > 2000) isDead = true //TODO: Why not 1080? Can they flow back?
 
-      val size: Double = (ssize + TableRandom.nextGaussian2*0.4)/2
+      val size: Double = (ssize + TableRandom.nextGaussianUnsafe*0.4)/2
       val colorDiv = (colorg/50)
       if(y <= 1080) {
         glColor3d(color.r/colorDiv, color.g/colorDiv, color.b/colorDiv)
@@ -338,74 +502,9 @@ final object Model {
         glVertex2d(x+size, y+size)
         glVertex2d(x,      y+size)
       }
-      /*def tryset(x: Int, y: Int): Boolean = {
-        if(!Liminoid.backpixelBuffer(x)(y)) {
-          Liminoid.backpixelBuffer(x)(y) = true
-          glColor4d(color.r/(g/10), color.g/(g/10), color.b/(g/10), 1)
-          glVertex2d(x,   y)
-          glVertex2d(x+g, y)
-          glVertex2d(x+g, y+g)
-          glVertex2d(x,   y+g)
-          true
-        } else {
-          false
-        }
-      }
-
-      if(y < 1080-1 && y >= 0+1 && x >= 0+1 && x < 1920-1) {
-        (tryset(x.toInt, y.toInt)
-          || tryset(x.toInt+1, y.toInt) || tryset(x.toInt-1, y.toInt)
-          || tryset(x.toInt, y.toInt+1) || tryset(x.toInt, y.toInt-1)
-          || tryset(x.toInt+1, y.toInt+1) || tryset(x.toInt-1, y.toInt-1)
-          || tryset(x.toInt-1, y.toInt+1) || tryset(x.toInt+1, y.toInt-1)
-        )
-      }*/
     }
   }
 
-  lazy val cam = {
-    val cam = new Camera
-    cam.setViewPort(0,0, winWidth,winHeight)
-    cam.setOrtho(0,winHeight,winWidth,0, 1f,-1f)
-    cam.setPerspective(50, winWidth/winHeight.toFloat, 0.25f, 700f)
-    cam.setPosition(0, 0, 0)
-    cam.lookAt(Vec3(0, 0, 200))
-    
-    cam
-  }
-
-  // See dis? I need dis rendered
-  def render3D(r: => Unit): Unit = {
-    renderMode match {
-      case Normal =>
-        r
-      case Stereo =>
-        //TODO: name these
-        val x = 0.5f       //+ Liminoid.testNum
-        val x2 = 126+30+22 //+ Liminoid.testNum
-        glEnable(GL_SCISSOR_TEST)
-        glPushMatrix
-          glScissor(0,0, winWidth/2,winHeight)
-          cam.look(Vec3(-x, 0, 0), Vec3(-x2, 0, 0))
-          r
-        glPopMatrix
-        glPushMatrix
-          glScissor(winWidth/2,0, winWidth/2,winHeight)
-          cam.look(Vec3(+x, 0, 0), Vec3(+x2, 0, 0))
-          r
-        glPopMatrix
-        glDisable(GL_SCISSOR_TEST)
-    }
-  }
-  
-  lazy val cam2D = {
-    val cam2D = new Camera
-    cam2D.setViewPort(0,0, winWidth,winHeight)
-    cam2D.setOrtho(0,winHeight,winWidth,0, 1f,-1f)
-    
-    cam2D
-  }
-  
   case class Coord(x: Double, y: Double, w: Double, h: Double) {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
@@ -414,8 +513,13 @@ final object Model {
     glDisable(GL_DEPTH_TEST)
     glDisable(GL_LIGHTING)
     
-    glEnable(GL_BLEND)
-    glBlendFunc(blend._1, blend._2)
+    if(blend != (-1, -1)) {
+      glEnable(GL_BLEND)
+      glBlendFunc(blend._1, blend._2)
+    } else {
+      glEnable(GL_ALPHA_TEST)
+      glAlphaFunc(GL_GEQUAL, 0.9f)
+    }
     
     if(texture != -1) {
       glEnable(GL_TEXTURE_2D)
@@ -427,49 +531,22 @@ final object Model {
     val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
     
     render2D {
-      glBegin(GL_QUADS)
+      glPrimitive(GL_QUADS) {
         glTexCoord2f(h1, v0); glVertex2d(coord.x,         coord.y+coord.h)
         glTexCoord2f(h0, v0); glVertex2d(coord.x+coord.w, coord.y+coord.h)
         glTexCoord2f(h0, v1); glVertex2d(coord.x+coord.w, coord.y)
         glTexCoord2f(h1, v1); glVertex2d(coord.x,         coord.y)
-      glEnd()
+      }
     }
     if(texture != -1) glDisable(GL_TEXTURE_2D)
 
-    glDisable(GL_BLEND)
+    if(blend != (-1, -1)) {
+      glDisable(GL_BLEND)
+    } else {
+      glDisable(GL_ALPHA_TEST)
+    }
 
     glEnable(GL_LIGHTING)
     glEnable(GL_DEPTH_TEST)
-  }
-
-  def render2D(toRender: => Unit): Unit = {
-    renderMode match {
-      case Normal =>
-        cam2D.render
-        toRender
-      case Stereo =>
-        cam2D.render
-        glEnable(GL_SCISSOR_TEST)
-          val eyeOffset = (winWidth/4+eyeCorrection)
-          glScissor(0,0, winWidth/2,winHeight)
-          glTranslatef(-eyeOffset, 0, 0)
-          toRender
-
-          glScissor(winWidth/2,0, winWidth/2,winHeight)
-          glTranslatef(2*eyeOffset, 0, 0)
-          toRender
-          glTranslatef(-eyeOffset, 0, 0)
-        glDisable(GL_SCISSOR_TEST)
-    }
-  }
-
-  /*def displayList(toRender: => Unit): Int = {
-    val displayList = glGenLists(1)
-    glNewList(displayList, GL_COMPILE)
-    toRender
-    glEndList()
-
-    displayList
-  }*/
-  
+  }  
 }

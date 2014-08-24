@@ -45,40 +45,40 @@ sealed trait Sequence[T] {
 
   def moveCursor(): Unit = synchronized {
     if(startTime == -1) startTime = now
-    val framesm1 = (frames.size-1)
+    val lastFrame = frames.size-1
 
     //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
     if(direction > 0) {
       //TODO: just calculate it... also, cursor + 1 or first frame gets skipped?
       while(since(startTime) > cursor * delay) cursor += 1
-      if(cursor >= framesm1) {
-        val diff = cursor - framesm1
+      if(cursor >= lastFrame) {
+        val diff = cursor - lastFrame
         if(bounce) {
-          cursor = math.max(0, framesm1 - diff) //TODO: Possible multiple bounces, but meh
+          cursor = math.max(0, lastFrame - diff) //TODO: Possible multiple bounces, but meh
           //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
           direction = -direction
           startTime = now //TODO: not right
         } else { // if(loop)
-          cursor = math.min(diff, framesm1)
+          cursor = math.min(diff, lastFrame)
           //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
         }
         
         if(stopAtEnd) {
-          cursor = framesm1
+          cursor = lastFrame
           //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
           active = false
         }
       }
     } else if(direction < 0) {
-      while(since(startTime) > (framesm1 - cursor) * delay) cursor -= 1
+      while(since(startTime) > (lastFrame - cursor) * delay) cursor -= 1
       if(cursor <= 0) {
         if(bounce) {
-          cursor = math.min(-cursor, framesm1)
+          cursor = math.min(-cursor, lastFrame)
           //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
           direction = -direction
           startTime = now
         } else { // if(loop)
-          cursor = math.max(framesm1 + cursor, 0)
+          cursor = math.max(lastFrame + cursor, 0)
           //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
         }
         

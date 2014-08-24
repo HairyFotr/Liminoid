@@ -77,7 +77,15 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   def saveImage(filename: String): Unit = {
     try {
       val img = captureFrameImg()
-      thread { cvSaveImage(filename, img) }
+      // FIXME issues with libpng versions
+      //thread { cvSaveImage(filename, img) }
+      thread {
+        javax.imageio.ImageIO.write(
+          img.getBufferedImage(),
+          "png",
+          new java.io.File(filename))
+      }
+      
     } catch {
       case e: Exception =>
         println(filename)
@@ -102,14 +110,24 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
       //(((c1 >> 16) & 255) - ((c2 >> 16) & 255))
     ) /// 3
 
-    var pix = Vector.empty[Pixel]
-    for(i <- 0 until size by 2) if((i/w)%2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold)
-      pix :+= Pixel(sx = i%w, sy = i/w, color = Color.BGR(pixels2(i)))
-
-    pix
+    val pix = Vector.newBuilder[Pixel]
+    var i = 0 
+    do {
+      val idw = i/w
+      if (idw%2 == 0) {
+        val imw = i%w
+        
+        if(imw > 1 && imw < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold)
+          pix += Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
+        
+        i += 2
+      } else {
+        i += w
+      }
+    } while(i < size)
+    pix.result
   }
 
-  //
   private var camtexFuture = future[IplImage] { null }
   private var camTex = -1
   def getTextureID(): Int = synchronized { try {

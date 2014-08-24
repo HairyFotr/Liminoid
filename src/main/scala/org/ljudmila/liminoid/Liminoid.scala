@@ -122,7 +122,7 @@ final object Liminoid {
         if(testNum1 != 0) println("testNum1: "+testNum1)
         if(testNum2 != 0) println("testNum2: "+testNum2)
         if(testNum3 != 0) println("testNum3: "+testNum3)
-        if(phase == Radiolarians) println("radiolarian: "+radiolarian.transform)
+        if(currentPhase == Radiolarians) println("radiolarian: "+radiolarian.transform)
         println("rotation:"+rotation)
 
         frameCounter = 0
@@ -200,28 +200,30 @@ final object Liminoid {
   lazy val liminoidTitleLoading = Texture("img/liminoidLoading.png")
   
   /// Liminoid phases ///
+  val Limbo = -1
   val Setup = 0
   val Radiolarians = 1
   val Mandalas = 2
   val BackSpace = 3
-  val PhaseTerminator = BackSpace // Last phase
+  val ThreadPhase = 4
+  val PhaseTerminator = ThreadPhase // Last phase
   var phaseTimer = now // Tracks time from the beginning of phase
 
-  var phase = Setup // Current phase
+  var currentPhase = Setup // Current phase
   var phaseChanged = true
   
   def gotoPhase(i: Int): Unit = {
-    phase = i
+    currentPhase = i
     phaseChanged = true
   }
   def nextPhase(): Unit = {
-    if(phaseChanged || phase >= PhaseTerminator) return
-    phase += 1
+    if(phaseChanged || currentPhase >= PhaseTerminator) return
+    currentPhase += 1
     phaseChanged = true
   }
   def previousPhase(): Unit = {
-    if(phaseChanged || phase <= Setup) return
-    phase -= 1
+    if(phaseChanged || currentPhase <= Setup) return
+    currentPhase -= 1
     phaseChanged = true
   }
   def initPhase(initFunc: => Unit): Unit = 
@@ -232,11 +234,22 @@ final object Liminoid {
       System.gc() // best place to do it...
     }
 
+  // http://www.dspguru.com/dsp/howtos/how-to-create-oscillators-in-software
+  // f = desired oscillator frequency
+  // w = 2 pi f / Fs
+  // phi = initial phase
+  // y = ouput array containing the oscillator signal
+  // def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
+  def oscillator(i: Double = Utils.now*0.002, phi: Double): Double = sin(i + phi)
   var osc1 = 0d
   var osc2 = 0d
   var osc3 = 0d
   var osc4 = 0d
-  
+
+  // variables that go up to 1 by little each frame
+  var (fade1, fadeSpeed1) = (1d, 0.002)
+  var (fade2, fadeSpeed2) = (1d, 0.04)
+
   // Cameras
   //val cams = Array(hardware.Camera(camId = 0, 1920, 1080), hardware.Camera(camId = 1, 1920, 1080), hardware.Camera(camId = 2, 1280, 720), hardware.Camera(camId = 3, 1280, 720))
   //val stereoCameras = cams.takeRight(2).reverse
@@ -263,8 +276,9 @@ final object Liminoid {
   val blackish = grey(0.1)
 
   val wallZ = 600                        // z position of wall
-  var radioBasePosVec = Vec(0, 0, -0.11) // basic z movement vector
-  val startPos = vecz(wallZ+15)          // starting point for radiolarians
+  val radioBasePosVecZ = -0.11 * 1.4 // 2min8s -> 1min30s (85x + 43x*1.75 = ...)
+  val radioBasePosVec = Vec(0, 0, radioBasePosVecZ) // basic z movement vector
+  val startPos = vecz(wallZ+15) // starting point for radiolarians
   def basicRot(): Vec = Vec.randomGaussian(1d/3d)
   
   // The rock inside radiolarians
@@ -279,11 +293,11 @@ final object Liminoid {
       delay = 80,
       color = whiteish,
       coreTransform = Transform(pos = vec3),
-      transform = Transform(pos = startPos + vecz(-5)),
+      transform = Transform(pos = startPos + vecz(-5), rot = vec90x),
       transformVector = Transform(pos = radioBasePosVec, rot = vec0))
     
   // The other radiolaria
-  lazy val quasiradiolarians =
+  lazy val quasiRadiolarians =
     Array[Model](
       /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
         transform = Transform(pos = startPos + Vec(-45, 21, 2), size = vec(0.6)),
@@ -431,7 +445,12 @@ final object Liminoid {
 
   // BackSpace phase objects
   var wallTex = -1
-  var backCamSnapSeq = TexSequence("seq/BackSpace/", delay = 1000/15d, stopAtEnd = false, bounce = true)
+  var backCamSnapSeq = 
+    TexSequence(
+      "seq/BackSpace/",
+      delay = 1000/15d,
+      stopAtEnd = false,
+      bounce = true)
   var backCamSnap = Texture.getImage("seq/BackSpace/1.png")
   var backCamSnapTex = backCamera.getTextureIDWait
   var backPixels = Vector.empty[Pixel]
@@ -448,19 +467,23 @@ final object Liminoid {
     Vector(
       Point(100, -200),
       Point(-100, 200),
-      Point(1400, 700)
+      Point(1400, 700),
+      Point(500, 500)
     )
   val nodes = 
     Vector(
       Point(400, 700),
-      Point(600, 500)
+      Point(600, 500),
+      Point(300, 300)
     )
   
   val lines = 
     Vector(
       Line(initNodes(0), nodes(0)),
       Line(initNodes(1), nodes(0)),
-      Line(initNodes(2), nodes(1)))
+
+      Line(initNodes(2), nodes(1)),
+      Line(initNodes(3), nodes(2)))
   
   val threadMap = lines.map{ line => line -> Thread.generateMultiThread(3)(line) }.toMap
   
@@ -479,10 +502,6 @@ final object Liminoid {
   }
   
   lazy val threadNetwork = ThreadNetwork(threadNodes);
-
-  // variable that goes to 1 by little each frame
-  var (fade1, fadeSpeed1) = (1d, 0.002)
-  var (fade2, fadeSpeed2) = (1d, 0.04)
 
   // have a small bump for movement
   val shakeBump = 3
@@ -514,7 +533,7 @@ final object Liminoid {
   val backBlendColor = Color(0, 0.08, 0.18)
   def backBlendRender(): Unit = {
     GL14.glBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT)
-    val alpha = if(phase == Radiolarians) 0.07 else 0.1
+    val alpha = if(currentPhase == Radiolarians) 0.07 else 0.1
     quad(winCoord, color = backBlendColor, alpha = alpha, blend = backBlend)
     GL14.glBlendEquation(GL14.GL_FUNC_ADD)
   }
@@ -526,7 +545,7 @@ final object Liminoid {
   def renderFrame(): Unit = {
     frames += 1
 
-    // Generate/Get oscilators, and heart signals
+    // Generate/Get heart signals
     if(!PulseSensor.init_) {
       println("Using fake pulse")
       PulseSensor.fake = true
@@ -537,18 +556,13 @@ final object Liminoid {
     softHeart = (heart + softHeart)*0.8
     softHeart2 = (softHeart + softHeart2)*0.7
 
-    // http://www.dspguru.com/dsp/howtos/how-to-create-oscillators-in-software
-    // f = desired oscillator frequency
-    // w = 2 pi f / Fs
-    // phi = initial phase
-    // y = ouput array containing the oscillator signal
-    // def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
-    def oscillator(i: Double = Utils.now*0.002, phi: Double): Double = sin(i + phi)
-
     osc1 = oscillator(phi = 0*Pi/4)
     osc2 = oscillator(phi = 1*Pi/4)
     osc3 = oscillator(phi = 2*Pi/4)
     osc4 = oscillator(phi = 3*Pi/4)
+
+    if(fade1 < 1) fade1 += fadeSpeed1 else fade1 = 1
+    if(fade2 < 1) fade2 += fadeSpeed2 else fade2 = 1
 
     val (mw, mh) = (200-osc1*100-osc3*30, 160-osc2*50-osc3*20)
     val (cx, cy) = (winWidth/2 - mw/2, winHeight/2 - mh/2)
@@ -569,11 +583,10 @@ final object Liminoid {
         (-rotation.yaw, -rotation.pitch)
       })
 
-    if(fade1 < 1) fade1 += fadeSpeed1 else fade1 = 1
-    if(fade2 < 1) fade2 += fadeSpeed2 else fade2 = 1
 
-    phase match {
+    currentPhase match {
       
+      /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       case Setup => ///////////////////////////////////////////////////////////////////////////////
@@ -597,25 +610,27 @@ final object Liminoid {
         var startingPhase = Radiolarians
         //startingPhase = Mandalas
         //startingPhase = BackSpace
+        //gotoPhase(ThreadPhase)
 
         // Triggers lazy load or preload of some resources
         println("Time" + frames + ": " + Utils.time(
           frames match {
             case 1 =>
             case 2 => radiolarian
-            case 3 => quasiradiolarians
+            case 3 => quasiRadiolarians
             case 4 => rocks 
             case 5 => guardRocks
             case 6 => blackMandala.preload(200)
             case 7 => blackHeartMandala
             case 8 => blackHeartDustMandala
             case 9 => whiteHeartMandala
-            case _ => if(startLiminoid) gotoPhase(startingPhase) else sleep(50)
+            case _ => if(startLiminoid) gotoPhase(startingPhase) else sleep(25)
           }))
         
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
-      case -1 => //////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      case Limbo => ///////////////////////////////////////////////////////////////////////////////
         //Limbo phase, should never happen :)
         glClear(1)
 
@@ -624,43 +639,46 @@ final object Liminoid {
       
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
       case Radiolarians => ////////////////////////////////////////////////////////////////////////
         initPhase {
           Sound.play("intro")
-          radiolarian.transform.rot = vec90x
         }
 
         /// Parts of the Radiolarians phase
-        val izSteneEnding     = 17.seconds
-        val tresenjeEnding    = 35.seconds
-        val radioVectorEnding = (60+25).seconds
-        val radioOpenEnding   = (60+43).seconds
-        val endEnding         = (120+8).seconds
+        val izSteneStart     = 17.seconds
+        val tresenjeStart    = 35.seconds
+        val radioVectorStart = (60+25-38).seconds
+        val radioOpenStart   = (60+43-38).seconds
+        val endStart         = (120+8-38).seconds
 
         // Crawl from wall
-        var izStene = since(phaseTimer) > izSteneEnding
+        var izStene = since(phaseTimer) > izSteneStart
         val firstIzStene = (!prevIzStene && izStene)
 
         // Start shaking elements
-        val tresenje = since(phaseTimer) > tresenjeEnding
+        val tresenje = since(phaseTimer) > tresenjeStart
         val firstTresenje = (!prevTresenje && tresenje)
 
         // Pull radiolarian towards view
-        val radioVector = since(phaseTimer) > radioVectorEnding
+        val radioVector = since(phaseTimer) > radioVectorStart
         val firstRadioVector = (!prevRadioVector && radioVector)
 
         // Activate radiolarian shell open animation
-        val radioOpen = since(phaseTimer) > radioOpenEnding
-        if(radioOpen) radiolarian.active = true
-
+        val radioOpen = since(phaseTimer) > radioOpenStart
         val firstRadioOpen = (!prevRadioOpen && radioOpen)
+        
+        if(firstRadioOpen) radiolarian.active = true
+        val radioHalfOpen = radioOpen && radiolarian.cursor > radiolarian.frames.size/2
 
-        // Ending of radiolarians phase
-        val end = since(phaseTimer) > endEnding
+        // Start of radiolarians phase
+        val end = since(phaseTimer) > endStart
         val firstEnd = (!prevEnd && end)
 
         if((radiolarian.transform.pos distance vec0) < 1 
-        || (radiolarian.transform.pos.z < -1)) gotoPhase(Mandalas)
+        || (radiolarian.transform.pos.z < -1)) {
+          gotoPhase(Mandalas)
+        }
 
 
         /// Rendering
@@ -693,10 +711,10 @@ final object Liminoid {
             glColor4f(1, 1, 1, 0)
             render3D {
               glPrimitive(GL_QUADS) {
-                glVertex3d(-2000, -2000, wallZ + osc1*20)
-                glVertex3d(+2000, -2000, wallZ + osc2*20)
-                glVertex3d(+2000, +2000, wallZ + osc3*25)
-                glVertex3d(-2000, +2000, wallZ + osc4*20)
+                glVertex3d(-2000, -2000, wallZ + osc1*10)
+                glVertex3d(+2000, -2000, wallZ + osc2*10)
+                glVertex3d(+2000, +2000, wallZ + osc3*10)
+                glVertex3d(-2000, +2000, wallZ + osc4*10)
               }
             }
           }
@@ -723,7 +741,7 @@ final object Liminoid {
           val radiolarianSize = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
           if(!pause) radiolarian.transform += radiolarian.transformVector ** renderTime
           if(firstRadioVector) {
-            radiolarian.transformVector.pos = radiolarian.transformVector.pos.setZ(radioBasePosVec.z*1.75)  //((Vec0 - radiolarian.transform.pos).normalize)
+            radiolarian.transformVector.pos = radiolarian.transformVector.pos.withZ(radioBasePosVecZ*1.75)
           }
           
           if(firstRadioOpen) {
@@ -744,29 +762,30 @@ final object Liminoid {
           val shaked: Transform = if(radioOpen) radiolarian.transform else shake(radiolarian())
           radiolarian().render(transform = shaked) // duplication below
 
-          if(radiolarian.active) core.color -= 0.0002 // Make core go black after radiolarian opening
+          // Make core go black after radiolarian opening
+          if(radioHalfOpen) core.color -= 0.0002
 
           core.render(transform = shaked.copy(size = radiolarian.transform.size * radiolarian.coreTransform.pos.x))
 
           // Draw the other radiolarians
-          for(radio <- quasiradiolarians) {
-            if(!pause) radio.transform += radio.transformVector ** renderTime
-            radio.transform.size = radiolarianSize
-            val shaked = shake(radio)
-            radio.render(transform = shaked)
+          for(quasiRadio <- quasiRadiolarians) {
+            if(!pause) quasiRadio.transform += quasiRadio.transformVector ** renderTime
+            quasiRadio.transform.size = radiolarianSize
+            val shaked = shake(quasiRadio)
+            quasiRadio.render(transform = shaked)
 
             if(radioVector) {
-              radio.transformVector.pos = radio.transformVector.pos.setZ(radio.transformVector.pos.z*0.85)  //((Vec0 - radiolarian.transform.pos).normalize)
+              quasiRadio.transformVector.pos = quasiRadio.transformVector.pos.withZ(quasiRadio.transformVector.pos.z*0.85)
             }
 
-            core.render(color = blackish, transform = shaked.copy(size = radio.transform.size * radio.coreTransform.pos.x))
+            core.render(color = blackish, transform = shaked.copy(size = quasiRadio.transform.size * quasiRadio.coreTransform.pos.x))
           }
 
           // Draw rocks
           for(rock <- rocks) {
             if(!pause) rock.transform += rock.transformVector ** renderTime
             if(radioVector) {
-              rock.transformVector.pos = rock.transformVector.pos.setZ(rock.transformVector.pos.z*0.85)  //((Vec0 - radiolarian.transform.pos).normalize)
+              rock.transformVector.pos = rock.transformVector.pos.withZ(rock.transformVector.pos.z*0.85)
             }
 
             rock.render(transform = shake(rock))
@@ -783,17 +802,19 @@ final object Liminoid {
         prevRadioVector = radioVector
         prevRadioOpen = radioOpen
         prevEnd = end
-        
+
         backBlendRender
 
-      
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       case Mandalas => ////////////////////////////////////////////////////////////////////////////
         initPhase {
           fade1 = 0
-          Sound.play("mandalas")
           fade2 = 0
+          Sound.stopAll // FIXME remove after shortening sound
+          Sound.play("mandalas")
         }
 
         val div = 1.75d
@@ -808,15 +829,13 @@ final object Liminoid {
           if(fade2 < 1) quad(coord2000, alpha = 1 - fade2, color = grey0)
 
           fade1 = 0
-          //blackMandala.active = false
         } else if(whiteMandala.active) {
           val firstWhite = (whiteFlashTimer == -1)
           if(firstWhite) {
             whiteFlashTimer = now
-            glClear(1)
-            fade2 = 0
-          } else if(since(whiteFlashTimer) <= 30*1000) { //30s
-            //glClear(heart + 1-fade2)
+            glClear(0.6)
+            fade2 = 0.4
+          } else if(since(whiteFlashTimer) <= 30.seconds) {
             glClear(1-fade2)
             dust = true
           } else {
@@ -824,33 +843,20 @@ final object Liminoid {
             beat = false
           }
 
-          /*if(whiteMandala.cursor > 1440) {
-            zoom += 1
-            if(whiteMandala.cursor > 1450)
-              zoom += 1
-            
-            quad(Coord(posx,posy, w,h) + zoom, whiteMandala())
-          } else {
-            quad(Coord(posx,posy, w,h), whiteMandala())
-          }*/
           quad(Coord(posx,posy, w,h), whiteMandala())
-
-
-          //if(fade < 1) quad(Coord(posx,posy, w,h), blackHeartDustMandala, alpha = 1-fade*2+heart/5)
         } else {
-          gotoPhase(BackSpace)
+          gotoPhase(ThreadPhase)
         }
-        val sinceStart = since(phaseTimer)
+
+        val sinceStart = since(phaseTimer) // TODO move outwards and reuse
         // 1m45s...3m  heartbeat sound and visualization
-        if((sinceStart > 105*1000 || !blackMandala.active) && sinceStart < 3*60*1000) {
+        if((sinceStart > 105.seconds || !blackMandala.active) && sinceStart < (3*60).seconds) {
           if(startDustHeart == -1) startDustHeart = now
 
-          if(beat) Sound.play("heart")
-
-          //if(blackMandala.active) {
           if(beat) {
-            if(!blackMandala.active && dust) fade2 = 0
-            if(since(startDustHeart) > 15*1000 || dust) { // 15s
+            Sound.play("heart")
+            if(!blackMandala.active && dust) fade2 = 0.1
+            if(since(startDustHeart) > 15.seconds || dust) {
               val (ww, hh) = (w*0.8, h*0.8)
               val posx = winWidth/2-ww/2d + rotx/div
               val posy = winHeight/2-hh/2d + roty/div
@@ -859,15 +865,8 @@ final object Liminoid {
 
             quad(Coord(posx,posy, w,h), blackHeartDustMandala, alpha = heart)
           }
-          //}
         }
 
-        // Linz Style
-        /*if(whiteMandala.cursor > 1445 && whiteMandala.cursor < 1600) {
-          fade1 = 0
-        } else if(whiteMandala.cursor > 1600) {
-          quad(coord2000, alpha = fade1)
-        }*/
         if(whiteMandala.cursor > 1440) {
           whiteMandala.active = false
           quad(coord2000, alpha = fade1)
@@ -882,16 +881,17 @@ final object Liminoid {
 
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
       case BackSpace => ///////////////////////////////////////////////////////////////////////////
         initPhase {
           fade1 = 0
           fade2 = 0
           diffStarted = false
           diffDone = false
+          glClear(0)
 
           //backCamera.saveImage("img/Image.png")
           backPixels = Vector.empty
-          phaseTimer = now
           //backCamSnap = Texture.getImage("img/Image.png")
           //backCamSnapTex = Texture("img/Image.png")
           backPixelDrop = true
@@ -899,9 +899,6 @@ final object Liminoid {
           Sound.play("razpad")
         }
         
-        glClear(0)
-        
-        implicit val rpd = RenderProcessData(beat)
         
         val f = 1400d
         val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
@@ -919,8 +916,8 @@ final object Liminoid {
         
         quad(Coord(camx,camy, camw,camh), backDrop, flipx = false)
 
-        val since5 = since(phaseTimer) >= 5*1000
-        val since1 = since(phaseTimer) >= 1*1000
+        val since5 = since(phaseTimer) >= 5.seconds
+        val since1 = since(phaseTimer) >= 1.second
         
         if(since5 && backPixelDrop && !finished) {
           if(!diffStarted) thread {
@@ -966,11 +963,8 @@ final object Liminoid {
           backPixelMerged = true
           backPixelDrop = false
           thread { sleep(300); backPixels = Vector.empty }
-        } else if(since5) {
-          threadNetwork.process
         }
 
-        //backpixelBuffer = Array.ofDim[Boolean](1920, 1080)
         glCapability(GL_BLEND) {
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
           render2D {
@@ -982,14 +976,56 @@ final object Liminoid {
               // Filter and render pixels at the same time
               backPixels = backPixels.filterNot { pixel => pixel.render(); pixel.isDead }
             }
-  
-            threadNetwork.render
           }
         }
 
 
         if(fade1 < 1) {
           quad(coord2000, alpha = 1-fade1)
+        }
+
+        backBlendRender
+
+
+
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      case ThreadPhase => ///////////////////////////////////////////////////////////////////////////
+        initPhase {
+          //fade1 = 0
+          //fade2 = 0
+
+          //backCamera.saveImage("img/Image.png")
+          backPixels = Vector.empty
+          phaseTimer = now
+          //backCamSnap = Texture.getImage("img/Image.png")
+          //backCamSnapTex = Texture("img/Image.png")
+          glClear(0)
+        }
+
+        // Pass some data into thread network renders
+        implicit val rpd = RenderProcessData(beat)
+
+        val f = 1400d
+        val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
+        val (camx, camy) = (rotx*0.7-camw/7, roty*0.7-camh/7)
+
+        quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
+
+        val since5 = since(phaseTimer) >= 5.seconds
+        
+        threadNetwork.process
+
+        //backpixelBuffer = Array.ofDim[Boolean](1920, 1080)
+        glCapability(GL_BLEND) {
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+          render2D {
+            glTranslated(camx, camy, 0)
+            glScaled(camw/1920d, camh/1080d, 1)
+            threadNetwork.render
+          }
         }
 
         backBlendRender
@@ -1054,7 +1090,7 @@ final object Liminoid {
       for(i <- 1 to 20) backCamera.getTextureIDWait
       val n = 100
       for(i <- 1 to n) {
-        backCamera.saveImage(s"seq/BackSpace/$i.png")
+        backCamera.saveImage("seq/BackSpace/"+i+".png")
       }
       backPixels = Vector.empty
       phaseTimer = now

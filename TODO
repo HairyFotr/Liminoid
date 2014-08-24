@@ -1,7 +1,7 @@
 TASKS
   0
-    sensors calibration (visual or magnetometer?)
-    circular opening up on center-stare 
+    Sensors calibration (visual(javacv) or magnetometer(jrift)?)
+    Circular opening up on center-stare 
   1
     Position rocks onto the center sphere
     Encourage user to face center during radiolarian opening
@@ -10,6 +10,12 @@ TASKS
     Pulse sensor filtering or close average instead of direct input
   3
     Disintegration and reintegration
+      Check it
+      Video saving (see keyboard)
+        Save into random folder, add to load file - last entry wins
+      Abstract Sequence and Camera, so they can be swapped around as needed
+        Is this more than a common get, and maybe blobdiff?
+  4
     Thread network with Liminal being nodes
     Liminal being transformation
 
@@ -18,9 +24,10 @@ TASKS
 /// check things for frame dependence instead of time dependence
 /// check for resolution dependence (especially 2D, I think)
 /// some things belong in config files (which?)
-/// make camera setup app / autodetect
+//// make camera id config and/or autodetect
 /// am I deleting all used textures? (camera?)
 /// why is so much stuff in Arduino synchronized?
+/// make oscillator/fade/... library
 
 SOME NOTES
   prehod med fazami
@@ -63,3 +70,4 @@ SOME NOTES
 
   Libraries
     I've compiled a custom lib rift, that skips display detection (and then lost it?)
+    opencv has its own libpng, that isn't compatible with ubuntu 14.04 libpng

@@ -15,32 +15,38 @@ import GLAddons._
 final object Models {
   private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
 
-  type Vertices = Vector[Vec]
-  type Faces = Vector[Array[(Int, Int, Int)]] //Array of indices vertex,tex,normal
-  type UVVertices = Vector[UV]
-  type Normals = Vector[Vec]
+  type Vertex = Vec
+  type Face = Array[(Int, Int, Int)] //Array of indices vertex,tex,normal
+  type Normal = Vec
+  type UVVertex = UV
+
+  type Vertices = Vector[Vertex]
+  type Faces = Vector[Face]
+  type Normals = Vector[Normal]
+  type UVVertices = Vector[UVVertex]
 
   final object OBJModel {
     def apply(fileStr: String): DisplayModel = modelCache.getOrElseUpdate(fileStr, {
       val file = io.Source.fromFile(fileStr)
 
-      var vertices: Vertices     = Vector.empty
-      var faces: Faces           = Vector.empty
-      var normals: Normals       = Vector.empty
-      var uvVertices: UVVertices = Vector.empty
+      val vertices   = Vector.newBuilder[Vertex]
+      val faces      = Vector.newBuilder[Face]
+      val normals    = Vector.newBuilder[Normal]
+      // Don't currently need UV, uncomment //uv/ if needed
+      //uv/val uvVertices = Vector.newBuilder[UVVertex]
 
       for(line <- file.getLines.buffered) {
         val x = line.split(" ")
         
         (line.charAt(0): @switch) match {
           case 'v' => (line.charAt(1): @switch) match {
-            case ' ' => vertices  :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
-            case 'n' => normals   :+= Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
-            case 't' => uvVertices :+= UV(x(1).toDouble, x(2).toDouble)
+            case ' ' => vertices  += Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
+            case 'n' => normals   += Vec(x(1).toDouble, x(2).toDouble, x(3).toDouble)
+            case 't' => //uv/uvVertices += UV(x(1).toDouble, x(2).toDouble)
           }
           
           case 'f' =>
-            faces :+= (x.tail.map { face =>
+            faces += (x.tail.map { face =>
               val fs = face.split("/")
               if(fs.length == 1)      (fs(0).toInt-1,            -1,            -1)
               else if(fs.length == 2) (fs(0).toInt-1, fs(1).toInt-1,            -1)
@@ -54,7 +60,7 @@ final object Models {
 
       file.close
 
-      (new RawModel(vertices, uvVertices, normals, faces)).toDisplayModel
+      (new RawModel(vertices.result(), /*//uv/uvVertices.result(),*/ normals.result(), faces.result())).toDisplayModel
     })
 
     def preload(files: Array[File], max: Int = -1): Unit = {
@@ -87,9 +93,9 @@ final object Models {
     def maxCoord(v: VecLike): Vec = Vec(max(x, v.x), max(y, v.y), max(z, v.z))
     def span(v: VecLike): Vec = Vec(abs(x-v.x), abs(y-v.y), abs(z-v.z))
     def avg(): Double = (x+y+z)/3d
-    def setX(d: Double): Vec = Vec(d, y, z)
-    def setY(d: Double): Vec = Vec(x, d, z)
-    def setZ(d: Double): Vec = Vec(x, y, d)
+    def withX(d: Double): Vec = Vec(d, y, z)
+    def withY(d: Double): Vec = Vec(x, d, z)
+    def withZ(d: Double): Vec = Vec(x, y, d)
     def zeroX(): Vec = Vec(0, y, z)
     def zeroY(): Vec = Vec(x, 0, z)
     def zeroZ(): Vec = Vec(x, y, 0)
@@ -136,9 +142,9 @@ final object Models {
   implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos, it.rot, it.size) //meh
   implicit def imutableTransform(mt: MutableTransform): Transform = Transform(mt.pos, mt.rot, mt.size) //meh
   case class MutableTransform(var pos: Vec = vec0, var rot: Vec = vec0, var size: Vec = vec0) extends TransformLike {
-    def setPosX(d: Double): Unit = { pos = pos.setX(d) }
-    def setPosY(d: Double): Unit = { pos = pos.setY(d) }
-    def setPosZ(d: Double): Unit = { pos = pos.setZ(d) }
+    def setPosX(d: Double): Unit = { pos = pos.withX(d) }
+    def setPosY(d: Double): Unit = { pos = pos.withY(d) }
+    def setPosZ(d: Double): Unit = { pos = pos.withZ(d) }
 
     def +=(vector: TransformLike): Unit = {
       pos = pos + vector.pos
@@ -183,7 +189,7 @@ final object Models {
         coreTransform: MutableTransform = transform000): Model = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
   }
   
-  class RawModel(vertices: Vertices, uvVertices: UVVertices, normals: Normals, faces: Faces) {
+  class RawModel(vertices: Vertices, /*//uv/uvVertices: UVVertices,*/ normals: Normals, faces: Faces) {
     // Compile model to display list for faster drawing
     def toDisplayModel = 
       new DisplayModel(glDisplayList {
@@ -203,7 +209,7 @@ final object Models {
   
           for((vi, vti, vni) <- f) {
             if(vni != -1) glNormal3d(normals(vni).x, normals(vni).y, normals(vni).z)
-            if(vti != -1) glTexCoord2d(uvVertices(vti).u, uvVertices(vti).v)
+            //uv/if(vti != -1) glTexCoord2d(uvVertices(vti).u, uvVertices(vti).v)
             glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
           }
         }
@@ -302,10 +308,12 @@ final object Models {
       if (fullyVisible) {
         for(out <- outs) out.init()
       }
+      for(in <- ins) in.process
     }
     
     def render() {
-      quad(Coord(position.x, position.y, 100, 100), texture, false, false, visible)      
+      quad(Coord(position.x, position.y, 100, 100), texture, false, false, visible)
+      for(in <- ins) in.render
     }
   }
   
@@ -384,7 +392,7 @@ final object Models {
     
     def init(): Unit = nodes.head.init()
     
-    def process(beat: Boolean): Unit = {
+    def process(implicit data: RenderProcessData): Unit = {
       var i = 0
       do {        
         val node = nodes(i)
@@ -416,7 +424,7 @@ final object Models {
         
         i += 1
       } while(i < currentLength && !nodes(i).paused)
-      if(beat && i < nodes.length && (i >= currentLength || nodes(i).paused)) { 
+      if(data.beat && i < nodes.length && (i >= currentLength || nodes(i).paused)) { 
         if(nodes(i).paused) {
           if(nodes(i-1).visible > 0.9) {
             nodes(i).unPause

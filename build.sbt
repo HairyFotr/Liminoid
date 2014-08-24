@@ -28,3 +28,10 @@ scalacOptions ++= Seq(
   "-optimise",
   "-Yinline",
   "-Yclosure-elim")
+
+initialCommands := """
+  import java.io.File
+  import math._
+  import org.ljudmila.liminoid._
+  import Utils._
+"""

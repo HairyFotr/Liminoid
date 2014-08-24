@@ -92,7 +92,7 @@ sealed trait Sequence[T] {
   }
 }
 
-case class TexSequence(
+final case class TexSequence(
     val path: String,
     var active: Boolean = true,
     var delay: Double = 1000/24d, //24fps
@@ -101,13 +101,13 @@ case class TexSequence(
     var selfDestruct: Boolean = false,
     val ext: String = ".png") extends Sequence[Int] {
 
-  var last = ""
+  var prev = ""
   override def get(): Int = {
     val name = frames(cursor)
     val out = Texture(name)
-    if(selfDestruct && name != last) {
-      if(last.nonEmpty) delete(last)
-      last = name
+    if(selfDestruct && name != prev) {
+      if(prev.nonEmpty) delete(prev)
+      prev = name
     }
     out
   }
@@ -117,8 +117,8 @@ case class TexSequence(
   def clear(): Unit = { for(f <- frames) delete(f) }
 }
 
-import Model._
-case class OBJSequence(
+import Models._
+final case class OBJSequence(
     val path: String,
     val transform: MutableTransform = transform001,
     val transformVector: MutableTransform = transform000,

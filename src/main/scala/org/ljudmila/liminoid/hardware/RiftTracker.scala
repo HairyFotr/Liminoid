@@ -2,7 +2,7 @@ package org.ljudmila.liminoid.hardware
 
 import de.fruitfly.ovr.OculusRift
 import java.io.File
-import org.ljudmila.liminoid.Model.{ Rotation, rotation0 }
+import org.ljudmila.liminoid.Models.{ Rotation, rotation0 }
 
 object RiftTracker {
   def init(): Unit = { } //Foo

@@ -6,7 +6,7 @@ import org.bytedeco.javacpp.opencv_highgui._
 import collection.mutable
 import scala.actors.Futures._
 import System.err
-import org.ljudmila.liminoid.Model
+import org.ljudmila.liminoid.Models.{ Pixel, Color }
 import org.ljudmila.liminoid.Utils.thread
 
 object Camera {
@@ -49,9 +49,9 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   import org.lwjgl.opengl.GL11._
   import org.lwjgl.opengl.GL12._
   private def captureFrameImg(): IplImage = cam.grab
-  var lastTextureID = -1
+  var prevTextureID = -1
   private def captureFrameTex(img: IplImage): Int = {
-    if(img == null) return lastTextureID // fixes ocassional dropped frame
+    if(img == null) return prevTextureID // fixes ocassional dropped frame
     
     //Generate texture and bind ID
     val textureID = glGenTextures
@@ -70,7 +70,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     
     //Return the texture ID so we can bind it later again
     //println(textureID)
-    lastTextureID = textureID
+    prevTextureID = textureID
     textureID
   }
 
@@ -85,7 +85,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
   }
 
-  def getDiffBlob(pixels1: Array[Int]): Vector[Model.Pixel] = {
+  def getDiffBlob(pixels1: Array[Int]): Vector[Pixel] = {
     val img = captureFrameImg()
     if(img == null) return Vector.empty
     val image = img.getBufferedImage
@@ -102,9 +102,9 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
       //(((c1 >> 16) & 255) - ((c2 >> 16) & 255))
     ) /// 3
 
-    var pix = Vector.empty[Model.Pixel]
+    var pix = Vector.empty[Pixel]
     for(i <- 0 until size by 2) if((i/w)%2 == 0 && i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold)
-      pix :+= Model.Pixel(sx = i%w, sy = i/w, color = Model.Color.BGR(pixels2(i)))
+      pix :+= Pixel(sx = i%w, sy = i/w, color = Color.BGR(pixels2(i)))
 
     pix
   }
@@ -130,7 +130,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     while(tex == -1 || tex == camTex) {
       tex = captureFrameTex(captureFrameImg())
       limit -= 1
-      Thread.sleep(20)
+      Thread.sleep(10)
     }
 
     tex

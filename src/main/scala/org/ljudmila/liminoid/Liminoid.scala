@@ -18,11 +18,11 @@ import Thread.sleep
 import Render.{ render3D, render2D }
 import GLAddons._
 
-import Model.{ Transform, OBJModel, quad, Coord, Point }
-import Model.{ Color, grey, grey0, grey1 }
-import Model.{ Vec, vec, vecx, vecy, vecz, vec0, vec05, vec1, vec2, vec3, vec4, vec5, vec90x }
-import Model.{ Rotation, rotation0 }
-import Model.{ Thread, ThreadNetwork, ThreadNode, Line, RenderProcessData }
+import Models.{ Transform, OBJModel, quad, Coord, Point, Model, Pixel }
+import Models.{ Color, grey, grey0, grey1 }
+import Models.{ Vec, vec, vecx, vecy, vecz, vec0, vec05, vec1, vec2, vec3, vec4, vec5, vec90x }
+import Models.{ Rotation, rotation0 }
+import Models.{ Thread, ThreadNetwork, ThreadNode, Line, RenderProcessData }
 
 final object Liminoid {
   val project = "Liminoid"
@@ -203,8 +203,7 @@ final object Liminoid {
   val Setup = 0
   val Radiolarians = 1
   val Mandalas = 2
-  val CircleSpace = 3
-  val BackSpace = 4
+  val BackSpace = 3
   val PhaseTerminator = BackSpace // Last phase
   var phaseTimer = now // Tracks time from the beginning of phase
 
@@ -285,7 +284,7 @@ final object Liminoid {
     
   // The other radiolaria
   lazy val quasiradiolarians =
-    Array[Model.Model](
+    Array[Model](
       /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
         transform = Transform(pos = startPos + Vec(-45, 21, 2), size = vec(0.6)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
@@ -425,43 +424,17 @@ final object Liminoid {
   var whiteFlashTimer = -1
   var startHeart = -1
   var startDustHeart = -1
-  var lastHeartpos = 0d
   lazy val blackHeartMandala     = Texture("seq/Srcni_utrip_CO/Srcni_utrip_CO_01290.png")
   lazy val blackHeartDustMandala = Texture("seq/Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png")
   lazy val whiteHeartMandala     = Texture("seq/Srcni_utrip_BO/Srcni_utrip_BO_05848.png")
   var zoom = 0d
-
-  /// CircleSpace phase objects ///
-  lazy val sphereTex = Texture("img/sphere.png")
-  lazy val sphereMandala =
-    TexSequence("seq/optipng_Sfera_plasc_I",
-    delay = 1000/10d,
-    stopAtEnd = false,
-    bounce = true)
-    
-  def newStar(): Model.Model = OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
-    transform = Transform(rot = Vec.random, size = vec05 + (Vec.random/3)),
-    transformVector = Transform(rot = Vec.random),
-    color = Color(0.2, 0.2, 0.2),
-    phi = nextDouble*math.Pi*2, theta = nextDouble*math.Pi*2)
-  var stars = Vector.empty[Model.Model]
-
-  var displayListSphere = -1
-
-  lazy val magnets =
-    Vector.fill(15)(
-      OBJModel("obj/UV_sfera/UV_sfera_I.obj").toModel(
-        transform = Transform(rot = Vec.random, size = vec2),
-        transformVector = Transform(rot = Vec.random),
-        color = grey(0.3),
-        phi = nextDouble*math.Pi*2, theta = nextDouble*math.Pi*2))
 
   // BackSpace phase objects
   var wallTex = -1
   var backCamSnapSeq = TexSequence("seq/BackSpace/", delay = 1000/15d, stopAtEnd = false, bounce = true)
   var backCamSnap = Texture.getImage("seq/BackSpace/1.png")
   var backCamSnapTex = backCamera.getTextureIDWait
-  var backPixels = Vector.empty[Model.Pixel]
+  var backPixels = Vector.empty[Pixel]
   var backpixelBuffer = Array[Array[Boolean]]()
   var backPixelDrop = false
   var backPixelMerge = false
@@ -732,7 +705,7 @@ final object Liminoid {
           if(firstTresenje) {
             fade1 = 0
           }
-          def shake(m: Model.Model): Transform = {
+          def shake(m: Model): Transform = {
             val newPos =
               if(tresenje)
                 m.transform.pos + Vec(
@@ -865,7 +838,6 @@ final object Liminoid {
 
           //if(fade < 1) quad(Coord(posx,posy, w,h), blackHeartDustMandala, alpha = 1-fade*2+heart/5)
         } else {
-          //gotoPhase(CircleSpace)
           gotoPhase(BackSpace)
         }
         val sinceStart = since(phaseTimer)
@@ -907,154 +879,7 @@ final object Liminoid {
 
         backBlendRender
 
-      
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      case CircleSpace => /////////////////////////////////////////////////////////////////////////
-        initPhase {
-          fade1 = 0
-          frames = 0
-          stars = Vector.fill(30)(newStar)
-          blackMandala.reset
-          blackMandala.active = true
-          //sphereMandala.reset
-          sphereMandala.active = true
-        }
-        val radius = 400
-        glClear(1)
-        
-        //Render.cam.lookAt(Vec3(testNum1, 0, 0))
-        Render.cam.setPerspective(50, winWidth/winHeight.toFloat, 0.25f, 7000f)
-        Render.cam.lookAt(Vec3(Render.cam.pos.x, Render.cam.pos.y, Render.cam.pos.z+500+testNum3))
-        Render.cam.render
-        render3D {
-          glColor3d(1, 1, 1)
-          glCapability(GL_TEXTURE_2D) {
-            glBindTexture(GL_TEXTURE_2D, sphereMandala())//sphereTex)//
-            glMatrix {
-              glRotatef(testNum1*0-90, 1, 0, 0)
-              glRotatef(testNum2*0,    0, 1, 0)
-              glRotatef(testNum3*0,    0, 0, 1)
-              //glScaled(testNum3*0.01+1, testNum3*0.01+1, testNum3*0.01+1)
-              import org.lwjgl.util.glu.GLU
-              def render() = {
-                gluQuadrics.texturedSphere.draw(645+testNum1*10, 100, 100)
-                //glDisable(GL_LIGHTING)
-                glColor3d(1, 1, 1)
-                gluQuadrics.sphere.setDrawStyle(GLU.GLU_LINE)
-                gluQuadrics.sphere.draw(635+testNum1*10, 100, 100)
-                ///glEnable(GL_LIGHTING)
-              }
-  
-              render
-              /*if(testNum1 != 0 || testNum2 != 0) {
-              } else if(frames == 0) {
-                displayListSphere = glGenLists(1)
-                glNewList(displayListSphere, GL_COMPILE)
-                  render
-                  //gluQuadrics.sphere.draw(645, 100, 100)
-                glEndList()
-              } else {
-                glCallList(displayListSphere)
-              }*/
-            }
-          }
-        }
-        val ddd = 4
-        Render.cam.rot = Vec3(-rotation.pitch/ddd, rotation.yaw/ddd, rotation.roll/ddd)
 
-        def getVec(phi: Double, theta: Double): Vec = Vec(
-          x = (cos(theta)*cos(phi)) * radius,
-          y = (cos(theta)*sin(phi)) * radius,
-          z = (sin(theta)) * radius)
-          
-        def getDiff(phi: Double, theta0: Double, theta1: Double): Vec =
-          getVec(phi, theta1) - getVec(phi, theta0)
-          
-        def zeroDist(v: Vec): Double = v distance vec0
-
-        /*for(magnet <- magnets) {
-          val phi = magnet.phi
-          val theta0 = magnet.theta
-          val theta1 = magnet.theta + 0.1
-
-          if(frames == 0) {
-            magnet.transform.pos = getVec(phi, theta1)
-          } else if(!pause) {
-
-          }
-
-          val zeroDist = magnet.transform.pos distance vec0
-          if(abs(zeroDist - radius) > 0) {
-            magnet.transform.pos = magnet.transform.pos * (radius/zeroDist)
-          }
-
-          magnet.render(color = color0)
-        }*/
-
-        //if(frames % 30 == 0) {
-          //stars :+= newStar
-        //}
-
-        /*for(star <- stars) {
-          // Great circles: http://paulbourke.net/geometry/circlesphere/
-          val phi = star.phi
-          val theta0 = star.theta
-          val theta1 = star.theta + 0.1
-
-          if(frames == 0) {
-            star.transform.pos = getVec(phi, theta1)
-          } else if(!pause) {
-            val magnet = magnets.minBy { magnet => (magnet.transform.pos distance star.transform.pos) - magnet.transform.size.avg }
-            val magdist = magnet.transform.pos distance star.transform.pos
-
-            val diff = getDiff(phi, theta0, theta1)
-            val magthresh = 5
-            val ratio = if(magdist < magthresh) math.pow((magthresh-magdist)/magthresh, 3000) else 1
-            star.transform.pos += diff*ratio + magnet.transform.pos*(1 - ratio)
-            star.transformVector.pos = diff
-            if(magdist < magnet.transform.size.avg && 0.01.prob) {
-              star.transform.pos = Vec.random
-              magnet.transform.size += Vec.randomUniform01/50
-            }
-            
-            val zeroD = zeroDist(star.transform.pos)
-            if(abs(zeroD - radius) > 0) {
-              star.transform.pos = star.transform.pos * (radius/zeroD)
-            }
-            star.theta = theta1
-            star.phi += nextDouble*0.005
-          }
-          star.render(color = color0)
-          star.trail += star.transform.pos.copy()
-          star.trail.render()
-        }*/
-
-        //quasiradiolarians.head.render(color = grey(0.5), alpha = 0.25, transform = Transform(pos = Vec0, size = Vec05))
-        render3D {
-          glPrimitive(GL_LINES) {
-            glColor3f(1, 0, 0)
-            glVertex3d(-100,    0,    0)
-            glVertex3d(+100,    0,    0)
-            glColor3f(0, 1, 0)
-            glVertex3d(   0, -100,    0)
-            glVertex3d(   0, +100,    0)
-            glColor3f(0, 0, 1)
-            glVertex3d(   0,    0, -100)
-            glVertex3d(   0,    0, +100)
-            glColor3f(0, 0, 0)
-            glVertex3d(-100, -100, -100)
-            glVertex3d(+100, +100, +100)
-            glVertex3d(   0,    0,    0)
-            glVertex3d(+100, +100, +100)
-            glVertex3d(   0,    0,    0)
-            glVertex3d(-100, -100, -100)
-          }
-        }
-        
-        backBlendRender
-
-      
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       case BackSpace => ///////////////////////////////////////////////////////////////////////////
@@ -1247,8 +1072,11 @@ final object Liminoid {
       Sound.play("razpadheart1")
       println("BackSpace done...")
     }
-    if(isKeyDown(KEY_M)) { 
+    if(isKeyDown(KEY_C)) { 
       renderMode = (if(renderMode == Mono) Stereo else Mono); sleep(200) 
+    }
+    if(isKeyDown(KEY_M)) { 
+      Sound.mute() 
     }
 
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {

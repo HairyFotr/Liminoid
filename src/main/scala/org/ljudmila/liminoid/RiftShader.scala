@@ -15,8 +15,7 @@ import org.lwjgl.opengl._
 import GLAddons._
 
 // Adapted from https://developer.oculusvr.com/forums/viewtopic.php?f=20&t=88&start=10
-
-class RiftShader(screenWidth: Int, screenHeight: Int) {
+final class RiftShader(screenWidth: Int, screenHeight: Int) {
   val Left  = -1
   val Right = +1
   
@@ -128,7 +127,7 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
   val K3 = 0.0f
   
   def renderDistortedEye(eye: Int, x: Float, y: Float, w: Float, h: Float): Unit = {
-    val as = w/h
+    val aspectRatio = w/h
     val scaleFactor = 1.0f
     val eyeHoleScale = 1.75f
     
@@ -142,8 +141,8 @@ class RiftShader(screenWidth: Int, screenHeight: Int) {
     
     glUniform2f(LensCenterLocation, x + (w + DistortionXCenterOffset * 0.5f)*0.5f, y + h*0.5f)
     glUniform2f(ScreenCenterLocation, x + w*0.5f, y + h*0.5f)
-    glUniform2f(ScaleLocation, (w/2.0f) * scaleFactor, (h/2.0f) * scaleFactor * as)
-    glUniform2f(ScaleInLocation, (eyeHoleScale/w), (eyeHoleScale/h) / as)
+    glUniform2f(ScaleLocation, w*0.5f * scaleFactor, h*0.5f * scaleFactor * aspectRatio)
+    glUniform2f(ScaleInLocation, (eyeHoleScale/w), (eyeHoleScale/h) / aspectRatio)
 
     glUniform4f(HmdWarpParamLocation, K0, K1, K2, K3)
     

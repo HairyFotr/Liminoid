@@ -2,20 +2,20 @@ package org.ljudmila.liminoid
 
 import math._
 
-object Vec3 {
+final object Vec3 {
   def apply(): Vec3 = new Vec3
   def apply(x: Float, y: Float, z: Float): Vec3 = new Vec3(x, y, z)
 }
-class Vec3(var x: Float, var y: Float, var z: Float) {
+final class Vec3(var x: Float, var y: Float, var z: Float) {
   def this() = this(0f, 0f, 0f)
   
   private def setPoints(v: Vec3): Unit = { x=v.x; y=v.y; z=v.z; }
   private def setPoints(x: Float, y: Float, z: Float): Unit = { this.x=x; this.y=y; this.z=z; }
   //private def setPoints(p: Array[Float]): Unit = setPoints(p(0), p(1), p(2))
   
-  override def clone: Vec3 = Vec3(x, y, z)
+  def copy(): Vec3 = Vec3(x, y, z)
   private def each(f: Float => Float): Unit = { x = f(x); y = f(y); z = f(z); }
-  private def map(f: Float => Float): Vec3 = { val out = this.clone; out.each(f); out }
+  private def map(f: Float => Float): Vec3 = { val out = this.copy; out.each(f); out }
   def applyVector(v: Vec3, multi: Float = 1): Unit = setPoints(this + (v * multi))
   
   def unary_- : Vec3       = Vec3(-x, -y, -z)
@@ -50,16 +50,16 @@ class Vec3(var x: Float, var y: Float, var z: Float) {
   override def toString: String = "%.2f, %.2f, %.2f".format(x, y, z)
 }
 
-class BoundingBox(vec: Vec3) {
-    var min = vec.clone
-    var max = vec.clone
+final class BoundingBox(vec: Vec3) {
+    var min = vec.copy
+    var max = vec.copy
     
     def this(v1: Vec3, v2: Vec3) = {
-        this(v1.clone)
+        this(v1.copy)
         this += v2
     }
     def this(points: Seq[Vec3]) = {
-        this(points(0).clone)
+        this(points(0).copy)
         for(i <- 1 until points.length) this += points(i)
     }
     
@@ -91,16 +91,16 @@ class BoundingBox(vec: Vec3) {
         this += b.max
     }
     def ++(b: BoundingBox): BoundingBox = { // merge boxes
-        val box = this.clone
+        val box = this.copy
         box += b
         box
     }
     def offsetBy(v: Vec3): BoundingBox = { // offset box
-        val box = this.clone
+        val box = this.copy
         box.min += v
         box.max += v
         box
     }
     
-    override def clone: BoundingBox = new BoundingBox(min.clone, max.clone)
+    def copy: BoundingBox = new BoundingBox(min.copy, max.copy)
 }

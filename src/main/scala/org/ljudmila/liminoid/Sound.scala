@@ -5,7 +5,7 @@ import java.io.BufferedInputStream
 import javazoom.jl.player.Player
 import Utils.{ thread, getFile }
 
-object Sound {
+final object Sound {
   val folder = "snd/"
   private var muted = false
   def mute(): Unit = synchronized {
@@ -16,8 +16,8 @@ object Sound {
     muted = false
   }
   val soundMap = getFile(folder + "list.txt").map { line =>
-    val name :: file :: _ = line.split(" ").toList
-    (name, folder + file)
+    val (name, file) = line.splitAt(line.indexOf(' '))
+    (name, folder + file.trim)
   }.toMap
   
   def init(): Unit = synchronized {

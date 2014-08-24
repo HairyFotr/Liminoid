@@ -49,9 +49,9 @@ object PulseSensor {
 
   var beat = false
 
-  var lastBeat = now-1000
+  var prevBeat = now-1000
   var avgBeat = 1000d // rolling average beat
-  var lastBeatAlien = false // was last beat alien
+  var prevBeatAlien = false // was last beat alien
 
   // just beat it... just beat it
   var fakeTimer = 0
@@ -67,14 +67,14 @@ object PulseSensor {
         false
       }
     } else synchronized {
-      val sinceLastBeat = since(lastBeat)
+      val sinceLastBeat = since(prevBeat)
 
       var out = beat
       beat = false
       
       // Ignore alien heartbeats (sorry aliens)
-      if(lastBeatAlien) {
-        lastBeatAlien = false
+      if(prevBeatAlien) {
+        prevBeatAlien = false
       } else {
         avgBeat = avgBeat*0.99 + sinceLastBeat*0.01
         if(avgBeat < 400) avgBeat = 400
@@ -83,13 +83,13 @@ object PulseSensor {
 
       if(sinceLastBeat < avgBeat*0.65) {
         out = false
-        lastBeatAlien = true
+        prevBeatAlien = true
       } else if(sinceLastBeat > avgBeat * 2) {
         out = true
-        lastBeatAlien = true
+        prevBeatAlien = true
       }
 
-      if(out) lastBeat = now
+      if(out) prevBeat = now
 
       //println((out, lastBeatAlien, avgBeat))
 

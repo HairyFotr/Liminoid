@@ -8,7 +8,7 @@ final object Utils {
   implicit class D(val d: Double) { def prob(): Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
   implicit class F(val f: Float) { def prob(): Boolean = util.Random.nextFloat < f }
   implicit class I(val i: Int) { 
-    def second(): Int = if(i == 1) i*1000 else throw new IllegalArgumentException
+    def second(): Int = if(i == 1) i.seconds else throw new IllegalArgumentException
     def seconds(): Int = i*1000
   }
   

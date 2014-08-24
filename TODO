@@ -19,6 +19,8 @@ TASKS
 /// check for resolution dependence (especially 2D, I think)
 /// some things belong in config files (which?)
 /// make camera setup app / autodetect
+/// am I deleting all used textures? (camera?)
+/// why is so much stuff in Arduino synchronized?
 
 SOME NOTES
   prehod med fazami
@@ -36,7 +38,7 @@ SOME NOTES
     menger sponge feathered texture on radiolarians!!!
 
   realne koordinate stene
-  senca na steni
+  senca na steni / roka pred kamni
   floaterji so bolj na mestu
   radiolarians gredo na pogled proti tebi
   radiolarian s kuglo
@@ -60,8 +62,4 @@ SOME NOTES
         brightness adjusting
 
   Libraries
-    find sbt versions of libs
-      opencv/javacv
-      PNGDecoder (part of lwjgl?)
-      jlplayer
     I've compiled a custom lib rift, that skips display detection (and then lost it?)

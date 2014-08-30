@@ -39,6 +39,7 @@ final object GLAddons {
 
     displayList
   }
+  def glBlendFuncTheUsual(): Unit = glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   object gluQuadrics {
     import org.lwjgl.util.glu.{ Sphere, Cylinder, Disk, PartialDisk }
     lazy val smoothSphere = {

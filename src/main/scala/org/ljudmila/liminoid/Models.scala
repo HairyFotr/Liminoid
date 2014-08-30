@@ -243,9 +243,8 @@ final object Models {
       render3D {
         import transform._
         glCapability(GL_DEPTH_TEST, GL_LIGHTING, GL_BLEND) {
-          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-          
-          if(tex != -1) {
+        glBlendFuncTheUsual
+        if(tex != -1) {
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, tex)
           } else {
@@ -270,35 +269,107 @@ final object Models {
 
   case class RenderProcessData(
       beat: Boolean = false)
+
+  case class RenderRenderData(
+      camx: Double, camy: Double,
+      camw: Double, camh: Double)
       
   trait RenderObject {
     def init(): Unit
     def process(implicit data: RenderProcessData): Unit
-    def render(): Unit
+    def render(implicit data: RenderRenderData): Unit
   }
 
-  case class ThreadNetwork(nodes: Seq[ThreadNode]) extends RenderObject {
+  object ThreadNetwork {
+    def apply(str: String): ThreadNetwork = {
+      var initNodes = Vector.empty[Point]
+      var nodes = Vector.empty[Point]
+      var lineStr = Vector.empty[(String, String)]
+      var lines = Vector.empty[Line]
+		  var liminoidTexMap = Map.empty[Point, Int] withDefaultValue -1
+      var phase = 0
+      
+      str.split("\n").map{ line =>
+        line.replaceAll("[ \"]", "")
+      }.filterNot{ line => 
+        line.isEmpty() || line.startsWith("#") || line.startsWith("//")
+      }.map{ line =>
+        if (line == "-") phase += 1
+        else phase match {
+          case 0 =>
+            initNodes :+= Point(line.split(","))
+          case 1 =>
+            val strings = line.split(",")  
+            val node = Point(strings)
+            nodes :+= node 
+            if(strings.size > 2) liminoidTexMap += node -> Texture(strings(2))
+          case 2 =>
+            val strings = line.split("->")
+            def parse(str: String): Point = 
+              if(str(0) != 'i') nodes(str.toInt)
+              else initNodes(str.tail.toInt)
+
+            lines :+= Line(parse(strings(0)), parse(strings(1)))
+        }
+      }
+
+      val threadMap = lines.map{ line => line -> Thread.generateMultiThread(3)(line) }.toMap
+
+      val threadNodes = 
+          nodes.map{ node => 
+            ThreadNode(
+              node,
+              ins  = lines.filter{ _.p2 eq node }.flatMap(threadMap),
+              outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
+              liminoidTexMap(node))
+          }
+        val initThreadNodes = 
+          initNodes.map{ node => 
+            ThreadNode(
+              node,
+              ins  = Vector.empty,
+              outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
+              liminoidTexMap(node))
+          }
+        
+        return ThreadNetwork(initThreadNodes, threadNodes, lines);
+    }
+  }
+
+  case class ThreadNetwork(initNodes: Vector[ThreadNode], nodes: Vector[ThreadNode], lines: Vector[Line]) extends RenderObject {
     def init(): Unit = {
-      nodes.foreach(_.init());
-      val noparentThreads = nodes.flatMap(_.ins).toSet &~ nodes.flatMap(_.outs).toSet;
-      noparentThreads.foreach(_.init());
+      nodes.foreach { node => 
+        node.init()
+      }
+      //val noparentThreads = nodes.flatMap(_.ins).toSet &~ nodes.flatMap(_.outs).toSet;
+      initNodes.foreach { node => 
+        node.init()
+        node.outs.foreach(_.init())
+      }
     }
     def process(implicit data: RenderProcessData): Unit = {
+      initNodes.foreach(_.process);
       nodes.foreach(_.process);
     }
-    def render(): Unit = {
-      nodes.foreach(_.render());
+    def render(implicit data: RenderRenderData): Unit = {
+      initNodes.foreach(_.render);
+      nodes.foreach(_.render);
     }
   }
 
   case class ThreadNode(
       position: Point,
-      ins: Seq[Thread],
-      outs: Seq[Thread],
+      ins: Vector[Thread],
+      outs: Vector[Thread],
       texture: Int) extends RenderObject {
     
-    def visible = ins.map{ thread => min(thread.visible/2d, 1d) }.sum
-    def fullyVisible = ins.minBy{ thread => thread.visible }.visible >= 1d
+    var outsInitialized = false
+    
+    def visible = 
+      if(ins.isEmpty) 0 else ins.map{ thread => min(thread.visible/3, 1d) }.sum
+        
+    def fullyVisible = 
+      ins.isEmpty || ins.maxBy{ thread => thread.visible }.visible >= 1d
     
     def init(): Unit = {
       //
@@ -306,24 +377,50 @@ final object Models {
     
     def process(implicit data: RenderProcessData) {
       if (fullyVisible) {
-        for(out <- outs) out.init()
-      }
-      for(in <- ins) in.process
+        if (!outsInitialized) {
+      	  println("Outs initialized")
+          outsInitialized = true
+          for(out <- outs) out.init()
+        }
+        for(out <- outs) out.process
+      } 
+      //for(in <- ins) if(in.isInitialized) in.process
     }
-    
-    def render() {
-      quad(Coord(position.x, position.y, 100, 100), texture, false, false, visible)
-      for(in <- ins) in.render
+
+    def render(implicit data: RenderRenderData) {
+      val liminoidSize = 100
+      val coords = Coord(position.x-liminoidSize/2, position.y-liminoidSize/2, liminoidSize, liminoidSize)
+      quad(coords, texture, false, false, visible,
+          preRender = {
+            glPushMatrix
+            glTranslated(data.camx, data.camy, 0)
+            glScaled(data.camw/1920d, data.camh/1080d, 1)
+          },
+          postRender = {
+            glPopMatrix
+          })
+      glCapability(GL_BLEND) {
+        glBlendFuncTheUsual
+        render2D {
+          glPushMatrix
+          glTranslated(data.camx, data.camy, 0)
+          glScaled(data.camw/1920d, data.camh/1080d, 1)
+          for(in <- ins) in.render
+          glPopMatrix
+        }
+      }
     }
   }
-  
-  
+
+  final object Point {
+    def apply(str: Array[String]): Point = Point(str(0).toDouble, str(1).toDouble)
+  }  
   case class Point(x: Double, y: Double) {
     def toTuple() = (x, y)
   }
   object ThreadPoint {
     val visibilityThreshold = 0.0001d
-    val visibilityVelocity = 0.003d
+    val visibilityVelocity = 0.002d
   }
   case class ThreadPoint(var desiredx: Double, var desiredy: Double) {
     var x: Double = desiredx
@@ -354,6 +451,12 @@ final object Models {
     def dist(that: ThreadPoint): Double = sqrt(pow2(this.x-that.x) + pow2(this.y-that.y))
   }
   
+  final object Line {
+    def apply(a: Array[String]): Line = 
+      Line(
+        Point(a(0).toDouble, a(1).toDouble), 
+        Point(a(2).toDouble, a(3).toDouble))
+  }
   case class Line(p1: Point, p2: Point) {
     def line = Vector(p1, p2)
   }
@@ -367,12 +470,19 @@ final object Models {
         Thread(l.line.sliding(2).flatMap { case s =>
           val (sx, sy) = s(0).toTuple
           val (dx, dy) = s(1).toTuple
-          val segments = 40d
+          val segments = max(5, math.hypot(sx-dx, sy-dy)/20d);
           var prev: Option[ThreadPoint] = None
           Vector.tabulate(segments.toInt){ i => 
             val (ratio1, ratio2) = getRatio(1 - i/segments)
-            val out = ThreadPoint(sx*ratio1+dx*ratio2, sy*ratio1+dy*ratio2)
-            if(i == segments.toInt-1) out.pause
+            val out = 
+              if(i == 0)
+                ThreadPoint(sx, sy)
+              else if(i == segments.toInt-1)
+                ThreadPoint(dx, dy)
+              else
+                ThreadPoint(sx*ratio1+dx*ratio2 + TableRandom.nextGaussian/7d, sy*ratio1+dy*ratio2 + TableRandom.nextGaussian/7d)
+
+            //if(i == segments.toInt-1) out.pause
             prev.foreach { _.children = Vector(out) }
             prev = Some(out)
             out
@@ -387,21 +497,26 @@ final object Models {
   case class Thread(var nodes: Vector[ThreadPoint]) {
     var currentLength = 1
     
-    def visible(): Double = nodes.last.visible
-    def fullyVisible(): Boolean = nodes.last.fullyVisible
+    def nodesLast = nodes.last//(nodes.size-2)
+    def visible(): Double = nodesLast.visible
+    def fullyVisible(): Boolean = nodesLast.fullyVisible
     
-    def init(): Unit = nodes.head.init()
+    var isInitialized = false
+    def init(): Unit = {
+      isInitialized = true
+      nodes.head.init()
+    }
     
     def process(implicit data: RenderProcessData): Unit = {
       var i = 0
-      do {        
+      do {
         val node = nodes(i)
         //node.x += node.xv
         //node.y += node.yv
-        node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussian/9d
-        node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussian/9d
-        node.desiredx = node.desiredx*0.96 + node.x*0.04
-        node.desiredy = node.desiredy*0.96 + node.y*0.04
+        node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussian/4d
+        node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussian/4d
+        //node.desiredx = node.desiredx*0.96 + node.x*0.04
+        //node.desiredy = node.desiredy*0.96 + node.y*0.04
         if(i > 0) {
           val prev = nodes(i-1)
           val dx = (node.desiredx-node.x)
@@ -412,8 +527,9 @@ final object Models {
         node.i += node.iv
         node.iv += node.ivv
         node.visible += node.visiblev
-        if(node.i > 0.9)      node.ivv = -0.01
+        if(node.i > 0.9) node.ivv = -0.01
         else if(node.i < 0.75) node.ivv = +0.01
+        
         if(node.i < 0.6) node.i = 0.6
         
         /*if(i < nodes.length) {
@@ -432,21 +548,24 @@ final object Models {
         } else {
           // Init next node
           currentLength += 1
-          if(currentLength >= nodes.length) currentLength = nodes.length-1
+          if(currentLength > nodes.length) currentLength = nodes.length
           nodes(i).init()
         }
       }
     }
     
-    def render(): Unit = {
+    def render(implicit data: RenderRenderData): Unit = {
       glLineWidth((2d + (testNum1/10d)*(osc1+1)).toFloat)
       glPrimitive(GL_LINE_STRIP) {
         var i = 0
         while(i < nodes.length && nodes(i).isVisible) {
           val node = nodes(i)
-          if(i > 0 && node.visible < 1d) {
+          if(node.y < 0-20 || node.y > 1080+20) {
+            //nop
+          } else if(i > 0 && node.visible < 1d) {
             val prevNode = nodes(i-1)
             glColor4d(node.i, node.i, node.i, node.visible)
+            //glColor3d(node.i, node.i, node.i)
             val (ratio1, ratio2) = getRatio(node.visible)
             glVertex2d(node.x*ratio1 + prevNode.x*ratio2, node.y*ratio1 + prevNode.y*ratio2)
           } else {
@@ -512,9 +631,13 @@ final object Models {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
 
-  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1d, color: Color = grey1, blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)): Unit = {
+  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1d, color: Color = grey1, blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
+      preRender: => Unit = {},
+      postRender: => Unit = {}): Unit = {
+    
     glDisable(GL_DEPTH_TEST)
     glDisable(GL_LIGHTING)
+    
     
     if(blend != (-1, -1)) {
       glEnable(GL_BLEND)
@@ -528,19 +651,24 @@ final object Models {
       glEnable(GL_TEXTURE_2D)
       glBindTexture(GL_TEXTURE_2D, texture)
     }
+
+    
     glColor4d(color.r, color.g, color.b, alpha)
 
     val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
     val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
     
     render2D {
+    	preRender
       glPrimitive(GL_QUADS) {
         glTexCoord2f(h1, v0); glVertex2d(coord.x,         coord.y+coord.h)
         glTexCoord2f(h0, v0); glVertex2d(coord.x+coord.w, coord.y+coord.h)
         glTexCoord2f(h0, v1); glVertex2d(coord.x+coord.w, coord.y)
         glTexCoord2f(h1, v1); glVertex2d(coord.x,         coord.y)
       }
+      postRender
     }
+
     if(texture != -1) glDisable(GL_TEXTURE_2D)
 
     if(blend != (-1, -1)) {

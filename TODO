@@ -5,7 +5,9 @@ TASKS
   1
     Position rocks onto the center sphere
     Encourage user to face center during radiolarian opening
-      could use: sound, fade out if looking around, slow down cam movement 
+      could use: sound, fade out if looking around, slow down cam movement
+    Where are the frames 5400 - 6480?
+    Sound and fadein to heartbeat 
   2
     Pulse sensor filtering or close average instead of direct input
   3
@@ -18,8 +20,11 @@ TASKS
   4
     Thread network with Liminal being nodes
     Liminal being transformation
+  5
+    Fly rock
 
 // General tasks:
+/// mouse replaces rift sensor, if missing
 /// split setup / rendering, as to get rid of lazy vals, and things like that
 /// check things for frame dependence instead of time dependence
 /// check for resolution dependence (especially 2D, I think)

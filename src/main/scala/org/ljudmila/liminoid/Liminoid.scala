@@ -22,10 +22,11 @@ import Models.{ Transform, OBJModel, quad, Coord, Point, Model, Pixel }
 import Models.{ Color, grey, grey0, grey1 }
 import Models.{ Vec, vec, vecx, vecy, vecz, vec0, vec05, vec1, vec2, vec3, vec4, vec5, vec90x }
 import Models.{ Rotation, rotation0 }
-import Models.{ Thread, ThreadNetwork, ThreadNode, Line, RenderProcessData }
+import Models.{ Thread, ThreadNetwork, ThreadNode, Line, RenderProcessData, RenderRenderData }
 
 final object Liminoid {
   val project = "Liminoid"
+  val settings = SettingsReader("Settings.txt")
   var startLiminoid = false
 
   var renderMode: RenderMode = Stereo
@@ -196,17 +197,25 @@ final object Liminoid {
   * Renders current frame
   */
 
-  lazy val liminoidTitle = Texture("img/liminoid.png")
-  lazy val liminoidTitleLoading = Texture("img/liminoidLoading.png")
+  lazy val liminoidSplash = Texture(settings("liminoidSplash"))
+  lazy val liminoidSplashLoading = Texture(settings("liminoidSplashLoading"))
   
   /// Liminoid phases ///
-  val Limbo = -1
-  val Setup = 0
-  val Radiolarians = 1
-  val Mandalas = 2
-  val BackSpace = 3
-  val ThreadPhase = 4
-  val PhaseTerminator = ThreadPhase // Last phase
+  val phases = Map(
+    "Limbo" -> -1,
+    "Setup" -> 0,
+    "Radiolarians" -> 1,
+    "Mandalas" -> 2,
+    "BackSpace" -> 3,
+    "Threads" -> 4
+  )
+  val Limbo = phases("Limbo")
+  val Setup = phases("Setup")
+  val Radiolarians = phases("Radiolarians")
+  val Mandalas = phases("Mandalas")
+  val BackSpace = phases("BackSpace")
+  val Threads = phases("Threads")
+  val PhaseTerminator = Threads // Last phase
   var phaseTimer = now // Tracks time from the beginning of phase
 
   var currentPhase = Setup // Current phase
@@ -261,8 +270,8 @@ final object Liminoid {
   //val backCamera = hardware.Camera(camId = 0, 1280, 960) //cams(0)
   //val frontCamera = hardware.Camera(camId = 1, 1920, 1080)
   
-  val frontCamera = hardware.Camera(camId = 0, 640, 480)
-  val backCamera = hardware.Camera(camId = 1, 640, 480)
+  val frontCamera = hardware.Camera(camId = 1, 640, 480)
+  val backCamera = hardware.Camera(camId = 0, 640, 480)
   
   val flipFrontCamera = true//false
 
@@ -282,7 +291,7 @@ final object Liminoid {
   def basicRot(): Vec = Vec.randomGaussian(1d/3d)
   
   // The rock inside radiolarians
-  lazy val core = OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.2, 0.2, 0.2))
+  lazy val core = OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.05, 0.05, 0.05))
 
   // The radiolarian that opens up
   lazy val radiolarian =
@@ -460,48 +469,8 @@ final object Liminoid {
   var backPixelMerged = true
   var finished = false
   var diffStarted, diffDone = false
-  lazy val liminoidBeingTex = Texture("img/liminoidno_bitje_I.png")
-  
-  //TODO: load from file
-  val initNodes = 
-    Vector(
-      Point(100, -200),
-      Point(-100, 200),
-      Point(1400, 700),
-      Point(500, 500)
-    )
-  val nodes = 
-    Vector(
-      Point(400, 700),
-      Point(600, 500),
-      Point(300, 300)
-    )
-  
-  val lines = 
-    Vector(
-      Line(initNodes(0), nodes(0)),
-      Line(initNodes(1), nodes(0)),
 
-      Line(initNodes(2), nodes(1)),
-      Line(initNodes(3), nodes(2)))
-  
-  val threadMap = lines.map{ line => line -> Thread.generateMultiThread(3)(line) }.toMap
-  
-  lazy val threadNodes = 
-    nodes.map{ node => 
-      ThreadNode(
-        node,
-        ins = lines.find{ _.p2 eq node }.map { line =>
-          threadMap(line)
-        }.getOrElse(Seq.empty),
-        outs = lines.find{ _.p1 eq node }.map { line =>
-          threadMap(line)
-        }.getOrElse(Seq.empty),
-        liminoidBeingTex)
-    
-  }
-  
-  lazy val threadNetwork = ThreadNetwork(threadNodes);
+  lazy val threadNetwork = ThreadNetwork(settings("threadNetwork"));
 
   // have a small bump for movement
   val shakeBump = 3
@@ -532,10 +501,10 @@ final object Liminoid {
   val backBlend = (GL_ONE, GL_ONE)
   val backBlendColor = Color(0, 0.08, 0.18)
   def backBlendRender(): Unit = {
-    GL14.glBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT)
+    /*GL14.glBlendEquation(GL14.GL_FUNC_REVERSE_SUBTRACT)
     val alpha = if(currentPhase == Radiolarians) 0.07 else 0.1
     quad(winCoord, color = backBlendColor, alpha = alpha, blend = backBlend)
-    GL14.glBlendEquation(GL14.GL_FUNC_ADD)
+    GL14.glBlendEquation(GL14.GL_FUNC_ADD)*/
   }
 
   var softHeart = 0d
@@ -592,7 +561,7 @@ final object Liminoid {
       case Setup => ///////////////////////////////////////////////////////////////////////////////
         glClear(0)
 
-        quad(Coord(winWidth/2-940/2,winHeight/2-550/2, 940,550), if(frames <= 10 && !startLiminoid) liminoidTitleLoading else liminoidTitle)
+        quad(Coord(winWidth/2-940/2,winHeight/2-550/2, 940,550), if(frames <= 10 && !startLiminoid) liminoidSplashLoading else liminoidSplash)
 
         //drawFrontCam()
         /*locally {
@@ -607,23 +576,23 @@ final object Liminoid {
         //quad(Coord(winWidth/2-40/2,winHeight/2-650/2, 40,650), alpha = 1-testNum2*0.1)
 
         //startLiminoid = true
-        var startingPhase = Radiolarians
+        var startingPhase = phases(settings("startingPhase"))
         //startingPhase = Mandalas
         //startingPhase = BackSpace
-        //gotoPhase(ThreadPhase)
+        //gotoPhase(Threads)
 
         // Triggers lazy load or preload of some resources
         println("Time" + frames + ": " + Utils.time(
           frames match {
             case 1 =>
-            case 2 => radiolarian
-            case 3 => quasiRadiolarians
-            case 4 => rocks 
-            case 5 => guardRocks
-            case 6 => blackMandala.preload(200)
-            case 7 => blackHeartMandala
-            case 8 => blackHeartDustMandala
-            case 9 => whiteHeartMandala
+            case 2 => if(startingPhase <= Radiolarians) radiolarian
+            case 3 => if(startingPhase <= Radiolarians) quasiRadiolarians
+            case 4 => if(startingPhase <= Radiolarians) rocks 
+            case 5 => if(startingPhase <= Radiolarians) guardRocks
+            case 6 => if(startingPhase <= Mandalas) blackMandala.preload(200)
+            case 7 => if(startingPhase <= Mandalas) blackHeartMandala
+            case 8 => if(startingPhase <= Mandalas) blackHeartDustMandala
+            case 9 => if(startingPhase <= Mandalas) whiteHeartMandala
             case _ => if(startLiminoid) gotoPhase(startingPhase) else sleep(25)
           }))
         
@@ -667,7 +636,7 @@ final object Liminoid {
         // Activate radiolarian shell open animation
         val radioOpen = since(phaseTimer) > radioOpenStart
         val firstRadioOpen = (!prevRadioOpen && radioOpen)
-        
+
         if(firstRadioOpen) radiolarian.active = true
         val radioHalfOpen = radioOpen && radiolarian.cursor > radiolarian.frames.size/2
 
@@ -707,7 +676,7 @@ final object Liminoid {
         if(izStene) {
           // Draw invisible wobbly wall
           glCapability(GL_DEPTH_TEST, GL_BLEND) {
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glBlendFuncTheUsual
             glColor4f(1, 1, 1, 0)
             render3D {
               glPrimitive(GL_QUADS) {
@@ -845,7 +814,7 @@ final object Liminoid {
 
           quad(Coord(posx,posy, w,h), whiteMandala())
         } else {
-          gotoPhase(ThreadPhase)
+          gotoPhase(Threads)
         }
 
         val sinceStart = since(phaseTimer) // TODO move outwards and reuse
@@ -888,8 +857,7 @@ final object Liminoid {
           fade2 = 0
           diffStarted = false
           diffDone = false
-          glClear(0)
-
+          
           //backCamera.saveImage("img/Image.png")
           backPixels = Vector.empty
           //backCamSnap = Texture.getImage("img/Image.png")
@@ -904,8 +872,8 @@ final object Liminoid {
         val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
         val (camx, camy) = (rotx*0.7-camw/7, roty*0.7-camh/7)
 
+        glClear(0)
         //TODO: lock in backCamSnapTex and do a Future[blob]
-
         val backDrop =
           if((backPixels.isEmpty && backPixelDrop && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I))
             backCamera.getTextureID
@@ -966,7 +934,7 @@ final object Liminoid {
         }
 
         glCapability(GL_BLEND) {
-          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+          glBlendFuncTheUsual
           render2D {
             glTranslated(camx, camy, 0)
             glScaled(camw/1920d, camh/1080d, 1)
@@ -992,7 +960,7 @@ final object Liminoid {
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
-      case ThreadPhase => ///////////////////////////////////////////////////////////////////////////
+      case Threads => ///////////////////////////////////////////////////////////////////////////
         initPhase {
           //fade1 = 0
           //fade2 = 0
@@ -1002,33 +970,27 @@ final object Liminoid {
           phaseTimer = now
           //backCamSnap = Texture.getImage("img/Image.png")
           //backCamSnapTex = Texture("img/Image.png")
-          glClear(0)
         }
-
-        // Pass some data into thread network renders
-        implicit val rpd = RenderProcessData(beat)
 
         val f = 1400d
         val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
         val (camx, camy) = (rotx*0.7-camw/7, roty*0.7-camh/7)
 
+        // Pass some data into thread network renders
+        implicit val rpd = RenderProcessData(beat)
+        implicit val rrd = RenderRenderData(camx, camy, camw, camh)
+
+        glClear(0)
+        //quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
         quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
 
-        val since5 = since(phaseTimer) >= 5.seconds
+        val since5 = since(phaseTimer)  >= 5.seconds
         
         threadNetwork.process
 
-        //backpixelBuffer = Array.ofDim[Boolean](1920, 1080)
-        glCapability(GL_BLEND) {
-          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-          render2D {
-            glTranslated(camx, camy, 0)
-            glScaled(camw/1920d, camh/1080d, 1)
-            threadNetwork.render
-          }
-        }
+        threadNetwork.render
 
-        backBlendRender
+        //backBlendRender
 
       case _ =>
     }

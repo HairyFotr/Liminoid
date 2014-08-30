@@ -1,0 +1,39 @@
+frontCamera=0, 640x480
+backCamera=1, 640x480
+
+#startingPhase=Radiolarians
+startingPhase=Threads
+
+liminoidSplash = "img/liminoid.png"
+liminoidSplashLoading = "img/liminoidLoading.png"
+
+threadNetwork="""
+# initial nodes
+100, -100
+-100, 2000
+1400, 2000
+500, 1200
+1700, 300
+-
+# visible nodes
+400, 750, "img/liminoidno_bitje_I.png"
+650, 500, "img/Alien_na_planetu_II.png"
+500, 300, "img/liminoidno_bitje_I.png"
+850, 400, "img/liminoidno_bitje_I.png"
+1200, 800, "img/liminoidno_bitje_I.png"
+850, 950, "img/Alien_na_planetu_II.png"
+1150, 300, "img/Alien_na_planetu_II.png"
+1350, 550, "img/liminoidno_bitje_I.png"
+-
+# connections
+i1 -> 1
+i2 -> 1
+i3 -> 2
+i4 -> 3
+
+1 -> 2
+1 -> 3
+2 -> 3
+2 -> 4
+3 -> 4
+"""

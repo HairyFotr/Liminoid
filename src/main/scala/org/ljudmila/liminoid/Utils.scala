@@ -17,6 +17,41 @@ final object Utils {
   def pow2(d: Double): Double = d*d
   def getRatio(p: Double): (Double, Double) = (p, 1 - p)
   
+  final object SettingsReader {
+    
+    def apply(fileName: String): Map[String, String] = {
+      sealed trait State
+      case object OneLine extends State
+      case class Text(
+          prop: String, 
+          buffer: StringBuilder = new StringBuilder) extends State
+      
+      io.Source.fromFile(fileName).getLines()
+        .map{ line =>
+          line.trim
+        }.filterNot{ line => 
+          line.isEmpty() || line.startsWith("#") || line.startsWith("//")
+        }.foldLeft((Map.empty[String,String], OneLine: State)) {
+          case ((map, OneLine), line) =>
+            val split = line.split(" *= *")
+            val prop = split(0).trim
+            val value = split(1).trim.stripPrefix("\"").stripSuffix("\"")
+            if (split(1) == "\"\"\"") {
+              (map, Text(prop))
+            } else {
+              (map + (prop -> value), OneLine)
+            }
+          case ((map, state @ Text(prop, buffer)), line) =>
+            if (line == "\"\"\"") {
+              (map + (prop -> buffer.toString.trim), OneLine)
+            } else {
+              buffer.append("\n").append(line)
+              (map, state)
+            }
+        }
+    }._1
+  }
+  
   object TableRandom {
     private[this] var index = 0
     private[this] val length = 10000

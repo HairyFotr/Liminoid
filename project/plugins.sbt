@@ -10,4 +10,4 @@ addSbtPlugin("de.johoop" % "cpd4sbt" % "1.1.5")
 
 addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.5.0")
 
-addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "0.93.1")
+addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "0.94.5")

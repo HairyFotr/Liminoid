@@ -15,7 +15,7 @@ sealed trait RenderMode
 case object Mono extends RenderMode
 case object Stereo extends RenderMode
 
-final object GLAddons {
+final object GLadDOnS {
   def glMatrix(func: => Unit): Unit = {
     glPushMatrix
     func
@@ -65,7 +65,7 @@ final object GLAddons {
 }
 
 final object Render {
-  import GLAddons._
+  import GLadDOnS._
   
   lazy val cam = {
     val cam = new Camera

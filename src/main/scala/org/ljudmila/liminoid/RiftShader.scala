@@ -12,7 +12,7 @@ import org.lwjgl.LWJGLException
 import org.lwjgl.input.Keyboard
 import org.lwjgl.opengl._
 
-import GLAddons._
+import GLadDOnS._
 
 // Adapted from https://developer.oculusvr.com/forums/viewtopic.php?f=20&t=88&start=10
 final class RiftShader(screenWidth: Int, screenHeight: Int) {

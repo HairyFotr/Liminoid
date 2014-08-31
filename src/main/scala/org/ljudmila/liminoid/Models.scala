@@ -5,12 +5,12 @@ import math._
 import Liminoid.{ winWidth, winHeight, renderMode, eyeCorrection, testNum1, osc1 }
 import scala.collection.mutable
 import java.io.File
-import util.Random._
+import scala.util.Random._
 import scala.language.implicitConversions
 import scala.annotation.switch
 import Render.{ render3D, render2D }
-import Utils.{ TableRandom, pow2, getRatio }
-import GLAddons._
+import Utils.{ TableRandom, pow2, getRatio, SettingsReader }
+import GLadDOnS._
 
 final object Models {
   private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
@@ -25,9 +25,40 @@ final object Models {
   type Normals = Vector[Normal]
   type UVVertices = Vector[UVVertex]
 
+  final object OBJModels {
+    def apply(
+        str: String,
+        baseTransform: Transform = transform001,
+        baseTransformVector: Transform = transform000): Array[Model] = {
+      
+      str.split("\n-\n").map{ str => 
+        OBJModel.apply(
+            str,
+            baseTransform,
+            baseTransformVector)
+      }
+      
+    }
+  }
   final object OBJModel {
-    def apply(fileStr: String): DisplayModel = modelCache.getOrElseUpdate(fileStr, {
-      val file = io.Source.fromFile(fileStr)
+    def apply(
+        str: String,
+        baseTransform: Transform = transform001,
+        baseTransformVector: Transform = transform000): Model = {
+      
+      val default = ""
+      val reader = SettingsReader(str) withDefaultValue default
+      load(reader("model"))
+        .toModel(
+            baseTransform + Transform(vec(reader("pos")), vec(reader("rot")), vec(reader("size"))),
+            baseTransformVector,
+            color = color(reader("color")),
+            coreTransform = Transform(vec(reader("transform")), vec0, vec0))
+            //alpha, phi, theta, baseVector, coreTransform)
+    }
+    
+    def load(filename: String): DisplayModel = modelCache.getOrElseUpdate(filename, {
+      val file = io.Source.fromFile(filename)
 
       val vertices   = Vector.newBuilder[Vertex]
       val faces      = Vector.newBuilder[Face]
@@ -118,6 +149,14 @@ final object Models {
     //def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
     def *=(f: Double): Unit = { x *= f; y *= f; z *= f }
   }
+  final def vec(s: String): Vec = {
+    if(s.isEmpty()) vec0
+    else {
+      val split = s.split(" *, *")
+      if(split.size == 1) vec(s.toDouble)
+      else Vec(split(0).toDouble, split(1).toDouble, split(2).toDouble)
+    }
+  } 
   final def vec(d: Double) = Vec(d, d, d)
   final def vecx(d: Double) = Vec(d, 0, 0)
   final def vecy(d: Double) = Vec(0, d, 0)
@@ -137,6 +176,7 @@ final object Models {
     def size: Vec
 
     def **(d: Double): Transform = Transform(this.pos * d, this.rot * d, this.size * d)
+    def +(t: Transform): Transform = Transform(this.pos + t.pos, this.rot + t.rot, this.size + t.size)
   }
   case class Transform(val pos: Vec = vec0, val rot: Vec = vec0, val size: Vec = vec0) extends TransformLike
   implicit def mutableTransform(it: Transform): MutableTransform = MutableTransform(it.pos, it.rot, it.size) //meh
@@ -171,6 +211,14 @@ final object Models {
   object Color {
     def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
     def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
+  }
+  final def color(s: String): Color = {
+    if(s.isEmpty()) grey0
+    else {
+      val split = s.split(" *, *")
+      if(split.size == 1) grey(s.toDouble)
+      else Color(split(0).toDouble, split(1).toDouble, split(2).toDouble)
+    }
   }
   final def grey(d: Double): Color = Color(d, d, d)
   final val grey0 = grey(0)

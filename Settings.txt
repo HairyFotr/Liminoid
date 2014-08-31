@@ -1,11 +1,103 @@
 frontCamera=0, 640x480
 backCamera=1, 640x480
 
-#startingPhase=Radiolarians
-startingPhase=Threads
+startingPhase=Radiolarians
+#startingPhase=Threads
 
 liminoidSplash = "img/liminoid.png"
 liminoidSplashLoading = "img/liminoidLoading.png"
+
+whiteish = 0.9
+blackish = 0.1
+
+rocksPath="obj/Prihod_iz_stene/Prihod iz stene_normale"
+rocks="""
+model = "@rocksPath@_II.obj"
+pos = -25, 22, 12
+size = 3
+color = @whiteish@
+-
+model = "@rocksPath@_III.obj"
+pos = -40, -4, 4
+size = 4,
+color = @blackish@
+-
+model = "@rocksPath@_V.obj"
+pos = -67, 18, 1
+size = 3,
+color = @whiteish@
+-
+model = "@rocksPath@_III.obj"
+pos = -75, -27, 13
+size = 4
+color = @blackish@
+-
+model = "@rocksPath@_V.obj"
+pos = -35, -35, 17
+size = 3
+color = @whiteish@
+-
+model = "@rocksPath@_II.obj"
+pos = 35, 12, 11
+size = 2
+color = @whiteish@
+-
+model = "@rocksPath@_V.obj"
+pos = 48, 5, 8
+size = 2.6,
+color = @blackish@
+-
+model = "@rocksPath@_II.obj"
+pos = 72, -15, 12
+size = 3
+color = @whiteish@
+-
+model = "@rocksPath@_II.obj"
+pos = 65, -45, 15
+size = 2
+color = @whiteish@
+-
+model = "@rocksPath@_V.obj"
+pos = 4, 35, 12
+size = 3
+color = @blackish@
+-
+model = "@rocksPath@_II.obj"
+pos = -45, 21, 2
+size = 2
+transform = 5
+color = @whiteish@
+-
+model = "@rocksPath@_II.obj"
+pos = 25, -19, 9
+size = 1
+transform = 5
+color = @blackish@
+-
+model = "@rocksPath@_III.obj"
+pos = 48, -33, 5
+size = 3
+transform = 3
+color = @whiteish@
+-
+model = "@rocksPath@_III.obj"
+pos = 30, 25, 5
+size = 3
+transform = 3
+color = @whiteish@
+-
+model = "@rocksPath@_V.obj"
+pos = -53, -18, 9
+size = 2
+transform = 5
+color = @blackish@
+-
+model = "@rocksPath@_V.obj"
+pos = -15, -24, 8
+size = 2
+transform = 5
+color = @whiteish@
+"""
 
 threadNetwork="""
 # initial nodes

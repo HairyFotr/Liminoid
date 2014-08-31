@@ -131,7 +131,7 @@ final case class OBJSequence(
     var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends Sequence[Model] {
 
-  val models: Array[Model] = frames.map { name => OBJModel(name).toModel(transform = transform, color = color, coreTransform = coreTransform) }
+  val models: Array[Model] = frames.map { name => OBJModel.load(name).toModel(transform = transform, color = color, coreTransform = coreTransform) }
   override def get(): Model = models(cursor)
   override def preload(): Unit = { OBJModel.preload(files) }
   def preload(i: Int): Unit = { OBJModel.preload(files, i) }

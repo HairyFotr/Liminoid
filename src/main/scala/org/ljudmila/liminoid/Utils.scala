@@ -18,38 +18,44 @@ final object Utils {
   def getRatio(p: Double): (Double, Double) = (p, 1 - p)
   
   final object SettingsReader {
-    
-    def apply(fileName: String): Map[String, String] = {
+    type SettingsMap = Map[String, String]
+    def apply(str: String): SettingsMap = {
       sealed trait State
       case object OneLine extends State
       case class Text(
           prop: String, 
           buffer: StringBuilder = new StringBuilder) extends State
       
-      io.Source.fromFile(fileName).getLines()
-        .map{ line =>
-          line.trim
-        }.filterNot{ line => 
-          line.isEmpty() || line.startsWith("#") || line.startsWith("//")
-        }.foldLeft((Map.empty[String,String], OneLine: State)) {
-          case ((map, OneLine), line) =>
-            val split = line.split(" *= *")
-            val prop = split(0).trim
-            val value = split(1).trim.stripPrefix("\"").stripSuffix("\"")
-            if (split(1) == "\"\"\"") {
-              (map, Text(prop))
-            } else {
-              (map + (prop -> value), OneLine)
-            }
-          case ((map, state @ Text(prop, buffer)), line) =>
-            if (line == "\"\"\"") {
-              (map + (prop -> buffer.toString.trim), OneLine)
-            } else {
-              buffer.append("\n").append(line)
-              (map, state)
-            }
-        }
-    }._1
+      val settingsMap = 
+        str.split("\n")
+          .map{ line =>
+            line.trim
+          }.filterNot{ line => 
+            line.isEmpty() || line.startsWith("#") || line.startsWith("//")
+          }.foldLeft((Map.empty[String,String], OneLine: State)) {
+            case ((map, OneLine), line) =>
+              val split = line.split(" *= *")
+              val prop = split(0).trim
+              val value = split(1).trim.stripPrefix("\"").stripSuffix(",").stripSuffix("\"")
+              if (split(1) == "\"\"\"") {
+                (map, Text(prop))
+              } else {
+                (map + (prop -> value), OneLine)
+              }
+            case ((map, state @ Text(prop, buffer)), line) =>
+              if (line == "\"\"\"") {
+                (map + (prop -> buffer.toString.trim), OneLine)
+              } else {
+                buffer.append("\n").append(line)
+                (map, state)
+              }
+          }._1
+      
+      settingsMap.mapValues { value => "@([a-zA-Z0-9]+)@".r.replaceAllIn(value, m => settingsMap(m.group(1))) }
+    }
+    def load(fileName: String): SettingsMap = {
+      SettingsReader(getFile(fileName).mkString("\n"))
+    }
   }
   
   object TableRandom {

@@ -16,9 +16,9 @@ import scala.annotation.switch
 import Thread.sleep
 
 import Render.{ render3D, render2D }
-import GLAddons._
+import GLadDOnS._
 
-import Models.{ Transform, OBJModel, quad, Coord, Point, Model, Pixel }
+import Models.{ Transform, OBJModel, OBJModels, quad, Coord, Point, Model, Pixel }
 import Models.{ Color, grey, grey0, grey1 }
 import Models.{ Vec, vec, vecx, vecy, vecz, vec0, vec05, vec1, vec2, vec3, vec4, vec5, vec90x }
 import Models.{ Rotation, rotation0 }
@@ -26,7 +26,7 @@ import Models.{ Thread, ThreadNetwork, ThreadNode, Line, RenderProcessData, Rend
 
 final object Liminoid {
   val project = "Liminoid"
-  val settings = SettingsReader("Settings.txt")
+  val settings = SettingsReader.load("Settings.txt")
   var startLiminoid = false
 
   var renderMode: RenderMode = Stereo
@@ -291,7 +291,8 @@ final object Liminoid {
   def basicRot(): Vec = Vec.randomGaussian(1d/3d)
   
   // The rock inside radiolarians
-  lazy val core = OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.05, 0.05, 0.05))
+  lazy val core = 
+    OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.05, 0.05, 0.05))
 
   // The radiolarian that opens up
   lazy val radiolarian =
@@ -308,48 +309,48 @@ final object Liminoid {
   // The other radiolaria
   lazy val quasiRadiolarians =
     Array[Model](
-      /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
+      /*OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
         transform = Transform(pos = startPos + Vec(-45, 21, 2), size = vec(0.6)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = whiteish),
-      OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
+      OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // holes
         transform = Transform(pos = startPos + Vec(25, -19, 9), size = vec(0.7)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = whiteish),
-      OBJModel("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel( // Same as radiolarian
+      OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel( // Same as radiolarian
         transform = Transform(pos = startPos + Vec(48, -33, 5), size = vec(0.9)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec3),
         color = whiteish), //majhen
-      //OBJModel("obj/Ogromni_modeli/Plascek_normale_IV.obj").toModel( // Same ??
-      OBJModel("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel(
+      //OBJModel.load("obj/Ogromni_modeli/Plascek_normale_IV.obj").toModel( // Same ??
+      OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_V.obj").toModel(
         transform = Transform(pos = startPos + Vec(30, 25, 5), size = vec(0.9)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec3),
         color = whiteish), //majhen
-      OBJModel("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel( // Edgy one
+      OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel( // Edgy one
         transform = Transform(pos = startPos + Vec(-53, -18, 9), size = vec(0.7)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = whiteish),
-      OBJModel("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel( // Edgy one
+      OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_VI.obj").toModel( // Edgy one
         transform = Transform(pos = startPos + Vec(-15, -24, 8), size = vec(0.6)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = whiteish) //,*/
-      /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // Big holes
+      /*OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_VII.obj").toModel( // Big holes
         transform = Transform(pos = startPos + Vec(35, 15, 8), size = vec1),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = whiteish)*///,
-      /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel( // High-poly version: obj/Ogromni_modeli/Plascek_normale_IX_velik.obj
+      /*OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel( // High-poly version: obj/Ogromni_modeli/Plascek_normale_IX_velik.obj
         transform = Transform(pos = startPos + Vec(-15, 37, 63), size = vec1),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec3),
         color = whiteish)*///, //test it
-      /*OBJModel("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel( // The thick one
+      /*OBJModel.load("obj/Plascki_iz_stene/Plascek_normale_IX_mali.obj").toModel( // The thick one
         transform = Transform(pos = startPos + Vec(-5, -14, 82), size = vec1),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = Vec3),
@@ -357,86 +358,90 @@ final object Liminoid {
 
   // Some rocks just floating around
   lazy val rocks = 
-    Array(
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
+    OBJModels(
+        settings("rocks"),
+        Transform(pos = startPos),
+        Transform(pos = radioBasePosVec, rot = basicRot))
+    /*Array(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
         transform = Transform(pos = startPos + Vec(-25, 22, 12), size = vec3),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = whiteish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
         transform = Transform(pos = startPos + Vec(-40, -4, 4), size = vec4),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = blackish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
         transform = Transform(pos = startPos + Vec(-67, 18, 1), size = vec3),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = whiteish), ///////////////////////////////////////////////////////////////////duplication
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
         transform = Transform(pos = startPos + Vec(-75, -27, 13), size = vec4),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = blackish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
         transform = Transform(pos = startPos + Vec(-35, -35, 17), size = vec3),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = whiteish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel( // I has a cube and too many vertices
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel( // I has a cube and too many vertices
         transform = Transform(pos = startPos + Vec(35, 12, 11), size = vec2),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = whiteish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
         transform = Transform(pos = startPos + Vec(48, 5, 8), size = vec(2.6)),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = blackish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
         transform = Transform(pos = startPos + Vec(72, -15, 12), size = vec3),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = whiteish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(
         transform = Transform(pos = startPos + Vec(65, -45, 15), size = vec2),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = whiteish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
         transform = Transform(pos = startPos + Vec(4, 35, 12), size = vec3),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         color = blackish),
       // ex radiolaria
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel( // holes
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel( // holes
         transform = Transform(pos = startPos + Vec(-45, 21, 2), size = vec2),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = whiteish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel( // holes
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel( // holes
         transform = Transform(pos = startPos + Vec(25, -19, 9), size = vec1),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = blackish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel( // Same as radiolarian
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel( // Same as radiolarian
         transform = Transform(pos = startPos + Vec(48, -33, 5), size = vec3),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec3),
         color = whiteish), //majhen
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_III.obj").toModel(
         transform = Transform(pos = startPos + Vec(30, 25, 5), size = vec3),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec3),
         color = whiteish), //majhen
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel( // Edgy one
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel( // Edgy one
         transform = Transform(pos = startPos + Vec(-53, -18, 9), size = vec2),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
         color = blackish),
-      OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel( // Edgy one
+      OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel( // Edgy one
         transform = Transform(pos = startPos + Vec(-15, -24, 8), size = vec2),
         transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
         coreTransform = Transform(pos = vec5),
-        color = whiteish))
+        color = whiteish))*/
 
   // rocks that fly with the radiolarian
   lazy val guardRocks = Array(
-    OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
+    OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(-29, -13, 0), size = vec(2.2)),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = whiteish),
-    OBJModel("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
+    OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(7, -32, 0), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = whiteish))

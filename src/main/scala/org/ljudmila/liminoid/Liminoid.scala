@@ -284,7 +284,7 @@ final object Liminoid {
   val whiteish = grey(0.9)
   val blackish = grey(0.1)
 
-  val wallZ = 600                        // z position of wall
+  val wallZ = settings("wallz").toInt // z position of wall
   val radioBasePosVecZ = -0.11 * 1.4 // 2min8s -> 1min30s (85x + 43x*1.75 = ...)
   val radioBasePosVec = Vec(0, 0, radioBasePosVecZ) // basic z movement vector
   val startPos = vecz(wallZ+15) // starting point for radiolarians
@@ -308,21 +308,29 @@ final object Liminoid {
 
   // Some rocks just floating around
   lazy val rocks = 
-    OBJModels(
-        settings("rocks"),
+    (OBJModels(
+        settings("rocks1"),
         Transform(pos = startPos),
-        Transform(pos = radioBasePosVec, rot = basicRot))
+        Transform(pos = radioBasePosVec, rot = basicRot)) ++
+    OBJModels(
+        settings("rocks2"),
+        Transform(pos = startPos),
+        Transform(pos = radioBasePosVec, rot = basicRot)) ++
+    OBJModels(
+        settings("rocks3"),
+        Transform(pos = startPos),
+        Transform(pos = radioBasePosVec, rot = basicRot)))
 
   // rocks that fly with the radiolarian
-  lazy val guardRocks = Array(
-    OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
+  lazy val guardRocks = Array[Model](
+    /*OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(-29, -13, 0), size = vec(2.2)),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
       color = whiteish),
     OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
       transform = Transform(pos = startPos + Vec(7, -32, 0), size = vec3),
       transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = whiteish))
+      color = whiteish)*/)
 
   /// Mandalas phase objects ///
   lazy val blackMandala = TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
@@ -563,10 +571,10 @@ final object Liminoid {
             glColor4f(1, 1, 1, 0)
             render3D {
               glPrimitive(GL_QUADS) {
-                glVertex3d(-2000, -2000, wallZ + osc1*10)
-                glVertex3d(+2000, -2000, wallZ + osc2*10)
-                glVertex3d(+2000, +2000, wallZ + osc3*10)
-                glVertex3d(-2000, +2000, wallZ + osc4*10)
+                glVertex3d(-2000, -2000, wallZ)// + osc1*10)
+                glVertex3d(+2000, -2000, wallZ)// + osc2*10)
+                glVertex3d(+2000, +2000, wallZ)// + osc3*10)
+                glVertex3d(-2000, +2000, wallZ)// + osc4*10)
               }
             }
           }

@@ -31,12 +31,14 @@ final object Models {
         baseTransform: Transform = transform001,
         baseTransformVector: Transform = transform000): Array[Model] = {
       
-      str.split("\n-\n").map{ str => 
-        OBJModel.apply(
-            str,
-            baseTransform,
-            baseTransformVector)
-      }
+      str.split("\n-+\n")
+        .filterNot { str => str.trim().isEmpty() }
+        .map{ str => 
+          OBJModel.apply(
+              str,
+              baseTransform,
+              baseTransformVector)
+        }
       
     }
   }

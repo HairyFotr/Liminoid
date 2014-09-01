@@ -1,4 +1,9 @@
 TASKS
+  first view postavitev in sound
+  mandale manjkoce slike
+  tread -> rock
+  sizofrenija
+  
   0
     Sensors calibration (visual(javacv) or magnetometer(jrift)?)
     Circular opening up on center-stare 
@@ -7,7 +12,8 @@ TASKS
     Encourage user to face center during radiolarian opening
       could use: sound, fade out if looking around, slow down cam movement
     Where are the frames 5400 - 6480?
-    Sound and fadein to heartbeat 
+    Sound and fadein to heartbeat
+    Rotate white rocks one way, black rocks the opposite way 
   2
     Pulse sensor filtering or close average instead of direct input
   3

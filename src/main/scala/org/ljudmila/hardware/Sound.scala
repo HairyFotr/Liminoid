@@ -1,9 +1,9 @@
-package org.ljudmila.liminoid
+package org.ljudmila.hardware
 
 import java.io.FileInputStream
 import java.io.BufferedInputStream
 import javazoom.jl.player.Player
-import Utils.{ thread, getFile }
+import org.ljudmila.Utils.{ thread, getFile }
 
 final object Sound {
   val folder = "snd/"

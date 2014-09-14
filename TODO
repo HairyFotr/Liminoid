@@ -39,6 +39,9 @@ TASKS
 /// am I deleting all used textures? (camera?)
 /// why is so much stuff in Arduino synchronized?
 /// make oscillator/fade/... library
+/// eclipse strip window title
+/// Data folder -> ../LiminoiData
+/// mono/stereo view switching is broken on at least radiolarians phase
 
 SOME NOTES
   prehod med fazami

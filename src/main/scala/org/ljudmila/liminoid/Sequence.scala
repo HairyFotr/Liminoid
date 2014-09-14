@@ -1,6 +1,8 @@
 package org.ljudmila.liminoid
 import java.io._
-import Utils._
+
+import Models._
+import org.ljudmila.Utils._
 
 sealed trait Sequence[T] {
   def path: String
@@ -92,7 +94,7 @@ sealed trait Sequence[T] {
   }
 }
 
-final case class TexSequence(
+case class TexSequence(
     val path: String,
     var active: Boolean = true,
     var delay: Double = 1000/24d, //24fps
@@ -116,9 +118,7 @@ final case class TexSequence(
   override def delete(d: String): Unit = { Texture.delete(d) }
   def clear(): Unit = { for(f <- frames) delete(f) }
 }
-
-import Models._
-final case class OBJSequence(
+case class OBJSequence(
     val path: String,
     val transform: MutableTransform = transform001,
     val transformVector: MutableTransform = transform000,

@@ -35,3 +35,5 @@ initialCommands := """
   import org.ljudmila.liminoid._
   import Utils._
 """
+
+watchSources += baseDirectory.value / "Settings.txt"

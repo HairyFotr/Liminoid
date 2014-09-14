@@ -1,4 +1,4 @@
-package org.ljudmila.liminoid.hardware
+package org.ljudmila.hardware
 
 import org.bytedeco.javacv._
 import org.bytedeco.javacpp.opencv_core._
@@ -7,7 +7,7 @@ import collection.mutable
 import scala.actors.Futures._
 import System.err
 import org.ljudmila.liminoid.Models.{ Pixel, Color }
-import org.ljudmila.liminoid.Utils.thread
+import org.ljudmila.Utils.thread
 
 object Camera {
   val FrameGrabbers = mutable.HashMap[Int, OpenCVFrameGrabber]()

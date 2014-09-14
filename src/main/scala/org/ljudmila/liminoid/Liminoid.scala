@@ -8,10 +8,13 @@ import java.nio._
 import scala.actors.Futures._
 import scala.util.Random._
 import math._
-import Utils._
+import org.ljudmila.Utils
+import org.ljudmila.Utils._
+import org.ljudmila.SettingsReader
+import org.ljudmila.hardware
+import org.ljudmila.hardware.{ RiftTracker, PulseSensor, Sound }
 import org.lwjgl.opengl.{ GL11, GL12, GL13, GL14 }
 import org.lwjgl.opengl.GL11._
-import hardware.{ RiftTracker, PulseSensor }
 import scala.annotation.switch
 import Thread.sleep
 
@@ -321,17 +324,6 @@ final object Liminoid {
         Transform(pos = startPos),
         Transform(pos = radioBasePosVec, rot = basicRot)))
 
-  // rocks that fly with the radiolarian
-  lazy val guardRocks = Array[Model](
-    /*OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(-29, -13, 0), size = vec(2.2)),
-      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = whiteish),
-    OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_V.obj").toModel(
-      transform = Transform(pos = startPos + Vec(7, -32, 0), size = vec3),
-      transformVector = Transform(pos = radioBasePosVec, rot = basicRot),
-      color = whiteish)*/)
-
   /// Mandalas phase objects ///
   lazy val blackMandala = TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
   lazy val whiteMandala = TexSequence("seq/optipng_Sekvenca_mandala_belo_ozadje", delay = (1000/24d)*0.8, stopAtEnd = true, selfDestruct = true)
@@ -361,7 +353,7 @@ final object Liminoid {
   var finished = false
   var diffStarted, diffDone = false
 
-  lazy val threadNetwork = ThreadNetwork(settings("threadNetwork"));
+  lazy val threadNetwork = ThreadNetwork(settings("threadNetwork"))
 
   // have a small bump for movement
   val shakeBump = 3
@@ -479,7 +471,7 @@ final object Liminoid {
             case 2 => if(startingPhase <= Radiolarians) radiolarian
             case 3 => 
             case 4 => if(startingPhase <= Radiolarians) rocks 
-            case 5 => if(startingPhase <= Radiolarians) guardRocks
+            case 5 => 
             case 6 => if(startingPhase <= Mandalas) blackMandala.preload(200)
             case 7 => if(startingPhase <= Mandalas) blackHeartMandala
             case 8 => if(startingPhase <= Mandalas) blackHeartDustMandala
@@ -513,7 +505,7 @@ final object Liminoid {
         val endStart         = (120+8-38).seconds
 
         // Crawl from wall
-        var izStene = since(phaseTimer) > izSteneStart
+        val izStene = since(phaseTimer) > izSteneStart
         val firstIzStene = (!prevIzStene && izStene)
 
         // Start shaking elements
@@ -567,7 +559,7 @@ final object Liminoid {
         if(izStene) {
           // Draw invisible wobbly wall
           glCapability(GL_DEPTH_TEST, GL_BLEND) {
-            glBlendFuncTheUsual
+            glTheUsualBlendFunc
             glColor4f(1, 1, 1, 0)
             render3D {
               glPrimitive(GL_QUADS) {
@@ -628,18 +620,15 @@ final object Liminoid {
           core.render(transform = shaked.copy(size = radiolarian.transform.size * radiolarian.coreTransform.pos.x))
 
           // Draw rocks
-          for(rock <- rocks) {
-            if(!pause) rock.transform += rock.transformVector ** renderTime
-            if(radioVector) {
-              rock.transformVector.pos = rock.transformVector.pos.withZ(rock.transformVector.pos.z*0.85)
-            }
-
-            rock.render(transform = shake(rock))
-          } ////////////////////////////////////////////// duplication
-          for(rock <- guardRocks) {
-            rock.transform.setPosZ((radiolarian.transform.pos.z + rocks.head.transform.pos.z)/2)
-
-            rock.render(transform = shake(rock))
+          glMatrix {
+            for(rock <- rocks) {
+              if(!pause) rock.transform += rock.transformVector ** renderTime
+              if(radioVector) {
+                rock.transformVector.pos = rock.transformVector.pos.withZ(rock.transformVector.pos.z*0.85)
+              }
+  
+              rock.render(transform = shake(rock))
+            } ////////////////////////////////////////////// duplication
           }
         }
 
@@ -811,7 +800,7 @@ final object Liminoid {
         }
 
         glCapability(GL_BLEND) {
-          glBlendFuncTheUsual
+          glTheUsualBlendFunc
           render2D {
             glTranslated(camx, camy, 0)
             glScaled(camw/1920d, camh/1080d, 1)

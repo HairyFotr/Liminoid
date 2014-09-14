@@ -9,7 +9,7 @@ import java.io.File
 import util.Random._
 import scala.language.implicitConversions
 import scala.annotation.switch
-import Utils.{ TableRandom, pow2, getRatio }
+import org.ljudmila.Utils.{ TableRandom, pow2, getRatio }
 
 sealed trait RenderMode
 case object Mono extends RenderMode
@@ -39,7 +39,7 @@ final object GLadDOnS {
 
     displayList
   }
-  def glBlendFuncTheUsual(): Unit = glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  def glTheUsualBlendFunc(): Unit = glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
   object gluQuadrics {
     import org.lwjgl.util.glu.{ Sphere, Cylinder, Disk, PartialDisk }
     lazy val smoothSphere = {

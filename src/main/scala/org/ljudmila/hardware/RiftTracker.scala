@@ -1,4 +1,4 @@
-package org.ljudmila.liminoid.hardware
+package org.ljudmila.hardware
 
 import de.fruitfly.ovr.OculusRift
 import java.io.File
@@ -16,9 +16,9 @@ object RiftTracker {
   withInit { OculusRift.LoadLibrary(new File(System.getProperty("java.io.tmpdir"))); }
 
   private[this] val oculusRift = withInit {
-    val or = new OculusRift
-    or.init
-    or
+    val rift = new OculusRift
+    rift.init
+    rift
   } getOrElse null
   
   

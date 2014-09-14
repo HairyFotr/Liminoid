@@ -9,7 +9,8 @@ import scala.util.Random._
 import scala.language.implicitConversions
 import scala.annotation.switch
 import Render.{ render3D, render2D }
-import Utils.{ TableRandom, pow2, getRatio, SettingsReader }
+import org.ljudmila.SettingsReader
+import org.ljudmila.Utils.{ TableRandom, pow2, getRatio }
 import GLadDOnS._
 
 final object Models {
@@ -25,7 +26,7 @@ final object Models {
   type Normals = Vector[Normal]
   type UVVertices = Vector[UVVertex]
 
-  final object OBJModels {
+  object OBJModels {
     def apply(
         str: String,
         baseTransform: Transform = transform001,
@@ -42,7 +43,7 @@ final object Models {
       
     }
   }
-  final object OBJModel {
+  object OBJModel {
     def apply(
         str: String,
         baseTransform: Transform = transform001,
@@ -137,7 +138,7 @@ final object Models {
       Vec(x/m, y/m, z/m)
     }
   }
-  final object Vec {
+  object Vec {
     def random(): Vec = random01
     def random360(): Vec = random01 * 360
     def random01(): Vec = Vec(nextDouble, nextDouble, nextDouble)
@@ -151,7 +152,7 @@ final object Models {
     //def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
     def *=(f: Double): Unit = { x *= f; y *= f; z *= f }
   }
-  final def vec(s: String): Vec = {
+  def vec(s: String): Vec = {
     if(s.isEmpty()) vec0
     else {
       val split = s.split(" *, *")
@@ -159,18 +160,18 @@ final object Models {
       else Vec(split(0).toDouble, split(1).toDouble, split(2).toDouble)
     }
   } 
-  final def vec(d: Double) = Vec(d, d, d)
-  final def vecx(d: Double) = Vec(d, 0, 0)
-  final def vecy(d: Double) = Vec(0, d, 0)
-  final def vecz(d: Double) = Vec(0, 0, d)
-  final val vec0 = vec(0)
-  final val vec05 = vec(0.5)
-  final val vec1 = vec(1)
-  final val vec2 = vec(2)
-  final val vec3 = vec(3)
-  final val vec4 = vec(4)
-  final val vec5 = vec(5)
-  final val vec90x = vecx(90)
+  def vec(d: Double) = Vec(d, d, d)
+  def vecx(d: Double) = Vec(d, 0, 0)
+  def vecy(d: Double) = Vec(0, d, 0)
+  def vecz(d: Double) = Vec(0, 0, d)
+  val vec0 = vec(0)
+  val vec05 = vec(0.5)
+  val vec1 = vec(1)
+  val vec2 = vec(2)
+  val vec3 = vec(3)
+  val vec4 = vec(4)
+  val vec5 = vec(5)
+  val vec90x = vecx(90)
 
   sealed trait TransformLike {
     def pos: Vec
@@ -194,8 +195,8 @@ final object Models {
       size = size + vector.size
     }
   }
-  final val transform001 = Transform(vec0, vec0, vec1)
-  final val transform000 = Transform(vec0, vec0, vec0)
+  val transform001 = Transform(vec0, vec0, vec1)
+  val transform000 = Transform(vec0, vec0, vec0)
 
   case class UV(u: Double, v: Double)
 
@@ -204,7 +205,7 @@ final object Models {
     def -(r: Rotation): Rotation = Rotation(yaw-r.yaw, pitch-r.pitch, roll-r.roll)
     def *(f: Float): Rotation = Rotation(yaw*f, pitch*f, roll*f)
   }
-  final val rotation0 = Rotation(0, 0, 0)
+  val rotation0 = Rotation(0, 0, 0)
   
   case class Color(var r: Double, var g: Double, var b: Double) {
     def -=(f: Double): Unit = { r -= f; g -= f; b -= f }
@@ -214,7 +215,7 @@ final object Models {
     def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
     def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
   }
-  final def color(s: String): Color = {
+  def color(s: String): Color = {
     if(s.isEmpty()) grey0
     else {
       val split = s.split(" *, *")
@@ -222,9 +223,9 @@ final object Models {
       else Color(split(0).toDouble, split(1).toDouble, split(2).toDouble)
     }
   }
-  final def grey(d: Double): Color = Color(d, d, d)
-  final val grey0 = grey(0)
-  final val grey1 = grey(1)
+  def grey(d: Double): Color = Color(d, d, d)
+  val grey0 = grey(0)
+  val grey1 = grey(1)
 
   class DisplayModel(val displayList: Int) extends AnyVal {
     def toModel( //TODO: Ouch, this sucks, but gets around mutability of the memoization cache
@@ -293,7 +294,7 @@ final object Models {
       render3D {
         import transform._
         glCapability(GL_DEPTH_TEST, GL_LIGHTING, GL_BLEND) {
-        glBlendFuncTheUsual
+        glTheUsualBlendFunc
         if(tex != -1) {
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, tex)
@@ -334,7 +335,6 @@ final object Models {
     def apply(str: String): ThreadNetwork = {
       var initNodes = Vector.empty[Point]
       var nodes = Vector.empty[Point]
-      var lineStr = Vector.empty[(String, String)]
       var lines = Vector.empty[Line]
 		  var liminoidTexMap = Map.empty[Point, Int] withDefaultValue -1
       var phase = 0
@@ -382,28 +382,29 @@ final object Models {
               liminoidTexMap(node))
           }
         
-        return ThreadNetwork(initThreadNodes, threadNodes, lines);
+        return ThreadNetwork(initThreadNodes, threadNodes, lines)
     }
   }
 
   case class ThreadNetwork(initNodes: Vector[ThreadNode], nodes: Vector[ThreadNode], lines: Vector[Line]) extends RenderObject {
     def init(): Unit = {
-      nodes.foreach { node => 
+      for(node <- nodes) {
         node.init()
       }
+
       //val noparentThreads = nodes.flatMap(_.ins).toSet &~ nodes.flatMap(_.outs).toSet;
-      initNodes.foreach { node => 
+      for (node <- initNodes) { 
         node.init()
         node.outs.foreach(_.init())
       }
     }
     def process(implicit data: RenderProcessData): Unit = {
-      initNodes.foreach(_.process);
-      nodes.foreach(_.process);
+      initNodes.foreach(_.process)
+      nodes.foreach(_.process)
     }
     def render(implicit data: RenderRenderData): Unit = {
-      initNodes.foreach(_.render);
-      nodes.foreach(_.render);
+      initNodes.foreach(_.render)
+      nodes.foreach(_.render)
     }
   }
 
@@ -425,7 +426,7 @@ final object Models {
       //
     }
     
-    def process(implicit data: RenderProcessData) {
+    def process(implicit data: RenderProcessData): Unit = {
       if (fullyVisible) {
         if (!outsInitialized) {
       	  println("Outs initialized")
@@ -437,7 +438,7 @@ final object Models {
       //for(in <- ins) if(in.isInitialized) in.process
     }
 
-    def render(implicit data: RenderRenderData) {
+    def render(implicit data: RenderRenderData): Unit = {
       val liminoidSize = 100
       val coords = Coord(position.x-liminoidSize/2, position.y-liminoidSize/2, liminoidSize, liminoidSize)
       quad(coords, texture, false, false, visible,
@@ -450,7 +451,7 @@ final object Models {
             glPopMatrix
           })
       glCapability(GL_BLEND) {
-        glBlendFuncTheUsual
+        glTheUsualBlendFunc
         render2D {
           glPushMatrix
           glTranslated(data.camx, data.camy, 0)
@@ -462,7 +463,7 @@ final object Models {
     }
   }
 
-  final object Point {
+  object Point {
     def apply(str: Array[String]): Point = Point(str(0).toDouble, str(1).toDouble)
   }  
   case class Point(x: Double, y: Double) {
@@ -501,7 +502,7 @@ final object Models {
     def dist(that: ThreadPoint): Double = sqrt(pow2(this.x-that.x) + pow2(this.y-that.y))
   }
   
-  final object Line {
+  object Line {
     def apply(a: Array[String]): Line = 
       Line(
         Point(a(0).toDouble, a(1).toDouble), 
@@ -517,30 +518,32 @@ final object Models {
     }
     def generateThread(l: Line): Thread = {
       val thread = 
-        Thread(l.line.sliding(2).flatMap { case s =>
-          val (sx, sy) = s(0).toTuple
-          val (dx, dy) = s(1).toTuple
-          val segments = max(5, math.hypot(sx-dx, sy-dy)/20d);
+        Thread({
+          val (sx, sy) = l.p1.toTuple
+          val (dx, dy) = l.p2.toTuple
+          val segments = max(5, math.hypot(sx-dx, sy-dy)/20d)
+          val segmentsInt = segments.toInt
           var prev: Option[ThreadPoint] = None
-          Vector.tabulate(segments.toInt){ i => 
+          Vector.tabulate(segmentsInt){ i => 
             val (ratio1, ratio2) = getRatio(1 - i/segments)
             val out = 
               if(i == 0)
                 ThreadPoint(sx, sy)
-              else if(i == segments.toInt-1)
+              else if(i == segmentsInt)
                 ThreadPoint(dx, dy)
               else
-                ThreadPoint(sx*ratio1+dx*ratio2 + TableRandom.nextGaussian/7d, sy*ratio1+dy*ratio2 + TableRandom.nextGaussian/7d)
+                ThreadPoint(
+                    sx*ratio1+dx*ratio2 + TableRandom.nextGaussian/7d,
+                    sy*ratio1+dy*ratio2 + TableRandom.nextGaussian/7d)
 
-            //if(i == segments.toInt-1) out.pause
             prev.foreach { _.children = Vector(out) }
+            
             prev = Some(out)
             out
           }
-        }.toVector)
-        
-      thread.init()
+        })
       
+      thread.init()
       thread
     }
   }

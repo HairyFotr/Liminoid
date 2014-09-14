@@ -12,7 +12,7 @@ wallz = 700
 whiteish = 0.9
 blackish = 0.1
 
-d = 35
+d = {35 + {rand(2)}}
 ds = {3 + {rand(0.25)}}
 dd = {7 + {rand(2)}}
 
@@ -31,7 +31,7 @@ rockInd={choose(II,III,V)}
 rocks1="""
 %(10)
 model = "@rocksPath@_@rockInd@.obj"
-pos = {{sin({iC})} * @d@}, {{cos({iC})} * @d@}, @dd@
+pos = {{sin(@iC@)} * @d@}, {{cos(@iC@)} * @d@}, @dd@
 size = @ds@
 color = @whiteish@
 -
@@ -42,7 +42,7 @@ color = @whiteish@
 rocks2="""
 %(12)
 model = "@rocksPath@_@rockInd@.obj"
-pos = {{sin({iC})} * @d2@}, {{cos({iC})} * @d2@}, @dd2@
+pos = {{sin(@iC@)} * @d2@}, {{cos(@iC@)} * @d2@}, @dd2@
 size = @ds2@
 color = @blackish@
 -

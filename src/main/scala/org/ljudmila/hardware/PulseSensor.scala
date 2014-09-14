@@ -1,4 +1,4 @@
-package org.ljudmila.liminoid.hardware
+package org.ljudmila.hardware
 
 import jssc._
 import jssc.SerialPort.BAUDRATE_115200
@@ -6,7 +6,7 @@ import jssc.SerialPort.DATABITS_8
 import jssc.SerialPort.MASK_RXCHAR
 import jssc.SerialPort.PARITY_NONE
 import jssc.SerialPort.STOPBITS_1
-import org.ljudmila.liminoid.Utils.{ now, since }
+import org.ljudmila.Utils.{ now, since }
 
 object PulseSensor {
   import jssc.SerialPort._

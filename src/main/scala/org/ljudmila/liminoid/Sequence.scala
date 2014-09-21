@@ -3,6 +3,7 @@ import java.io._
 
 import Models._
 import org.ljudmila.Utils._
+import org.ljudmila.hardware.Camera
 
 sealed trait Sequence[T] {
   def path: String
@@ -13,6 +14,7 @@ sealed trait Sequence[T] {
   def stopAtEnd: Boolean
 
   //---//
+  println(path)
 
   var direction = 1
   var cursor = 0
@@ -94,6 +96,16 @@ sealed trait Sequence[T] {
   }
 }
 
+/*sealed trait VideoSource {
+  def get(): Int
+}
+case class ImageFolder(path: String) extends VideoSource {
+  
+}
+case class Camera(cam: Camera) extends VideoSource {
+  
+}*/
+
 case class TexSequence(
     val path: String,
     var active: Boolean = true,
@@ -137,17 +149,3 @@ case class OBJSequence(
   def preload(i: Int): Unit = { OBJModel.preload(files, i) }
   override def delete(d: String): Unit = { /*foo*/ }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

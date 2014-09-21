@@ -1,11 +1,16 @@
+dataFolder = "../LiminoiData/"
+imgs = "@dataFolder@img/"
+objs = "@dataFolder@obj/"
+
+
 frontCamera=0, 640x480
 backCamera=1, 640x480
 
 startingPhase=Threads
 startingPhase=Radiolarians
 
-liminoidSplash = "img/liminoid.png"
-liminoidSplashLoading = "img/liminoidLoading.png"
+liminoidSplash = "@imgs@liminoid.png"
+liminoidSplashLoading = "@imgs@liminoidLoading.png"
 
 wallz = 700
 
@@ -24,7 +29,7 @@ ds3 = 1.5
 dd3 = 16
 dh3 = 77
 
-rocksPath="obj/Prihod_iz_stene/Prihod iz stene_normale"
+rocksPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 rockInd={choose(II,III,V)}
 
 ### White center rocks ###
@@ -75,14 +80,14 @@ threadNetwork="""
 1700, 300
 -
 # visible nodes
-400, 750, "img/liminoidno_bitje_I.png"
-650, 500, "img/Alien_na_planetu_II.png"
-500, 300, "img/liminoidno_bitje_I.png"
-850, 400, "img/liminoidno_bitje_I.png"
-1200, 800, "img/liminoidno_bitje_I.png"
-850, 950, "img/Alien_na_planetu_II.png"
-1150, 300, "img/Alien_na_planetu_II.png"
-1350, 550, "img/liminoidno_bitje_I.png"
+400, 750, "@imgs@liminoidno_bitje_I.png"
+650, 500, "@imgs@Alien_na_planetu_II.png"
+500, 300, "@imgs@liminoidno_bitje_I.png"
+850, 400, "@imgs@liminoidno_bitje_I.png"
+1200, 800, "@imgs@liminoidno_bitje_I.png"
+850, 950, "@imgs@Alien_na_planetu_II.png"
+1150, 300, "@imgs@Alien_na_planetu_II.png"
+1350, 550, "@imgs@liminoidno_bitje_I.png"
 -
 # connections
 i1 -> 1

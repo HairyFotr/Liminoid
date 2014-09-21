@@ -4,9 +4,9 @@ import java.io.FileInputStream
 import java.io.BufferedInputStream
 import javazoom.jl.player.Player
 import org.ljudmila.Utils.{ thread, getFile }
+import scala.collection.mutable
 
 final object Sound {
-  val folder = "snd/"
   private var muted = false
   def mute(): Unit = synchronized {
     stopAll()
@@ -15,12 +15,14 @@ final object Sound {
   def unmute(): Unit = synchronized {
     muted = false
   }
-  val soundMap = getFile(folder + "list.txt").map { line =>
-    val (name, file) = line.splitAt(line.indexOf(' '))
-    (name, folder + file.trim)
-  }.toMap
+  val soundMap = mutable.HashMap.empty[String, String]
   
-  def init(): Unit = synchronized {
+  def init(folder: String): Unit = synchronized {
+    for(line <- getFile(folder + "list.txt")) {
+      val (name, file) = line.splitAt(line.indexOf(' '))
+      soundMap += name -> (folder + file.trim)
+    }
+
     for((_, file) <- soundMap) {
       val player = new Player(new BufferedInputStream(new FileInputStream(file)))
       player.play(0)

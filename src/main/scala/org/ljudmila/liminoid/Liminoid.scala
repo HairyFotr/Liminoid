@@ -30,6 +30,7 @@ import Models.{ Thread, ThreadNetwork, ThreadNode, Line, RenderProcessData, Rend
 final object Liminoid {
   val project = "Liminoid"
   val settings = SettingsReader.load("Settings.txt")
+  val dataFolder = settings("dataFolder")
   var startLiminoid = false
 
   var renderMode: RenderMode = Stereo
@@ -45,7 +46,7 @@ final object Liminoid {
     initDisplay()
     PulseSensor.init()
     RiftTracker.init()
-    Sound.init()
+    Sound.init(dataFolder + "snd/")
 
     mainLoop()
     
@@ -76,6 +77,7 @@ final object Liminoid {
     println("Display: "+bestMode.getWidth+"x"+bestMode.getHeight+"@"+bestMode.getFrequency+"Hz, "+bestMode.getBitsPerPixel+"bit")
     
     Display.create()
+    // TODO try antialiasing/multisampling/...:
     //Display.create(new PixelFormat(24, 8, 16, 8, 8))
     //Display.create(new PixelFormat(8, 0, 0, 8))
 
@@ -295,12 +297,12 @@ final object Liminoid {
   
   // The rock inside radiolarians
   lazy val core = 
-    OBJModel.load("obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.05, 0.05, 0.05))
+    OBJModel.load(dataFolder + "obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.05, 0.05, 0.05))
 
   // The radiolarian that opens up
   lazy val radiolarian =
     OBJSequence(
-      path = "obj/OBJ_the_radiolarian_normale",
+      path = dataFolder + "obj/OBJ_the_radiolarian_normale",
       active = false,
       stopAtEnd = true,
       delay = 80,
@@ -325,25 +327,25 @@ final object Liminoid {
         Transform(pos = radioBasePosVec, rot = basicRot)))
 
   /// Mandalas phase objects ///
-  lazy val blackMandala = TexSequence("seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
-  lazy val whiteMandala = TexSequence("seq/optipng_Sekvenca_mandala_belo_ozadje", delay = (1000/24d)*0.8, stopAtEnd = true, selfDestruct = true)
+  lazy val blackMandala = TexSequence(dataFolder + "seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
+  lazy val whiteMandala = TexSequence(dataFolder + "seq/optipng_Sekvenca_mandala_belo_ozadje", delay = (1000/24d)*0.8, stopAtEnd = true, selfDestruct = true)
   var whiteFlashTimer = -1
   var startHeart = -1
   var startDustHeart = -1
-  lazy val blackHeartMandala     = Texture("seq/Srcni_utrip_CO/Srcni_utrip_CO_01290.png")
-  lazy val blackHeartDustMandala = Texture("seq/Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png")
-  lazy val whiteHeartMandala     = Texture("seq/Srcni_utrip_BO/Srcni_utrip_BO_05848.png")
+  lazy val blackHeartMandala     = Texture(dataFolder + "seq/Srcni_utrip_CO/Srcni_utrip_CO_01290.png")
+  lazy val blackHeartDustMandala = Texture(dataFolder + "seq/Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png")
+  lazy val whiteHeartMandala     = Texture(dataFolder + "seq/Srcni_utrip_BO/Srcni_utrip_BO_05848.png")
   var zoom = 0d
 
   // BackSpace phase objects
   var wallTex = -1
   var backCamSnapSeq = 
     TexSequence(
-      "seq/BackSpace/",
+      dataFolder + "seq/BackSpace/",
       delay = 1000/15d,
       stopAtEnd = false,
       bounce = true)
-  var backCamSnap = Texture.getImage("seq/BackSpace/1.png")
+  var backCamSnap = Texture.getImage(dataFolder + "seq/BackSpace/1.png")
   var backCamSnapTex = backCamera.getTextureIDWait
   var backPixels = Vector.empty[Pixel]
   var backpixelBuffer = Array[Array[Boolean]]()
@@ -577,13 +579,15 @@ final object Liminoid {
           }
           def shake(m: Model): Transform = {
             val newPos =
-              if(tresenje)
+              if(tresenje) {
+                val osc = fade1 * abs(oscillator(phi = m.phi))
                 m.transform.pos + Vec(
-                  (TableRandom.nextGaussian/5)  * fade1 * abs(oscillator(phi = m.phi)),
-                  (TableRandom.nextGaussian/8)  * fade1 * abs(oscillator(phi = m.phi)),
-                  (TableRandom.nextGaussian/15) * fade1 * abs(oscillator(phi = m.phi)))
-              else
+                  (TableRandom.nextGaussian/5)  * osc,
+                  (TableRandom.nextGaussian/8)  * osc,
+                  (TableRandom.nextGaussian/15) * osc)
+              } else {
                 m.transform.pos
+              }
 
             m.transform.copy(pos = newPos)
           }
@@ -724,10 +728,10 @@ final object Liminoid {
           diffStarted = false
           diffDone = false
           
-          //backCamera.saveImage("img/Image.png")
+          //backCamera.saveImage(dataFolder + "img/Image.png")
           backPixels = Vector.empty
-          //backCamSnap = Texture.getImage("img/Image.png")
-          //backCamSnapTex = Texture("img/Image.png")
+          //backCamSnap = Texture.getImage(dataFolder + "img/Image.png")
+          //backCamSnapTex = Texture(dataFolder + "img/Image.png")
           backPixelDrop = true
           for(i <- 1 to 5) backCamera.getTextureIDWait
           Sound.play("razpad")
@@ -831,11 +835,11 @@ final object Liminoid {
           //fade1 = 0
           //fade2 = 0
 
-          //backCamera.saveImage("img/Image.png")
+          //backCamera.saveImage(dataFolder + "img/Image.png")
           backPixels = Vector.empty
           phaseTimer = now
-          //backCamSnap = Texture.getImage("img/Image.png")
-          //backCamSnapTex = Texture("img/Image.png")
+          //backCamSnap = Texture.getImage(dataFolder + "img/Image.png")
+          //backCamSnapTex = Texture(dataFolder + "img/Image.png")
         }
 
         val f = 1400d
@@ -899,7 +903,7 @@ final object Liminoid {
     if(isKeyDown(KEY_C)) {
       // Takes about 5 frames to set exposure, let's wait...
       for(i <- 1 to 10) backCamera.getTextureIDWait
-      //backCamera.saveImage("img/Image.png")
+      //backCamera.saveImage(dataFolder + "img/Image.png")
       backPixels = Vector.empty
       phaseTimer = now
       backCamSnapSeq.rewind()
@@ -918,15 +922,15 @@ final object Liminoid {
       for(i <- 1 to 20) backCamera.getTextureIDWait
       val n = 100
       for(i <- 1 to n) {
-        backCamera.saveImage("seq/BackSpace/"+i+".png")
+        backCamera.saveImage(dataFolder + "seq/BackSpace/"+i+".png")
       }
       backPixels = Vector.empty
       phaseTimer = now
-      backCamSnap = Texture.getImage("seq/BackSpace/1.png")
+      backCamSnap = Texture.getImage(dataFolder + "seq/BackSpace/1.png")
       backCamSnapSeq.clear()
       backCamSnapSeq.preload(n)
       backCamSnapSeq.rewind()
-      backCamSnapTex = Texture("seq/BackSpace/1.png")
+      backCamSnapTex = Texture(dataFolder + "seq/BackSpace/1.png")
       backPixelDrop = true
       backPixelMerge = false
       backPixelMerged = true

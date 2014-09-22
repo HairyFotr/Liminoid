@@ -469,15 +469,15 @@ final object Liminoid {
         // Triggers lazy load or preload of some resources
         println("Time" + frames + ": " + Utils.time(
           frames match {
-            case 1 =>
+            case 1 => 
             case 2 => if(startingPhase <= Radiolarians) radiolarian
-            case 3 => 
-            case 4 => if(startingPhase <= Radiolarians) rocks 
-            case 5 => 
-            case 6 => if(startingPhase <= Mandalas) blackMandala.preload(200)
-            case 7 => if(startingPhase <= Mandalas) blackHeartMandala
-            case 8 => if(startingPhase <= Mandalas) blackHeartDustMandala
-            case 9 => if(startingPhase <= Mandalas) whiteHeartMandala
+            case 3 => if(startingPhase <= Radiolarians) rocks
+            case 4 => 
+            case 5 => if(startingPhase <= Mandalas) blackMandala.preload(500)
+            case 6 => if(startingPhase <= Mandalas) blackHeartMandala
+            case 7 => if(startingPhase <= Mandalas) blackHeartDustMandala
+            case 8 => if(startingPhase <= Mandalas) whiteHeartMandala
+            case 9 => if(startingPhase <= Mandalas) whiteMandala.preload(200)
             case _ => if(startLiminoid) gotoPhase(startingPhase) else sleep(25)
           }))
         
@@ -594,7 +594,7 @@ final object Liminoid {
 
           // Draw radiolarian
           val oscDiv = 10d
-          val radiolarianSize = Vec(1+osc1/oscDiv, 1+osc2/oscDiv, 1+osc3/oscDiv)
+          val radiolarianSize = Vec(1 + osc1/oscDiv, 1 + osc2/oscDiv, 1 + osc3/oscDiv)
           if(!pause) radiolarian.transform += radiolarian.transformVector ** renderTime
           if(firstRadioVector) {
             radiolarian.transformVector.pos = radiolarian.transformVector.pos.withZ(radioBasePosVecZ*1.75)
@@ -605,7 +605,7 @@ final object Liminoid {
           }
           
           radiolarian.transform.size = {
-            val scale = 1.6
+            val scale = 1.7
             
             (if(radioOpen) {
               (radiolarianSize * (scale * (1 - fade1))) + vec((scale + 1/oscDiv) * fade1)
@@ -617,12 +617,12 @@ final object Liminoid {
 
           val shaked: Transform = if(radioOpen) radiolarian.transform else shake(radiolarian())
           radiolarian().render(transform = shaked) // duplication below
-
+          
           // Make core go black after radiolarian opening
           if(radioHalfOpen) core.color -= 0.0002
-
+          
           core.render(transform = shaked.copy(size = radiolarian.transform.size * radiolarian.coreTransform.pos.x))
-
+          
           // Draw rocks
           glMatrix {
             for(rock <- rocks) {
@@ -652,7 +652,6 @@ final object Liminoid {
         initPhase {
           fade1 = 0
           fade2 = 0
-          Sound.stopAll // FIXME remove after shortening sound
           Sound.play("mandalas")
         }
 

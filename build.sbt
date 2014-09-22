@@ -22,7 +22,9 @@ libraryDependencies <++= scalaVersion(v => Seq(
 
 fork := true
 
-javaOptions += "-Xmx2G"
+javaOptions ++= Seq(
+  "-Xmx2G",
+  "-XX:MaxGCPauseMillis=15")
 
 scalacOptions ++= Seq(
   "-optimise",

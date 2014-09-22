@@ -292,17 +292,17 @@ final object Models {
 
     def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha): Unit = {
       render3D {
-        import transform._
         glCapability(GL_DEPTH_TEST, GL_LIGHTING, GL_BLEND) {
-        glTheUsualBlendFunc
-        if(tex != -1) {
+          glTheUsualBlendFunc
+          if(tex != -1) {
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, tex)
           } else {
             glDisable(GL_TEXTURE_2D)
           }
-  
+          
           glMatrix {
+            import transform.{ pos, rot, size }
             glTranslated(pos.x, pos.y, pos.z)
             glRotated(rot.x, 1, 0, 0)
             glRotated(rot.y, 0, 1, 0)
@@ -311,7 +311,7 @@ final object Models {
             glColor4d(color.r, color.g, color.b, alpha)
             glCallList(displayList)
           }
-  
+          
           glDisable(GL_TEXTURE_2D)
         }
       }

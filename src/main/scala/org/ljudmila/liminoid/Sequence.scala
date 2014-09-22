@@ -6,26 +6,16 @@ import org.ljudmila.Utils._
 import org.ljudmila.hardware.Camera
 
 sealed trait Sequence[T] {
-  def path: String
-  def ext: String
   def delay: Double
   def bounce: Boolean
   var active: Boolean
   def stopAtEnd: Boolean
 
   //---//
-  println(path)
 
   var direction = 1
   var cursor = 0
   var startTime = -1
-  val files =
-    (new File(path))
-      .listFiles
-      .filter { _.isFile }
-      .filter { _.toString endsWith ext }
-
-  val frames = files.map { _.toString }.sorted
 
   def preload(): Unit
   def get(): T
@@ -39,6 +29,8 @@ sealed trait Sequence[T] {
     })
 
   def delete(d: String): Unit
+  
+  def lastFrame: Int
 
   def reset(): Unit = rewind
   def rewind(): Unit = {
@@ -49,7 +41,6 @@ sealed trait Sequence[T] {
 
   def moveCursor(): Unit = synchronized {
     if(startTime == -1) startTime = now
-    val lastFrame = frames.size-1
 
     //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
     if(direction > 0) {
@@ -59,17 +50,14 @@ sealed trait Sequence[T] {
         val diff = cursor - lastFrame
         if(bounce) {
           cursor = math.max(0, lastFrame - diff) //TODO: Possible multiple bounces, but meh
-          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
           direction = -direction
           startTime = now //TODO: not right
-        } else { // if(loop)
+        } else {
           cursor = math.min(diff, lastFrame)
-          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
         }
         
         if(stopAtEnd) {
           cursor = lastFrame
-          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
           active = false
         }
       }
@@ -78,17 +66,14 @@ sealed trait Sequence[T] {
       if(cursor <= 0) {
         if(bounce) {
           cursor = math.min(-cursor, lastFrame)
-          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
           direction = -direction
           startTime = now
-        } else { // if(loop)
+        } else {
           cursor = math.max(lastFrame + cursor, 0)
-          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
         }
         
         if(stopAtEnd) {
           cursor = 0
-          //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
           active = false
         }
       }
@@ -96,15 +81,32 @@ sealed trait Sequence[T] {
   }
 }
 
-/*sealed trait VideoSource {
-  def get(): Int
+sealed trait Source[T] {
+  def get(): T
 }
-case class ImageFolder(path: String) extends VideoSource {
+sealed trait Source2[T, U] extends Source[T] {
+  def getAlter(): U = null.asInstanceOf[U]
+}
+
+abstract class FolderSource[T](path: String, ext: String) extends Source[T] with Sequence[T] {
+
+  val files =
+    (new File(path))
+      .listFiles
+      .filter { _.isFile }
+      .filter { _.toString endsWith ext }
+      
+  val frames = files.map { _.toString }.sorted
+  
+  val lastFrame = frames.size - 1
   
 }
-case class Camera(cam: Camera) extends VideoSource {
+abstract class FolderSource2[T, U](path: String, ext: String) extends FolderSource[T](path: String, ext: String) with Source2[T, U] with Sequence[T] {
   
-}*/
+}
+abstract class CameraSource(cam: Camera) extends Source2[Int, Int] {
+  
+}
 
 case class TexSequence(
     val path: String,
@@ -113,7 +115,7 @@ case class TexSequence(
     var bounce: Boolean = false,
     var stopAtEnd: Boolean = false,
     var selfDestruct: Boolean = false,
-    val ext: String = ".png") extends Sequence[Int] {
+    val ext: String = ".png") extends FolderSource2[Int, Int](path, ext) {
 
   var prev = ""
   override def get(): Int = {
@@ -134,14 +136,14 @@ case class OBJSequence(
     val path: String,
     val transform: MutableTransform = transform001,
     val transformVector: MutableTransform = transform000,
-    var oscillatorPhase: Double = 0,
+    //var oscillatorPhase: Double = 0,
     var active: Boolean = true,
     var delay: Double = 80,
     var color: Color,
     var coreTransform: MutableTransform,
     var bounce: Boolean = true,
     var stopAtEnd: Boolean = false,
-    val ext: String = ".obj") extends Sequence[Model] {
+    val ext: String = ".obj") extends FolderSource[Model](path, ext) {
 
   val models: Array[Model] = frames.map { name => OBJModel.load(name).toModel(transform = transform, color = color, coreTransform = coreTransform) }
   override def get(): Model = models(cursor)

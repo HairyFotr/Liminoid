@@ -49,7 +49,7 @@ rocks2="""
 model = "@rocksPath@_@rockInd@.obj"
 pos = {{sin(@iC@)} * @d2@}, {{cos(@iC@)} * @d2@}, @dd2@
 size = @ds2@
-color = @blackish@
+color = {select({@i@ mod 2}, @blackish@, @whiteish@)}
 -
 %
 """

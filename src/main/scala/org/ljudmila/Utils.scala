@@ -9,6 +9,7 @@ final object Utils {
   implicit class I(val i: Int) { 
     def second(): Int = if(i == 1) i.seconds else throw new IllegalArgumentException
     def seconds(): Int = i*1000
+    def FPS(): Double = 1000d/i
   }
   
   def min(a: Double, b: Double, c: Double): Double = math.min(math.min(a, b), c)

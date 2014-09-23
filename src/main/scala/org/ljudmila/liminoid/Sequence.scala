@@ -113,7 +113,7 @@ case class TexSequence(
     var active: Boolean = true,
     var delay: Double = 1000/24d, //24fps
     var bounce: Boolean = false,
-    var stopAtEnd: Boolean = false,
+    var stopAtEnd: Boolean = true,
     var selfDestruct: Boolean = false,
     val ext: String = ".png") extends FolderSource2[Int, Int](path, ext) {
 

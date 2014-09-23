@@ -206,21 +206,24 @@ final object Liminoid {
   lazy val liminoidSplashLoading = Texture(settings("liminoidSplashLoading"))
   
   /// Liminoid phases ///
-  val phases = Map(
-    "Limbo" -> -1,
-    "Setup" -> 0,
-    "Radiolarians" -> 1,
-    "Mandalas" -> 2,
-    "BackSpace" -> 3,
-    "Threads" -> 4
-  )
-  val Limbo = phases("Limbo")
-  val Setup = phases("Setup")
+  val phases = 
+    mutable.ListMap(
+      "Limbo" -> -1,
+      "Setup" -> 0,
+      "Radiolarians" -> 1,
+      "Mandalas" -> 2,
+      "BackSpace" -> 3,
+      "Threads" -> 4,
+      "FlyingRock" -> 5
+    )
+  val Limbo        = phases("Limbo")
+  val Setup        = phases("Setup")
   val Radiolarians = phases("Radiolarians")
-  val Mandalas = phases("Mandalas")
-  val BackSpace = phases("BackSpace")
-  val Threads = phases("Threads")
-  val PhaseTerminator = Threads // Last phase
+  val Mandalas     = phases("Mandalas")
+  val BackSpace    = phases("BackSpace")
+  val Threads      = phases("Threads")
+  val FlyingRock   = phases("FlyingRock")
+  val PhaseTerminator = phases.last._2 // Last phase
   var phaseTimer = now // Tracks time from the beginning of phase
 
   var currentPhase = Setup // Current phase
@@ -302,7 +305,7 @@ final object Liminoid {
   // The radiolarian that opens up
   lazy val radiolarian =
     OBJSequence(
-      path = dataFolder + "obj/OBJ_the_radiolarian_normale",
+      path = settings("radiolarianFolder"),
       active = false,
       stopAtEnd = true,
       delay = 80,
@@ -327,8 +330,16 @@ final object Liminoid {
         Transform(pos = radioBasePosVec, rot = basicRot)))
 
   /// Mandalas phase objects ///
-  lazy val blackMandala = TexSequence(settings("blackMandala"), delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
-  lazy val whiteMandala = TexSequence(settings("whiteMandala"), delay = (1000/24d)*0.8, stopAtEnd = true, selfDestruct = true)
+  lazy val blackMandala = 
+    TexSequence(
+      settings("blackMandala"),
+      delay = 25.FPS,
+      selfDestruct = true)
+  lazy val whiteMandala = 
+    TexSequence(
+      settings("whiteMandala"),
+      delay = 25.FPS,
+      selfDestruct = true)
   var whiteFlashTimer = -1
   var startHeart = -1
   var startDustHeart = -1
@@ -705,12 +716,12 @@ final object Liminoid {
           }
         }
 
-        if(whiteMandala.cursor > 1440) {
+        if(whiteMandala.cursor >= whiteMandala.lastFrame) {
           whiteMandala.active = false
           quad(coord2000, alpha = fade1)
-        } else if(whiteMandala.cursor > 1175) {
+        } else if(whiteMandala.cursor >= whiteMandala.lastFrame-265) {
           quad(coord2000, alpha = fade1)
-        } else if(whiteMandala.cursor > 1000) {
+        } else if(whiteMandala.cursor >= whiteMandala.lastFrame-440) {
           fade1 = 0
         }
 
@@ -861,6 +872,8 @@ final object Liminoid {
 
         //backBlendRender
 
+      case FlyingRock =>
+        
       case _ =>
     }
   }

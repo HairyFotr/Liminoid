@@ -9,6 +9,7 @@ backCamera=1, 640x480
 
 startingPhase=Threads
 startingPhase=Radiolarians
+startingPhase=Mandalas
 
 liminoidSplash = "@imgs@liminoid.png"
 liminoidSplashLoading = "@imgs@liminoidLoading.png"
@@ -33,6 +34,7 @@ dh3 = 77
 rockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 rockInd={choose(II,III,V)}
 
+radiolarianFolder="@objs@OBJ_the_radiolarian_normale"
 coreModel="@rockPath@_II.obj"
 
 ### White center rocks ###

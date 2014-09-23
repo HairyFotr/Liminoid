@@ -297,7 +297,7 @@ final object Liminoid {
   
   // The rock inside radiolarians
   lazy val core = 
-    OBJModel.load(dataFolder + "obj/Prihod_iz_stene/Prihod iz stene_normale_II.obj").toModel(color = Color(0.05, 0.05, 0.05))
+    OBJModel.load(settings("coreModel")).toModel(color = Color(0.05, 0.05, 0.05))
 
   // The radiolarian that opens up
   lazy val radiolarian =
@@ -327,14 +327,14 @@ final object Liminoid {
         Transform(pos = radioBasePosVec, rot = basicRot)))
 
   /// Mandalas phase objects ///
-  lazy val blackMandala = TexSequence(dataFolder + "seq/optipng_Sekvenca_mandala_crno_ozadje", delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
-  lazy val whiteMandala = TexSequence(dataFolder + "seq/optipng_Sekvenca_mandala_belo_ozadje", delay = (1000/24d)*0.8, stopAtEnd = true, selfDestruct = true)
+  lazy val blackMandala = TexSequence(settings("blackMandala"), delay = 1000/24d, stopAtEnd = true, selfDestruct = true)
+  lazy val whiteMandala = TexSequence(settings("whiteMandala"), delay = (1000/24d)*0.8, stopAtEnd = true, selfDestruct = true)
   var whiteFlashTimer = -1
   var startHeart = -1
   var startDustHeart = -1
-  lazy val blackHeartMandala     = Texture(dataFolder + "seq/Srcni_utrip_CO/Srcni_utrip_CO_01290.png")
-  lazy val blackHeartDustMandala = Texture(dataFolder + "seq/Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png")
-  lazy val whiteHeartMandala     = Texture(dataFolder + "seq/Srcni_utrip_BO/Srcni_utrip_BO_05848.png")
+  lazy val blackHeartMandala     = Texture(settings("blackHeartMandala"))
+  lazy val blackHeartDustMandala = Texture(settings("blackHeartDustMandala"))
+  lazy val whiteHeartMandala     = Texture(settings("whiteHeartMandala"))
   var zoom = 0d
 
   // BackSpace phase objects
@@ -473,7 +473,7 @@ final object Liminoid {
             case 2 => if(startingPhase <= Radiolarians) radiolarian
             case 3 => if(startingPhase <= Radiolarians) rocks
             case 4 => 
-            case 5 => if(startingPhase <= Mandalas) blackMandala.preload(500)
+            case 5 => if(startingPhase <= Mandalas) blackMandala.preload(300)
             case 6 => if(startingPhase <= Mandalas) blackHeartMandala
             case 7 => if(startingPhase <= Mandalas) blackHeartDustMandala
             case 8 => if(startingPhase <= Mandalas) whiteHeartMandala

@@ -1,6 +1,7 @@
 dataFolder = "../LiminoiData/"
 imgs = "@dataFolder@img/"
 objs = "@dataFolder@obj/"
+seqs = "@dataFolder@seq/"
 
 
 frontCamera=0, 640x480
@@ -29,13 +30,15 @@ ds3 = 1.5
 dd3 = 16
 dh3 = 77
 
-rocksPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
+rockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 rockInd={choose(II,III,V)}
+
+coreModel="@rockPath@_II.obj"
 
 ### White center rocks ###
 rocks1="""
 %(10)
-model = "@rocksPath@_@rockInd@.obj"
+model = "@rockPath@_@rockInd@.obj"
 pos = {{sin(@iC@)} * @d@}, {{cos(@iC@)} * @d@}, @dd@
 size = @ds@
 color = @whiteish@
@@ -46,7 +49,7 @@ color = @whiteish@
 ### Black outer rocks ###
 rocks2="""
 %(12)
-model = "@rocksPath@_@rockInd@.obj"
+model = "@rockPath@_@rockInd@.obj"
 pos = {{sin(@iC@)} * @d2@}, {{cos(@iC@)} * @d2@}, @dd2@
 size = @ds2@
 color = {select({@i@ mod 2}, @blackish@, @whiteish@)}
@@ -56,13 +59,13 @@ color = {select({@i@ mod 2}, @blackish@, @whiteish@)}
 
 ### Random outer rocks ###
 rocks3="""
-%(15)model = "@rocksPath@_@rockInd@.obj"
+%(15)model = "@rockPath@_@rockInd@.obj"
 pos = {rand(@dh3@)}, {rand(@dh3@)}, {@dd3@ + {rand(5)}}
 size = {@ds3@ + {rand(1)}}
 color = @whiteish@
 transform = 5
 -
-model = "@rocksPath@_@rockInd@.obj"
+model = "@rockPath@_@rockInd@.obj"
 pos = {rand(@dh3@)}, {rand(@dh3@)}, {@dd3@ + {rand(5)}}
 size = {@ds3@ + {rand(1)}}
 color = @blackish@
@@ -70,6 +73,12 @@ transform = 5
 -
 %
 """
+
+blackMandala = "@seqs@optipng_Sekvenca_mandala_crno_ozadje"
+blackHeartMandala = "@seqs@Srcni_utrip_CO/Srcni_utrip_CO_01290.png"
+blackHeartDustMandala = "@seqs@Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png"
+whiteMandala = "@seqs@Sekvenca_mandala_belo_ozadje_II"
+whiteHeartMandala = "@seqs@Srcni_utrip_BO/Srcni_utrip_BO_05848.png"
 
 threadNetwork="""
 # initial nodes

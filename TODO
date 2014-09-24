@@ -1,9 +1,21 @@
 TASKS
-  first view postavitev in sound
-    mini se razprsijo in odbijajo od velikih
-    veliki se vrtijo okrog sredisca in oscilirajo pravokotno na izhodisce
-  thread -> flashbang -> rock
-  sizofrenija
+  /// some things belong in config files (which?)
+  //// make camera id config and/or autodetect
+  /// first view postavitev in sound
+  //// mini kamni se razprsijo in odbijajo od velikih
+  //// veliki se vrtijo okrog sredisca in oscilirajo pravokotno na izhodisce
+  /// thread -> flashbang -> rock
+  /// sizofrenija
+  // low priority
+  /// mono/stereo view switching is broken on at least radiolarians phase
+  /// am I deleting all used textures? (camera?)
+  /// why is so much stuff in Arduino synchronized?
+  /// make oscillator/fade/... library
+  /// eclipse strip window title
+  /// mouse replaces rift sensor, if missing
+  /// split setup / rendering, as to get rid of lazy vals, and things like that
+  /// check things for frame dependence instead of time dependence
+  /// check for resolution dependence (especially 2D, I think)
   
   0
     Sensors calibration (visual(javacv) or magnetometer(jrift)?)
@@ -30,20 +42,6 @@ TASKS
   5
     Fly rock
 
-// General tasks:
-/// mouse replaces rift sensor, if missing
-/// split setup / rendering, as to get rid of lazy vals, and things like that
-/// check things for frame dependence instead of time dependence
-/// check for resolution dependence (especially 2D, I think)
-/// some things belong in config files (which?)
-//// make camera id config and/or autodetect
-/// am I deleting all used textures? (camera?)
-/// why is so much stuff in Arduino synchronized?
-/// make oscillator/fade/... library
-/// eclipse strip window title
-/// Data folder -> ../LiminoiData
-/// mono/stereo view switching is broken on at least radiolarians phase
-
 SOME NOTES
   prehod med fazami
   setup -> heartbeat works, rift view is forward, images preloaded ->
@@ -53,13 +51,14 @@ SOME NOTES
 
   refactor
     start opengl, then go onto app -> get rid of some false lazy loading
+    or pack phase objects into actual objects
   optimizations, ideas, ...
     preload images while fps >= 60
   details
-    call camtex when switching to a camera phase
+    call camtex a few times when switching to a camera phase
     menger sponge feathered texture on radiolarians!!!
 
-  realne koordinate stene
+  "realne" koordinate stene?
   senca na steni / roka pred kamni
   floaterji so bolj na mestu
   radiolarians gredo na pogled proti tebi

@@ -191,7 +191,7 @@ final object Liminoid {
   * Resets the view of current frame
   */
   def resetView(): Unit = {
-    // clear color and depth buffer
+    // TODO clear color and depth buffer?
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glMatrixMode(GL_MODELVIEW)
@@ -212,7 +212,7 @@ final object Liminoid {
       "Setup" -> 0,
       "Radiolarians" -> 1,
       "Mandalas" -> 2,
-      "BackSpace" -> 3,
+      "Schizo" -> 3,
       "Threads" -> 4,
       "FlyingRock" -> 5
     )
@@ -220,7 +220,7 @@ final object Liminoid {
   val Setup        = phases("Setup")
   val Radiolarians = phases("Radiolarians")
   val Mandalas     = phases("Mandalas")
-  val BackSpace    = phases("BackSpace")
+  val Schizo       = phases("Schizo")
   val Threads      = phases("Threads")
   val FlyingRock   = phases("FlyingRock")
   val PhaseTerminator = phases.last._2 // Last phase
@@ -348,7 +348,7 @@ final object Liminoid {
   lazy val whiteHeartMandala     = Texture(settings("whiteHeartMandala"))
   var zoom = 0d
 
-  // BackSpace phase objects
+  // Schizo phase objects
   var wallTex = -1
   var backCamSnapSeq = 
     TexSequence(
@@ -381,10 +381,6 @@ final object Liminoid {
   var prevRadioOpen = false
   var prevEnd = false
 
-  def glClear(c: Double): Unit = {
-    GL11.glClearColor(c.toFloat, c.toFloat, c.toFloat, 1)
-    GL11.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  }
   def drawFrontCam(): Unit = {
     val img = frontCamera.getTextureID
     val camScale = -1030
@@ -455,7 +451,7 @@ final object Liminoid {
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       case Setup => ///////////////////////////////////////////////////////////////////////////////
-        glClear(0)
+        glClear1d(0)
 
         quad(Coord(winWidth/2-940/2,winHeight/2-550/2, 940,550), if(frames <= 10 && !startLiminoid) liminoidSplashLoading else liminoidSplash)
 
@@ -474,7 +470,7 @@ final object Liminoid {
         //startLiminoid = true
         var startingPhase = phases(settings("startingPhase"))
         //startingPhase = Mandalas
-        //startingPhase = BackSpace
+        //startingPhase = Schizo
         //gotoPhase(Threads)
 
         // Triggers lazy load or preload of some resources
@@ -497,7 +493,7 @@ final object Liminoid {
       /////////////////////////////////////////////////////////////////////////////////////////////
       case Limbo => ///////////////////////////////////////////////////////////////////////////////
         //Limbo phase, should never happen :)
-        glClear(1)
+        glClear1d(1)
 
         drawFrontCam()
 
@@ -547,7 +543,7 @@ final object Liminoid {
 
 
         /// Rendering
-        glClear(0)
+        glClear1d(0)
         drawFrontCam()
 
         val posVec =
@@ -673,7 +669,7 @@ final object Liminoid {
         var dust = false
 
         if(blackMandala.active) {
-          glClear(0)
+          glClear1d(0)
           quad(Coord(posx,posy, w,h), blackMandala())
           if(fade2 < 1) quad(coord2000, alpha = 1 - fade2, color = grey0)
 
@@ -682,13 +678,13 @@ final object Liminoid {
           val firstWhite = (whiteFlashTimer == -1)
           if(firstWhite) {
             whiteFlashTimer = now
-            glClear(0.6)
+            glClear1d(0.6)
             fade2 = 0.4
           } else if(since(whiteFlashTimer) <= 30.seconds) {
-            glClear(1-fade2)
+            glClear1d(1-fade2)
             dust = true
           } else {
-            glClear(fade2)
+            glClear1d(fade2)
             beat = false
           }
 
@@ -731,7 +727,7 @@ final object Liminoid {
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
-      case BackSpace => ///////////////////////////////////////////////////////////////////////////
+      case Schizo => ///////////////////////////////////////////////////////////////////////////
         initPhase {
           fade1 = 0
           fade2 = 0
@@ -752,7 +748,7 @@ final object Liminoid {
         val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
         val (camx, camy) = (rotx*0.7-camw/7, roty*0.7-camh/7)
 
-        glClear(0)
+        glClear1d(0)
         //TODO: lock in backCamSnapTex and do a Future[blob]
         val backDrop =
           if((backPixels.isEmpty && backPixelDrop && !finished) || Keyboard.isKeyDown(Keyboard.KEY_I))
@@ -860,7 +856,7 @@ final object Liminoid {
         implicit val rpd = RenderProcessData(beat)
         implicit val rrd = RenderRenderData(camx, camy, camw, camh)
 
-        glClear(0)
+        glClear1d(0)
         //quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
         quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
 

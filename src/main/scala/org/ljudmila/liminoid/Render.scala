@@ -16,6 +16,10 @@ case object Mono extends RenderMode
 case object Stereo extends RenderMode
 
 final object GLadDOnS {
+  def glClear1d(c: Double): Unit = {
+    glClearColor(c.toFloat, c.toFloat, c.toFloat, 1)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  }
   def glMatrix(func: => Unit): Unit = {
     glPushMatrix
     func

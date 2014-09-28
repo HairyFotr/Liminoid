@@ -266,6 +266,7 @@ final object Liminoid {
   // variables that go up to 1 by little each frame
   var (fade1, fadeSpeed1) = (1d, 0.002)
   var (fade2, fadeSpeed2) = (1d, 0.04)
+  var (fadeFlash, fadeSpeedFlash) = (1d, 0.06)
 
   // Cameras
   //val cams = Array(hardware.Camera(camId = 0, 1920, 1080), hardware.Camera(camId = 1, 1920, 1080), hardware.Camera(camId = 2, 1280, 720), hardware.Camera(camId = 3, 1280, 720))
@@ -424,6 +425,7 @@ final object Liminoid {
 
     if(fade1 < 1) fade1 += fadeSpeed1 else fade1 = 1
     if(fade2 < 1) fade2 += fadeSpeed2 else fade2 = 1
+    if(fadeFlash < 1) fadeFlash += fadeSpeedFlash else fadeFlash = 1
 
     val (mw, mh) = (200-osc1*100-osc3*30, 160-osc2*50-osc3*20)
     val (cx, cy) = (winWidth/2 - mw/2, winHeight/2 - mh/2)
@@ -566,7 +568,7 @@ final object Liminoid {
             +rotation.roll/rotationCalibration)
 
         if(izStene) {
-          // Draw invisible wobbly wall
+          // Draw invisible wall
           glCapability(GL_DEPTH_TEST, GL_BLEND) {
             glTheUsualBlendFunc
             glColor4f(1, 1, 1, 0)
@@ -857,7 +859,6 @@ final object Liminoid {
         implicit val rrd = RenderRenderData(camx, camy, camw, camh)
 
         glClear1d(0)
-        //quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
         quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
 
         val since5 = since(phaseTimer)  >= 5.seconds
@@ -867,12 +868,55 @@ final object Liminoid {
         threadNetwork.render
 
         //backBlendRender
+        
+        if (testNum1 != 0) {
+          var _i = 0
+          def i() = { _i += 1; _i - 1 } 
+          if (flash == i) {
+        	  println("flash tiem!")
+        	  fadeFlash = 0
+            flash = 1
+          } else if (flash == i) {
+            quad(coord2000, alpha = fadeFlash)
+            if(fadeFlash == 1) {
+          	  fadeFlash = 0
+              flash += 1
+            }
+          } else if (flash == i) {
+            quad(coord2000, alpha = 1)
+            if(fadeFlash == 1) {
+          	  fadeFlash = 0
+              flash += 1
+            }
+          } else if (flash == i) {
+            if(fadeFlash == 1) flash += 1
+            quad(coord2000, alpha = 1-fadeFlash)
+            if(fadeFlash == 1) {
+          	  fadeFlash = 0
+              flash += 1
+            }
+          } else if (flash == i) {
+            flash += 1
+            /*core.color = whiteish
+            core.transform.pos = startPos
+            core.transform.size = radiolarian.transform.size * radiolarian.coreTransform.pos.x
+            core.transformVector.pos = radioBasePosVec
+            core.transformVector.rot = basicRot*/
+          } else if (flash == i) {
+            //if(!pause) core.transform += core.transformVector ** renderTime
+            //core.render(transform = core.transform)
+            testNum1 = 0
+            flash = 0
+          }
+        }
 
       case FlyingRock =>
         
       case _ =>
     }
   }
+  
+  var flash = 0;
   
   def processInput(): Unit = {
     import Keyboard._

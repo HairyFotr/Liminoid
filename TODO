@@ -16,6 +16,8 @@ TASKS
   /// split setup / rendering, as to get rid of lazy vals, and things like that
   /// check things for frame dependence instead of time dependence
   /// check for resolution dependence (especially 2D, I think)
+  //naming
+  ///tresenje, etc..
   
   0
     Sensors calibration (visual(javacv) or magnetometer(jrift)?)

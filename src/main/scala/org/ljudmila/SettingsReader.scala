@@ -103,6 +103,7 @@ final object SettingsReader {
         "[{]([-+]?[0-9.E-]+) *([-+*/]|mod) *([-+]?[0-9.E-]+)[}]".r.replaceAllIn(value, m => infixFuncMap(m.group(2))(m.group(1), m.group(3)))
       }
 
+      // TODO map => case partial map for added parsing
       val funcMap = Map[String, Array[String] => String](
           "rand"   -> (a => ((nextDouble*2 - 1) * a(0).toDouble).toString),
           "choose" -> (a => a.toSeq.random),

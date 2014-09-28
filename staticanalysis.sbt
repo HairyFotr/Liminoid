@@ -27,13 +27,15 @@ scalacOptions += "-P:linter:disable:UseHypot"
 
 // Scapegoat
 // add this to project/plugins.sbt
-//addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "0.93.1")
+//addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "<version>")
 scapegoatDisabledInspections := Seq("VarUse", "NullParameter", "NullAssignment", "WildcardImport")
 
 // Scalastyle
 ScalastylePlugin.Settings
 
 PluginKeys.config <<= baseDirectory { base => base / "sca" / "scalastyle-config.xml" }
+
+watchSources += baseDirectory.value / "sca" / "scalastyle-config.xml"
 
 // Findbugs (optionally put findbugs plugins (such as fb-contrib and findsecbugs) jars into ~/.findbugs/plugin)
 findbugsSettings

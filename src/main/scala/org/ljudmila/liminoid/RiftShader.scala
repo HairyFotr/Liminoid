@@ -54,14 +54,12 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
 
   val (shader, vertShader, fragShader) = initShaders()
   val (colorTextureID, framebufferID, depthRenderBufferID) = initFBO()
-  Util.checkGLError()
   
   val LensCenterLocation = glGetUniformLocation(shader, "LensCenter")
   val ScreenCenterLocation = glGetUniformLocation(shader, "ScreenCenter")
   val ScaleLocation = glGetUniformLocation(shader, "Scale")
   val ScaleInLocation = glGetUniformLocation(shader, "ScaleIn")
   val HmdWarpParamLocation = glGetUniformLocation(shader, "HmdWarpParam")
-  Util.checkGLError()
 
   def initFBO(): (Int, Int, Int) = {
     val framebufferID = glGenFramebuffers()
@@ -91,9 +89,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
 
   def beginOffScreenRenderPass(): Unit = {
     glBindTexture(GL_TEXTURE_2D, 0)
-    Util.checkGLError()
     glBindFramebuffer(GL_FRAMEBUFFER, framebufferID)
-    Util.checkGLError()
   }
   
   def endOffScreenRenderPass(): Unit = {
@@ -101,9 +97,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
   }
   
   def renderToScreen(): Unit = {
-    Util.checkGLError()
     glUseProgram(shader)
-    Util.checkGLError()
     
     glEnable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
@@ -132,7 +126,6 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     val eyeHoleScale = 1.75f
     
     this.validate()
-    Util.checkGLError()
     
     val DistortionXCenterOffset = eye match {
       case Left  => +0.25f
@@ -167,7 +160,6 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
 
     val vertShader = createVertShader(vertexShader)
     val fragShader = createFragShader(fragmentShader)
-    Util.checkGLError()
 
     if(vertShader != 0 && fragShader != 0) {
       glAttachShader(shader, vertShader)
@@ -187,7 +179,6 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     } else {
       println("No shaders")
     }
-    Util.checkGLError()
 
     (shader, vertShader, fragShader)
   }

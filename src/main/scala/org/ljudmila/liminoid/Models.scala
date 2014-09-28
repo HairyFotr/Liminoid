@@ -2,7 +2,7 @@ package org.ljudmila.liminoid
 
 import org.lwjgl.opengl.GL11._
 import math._
-import Liminoid.{ winWidth, winHeight, renderMode, eyeCorrection, testNum1, osc1 }
+import Liminoid.{ winWidth, winHeight, renderMode, eyeCorrection, testNum1, testNum2, testNum3, osc1 }
 import scala.collection.mutable
 import java.io.File
 import scala.util.Random._
@@ -10,7 +10,7 @@ import scala.language.implicitConversions
 import scala.annotation.switch
 import Render.{ render3D, render2D }
 import org.ljudmila.SettingsReader
-import org.ljudmila.Utils.{ TableRandom, pow2, getRatio }
+import org.ljudmila.Utils.{ TableRandom, pow2, getRatio, withAlternative }
 import GLadDOnS._
 
 final object Models {
@@ -55,6 +55,7 @@ final object Models {
         .toModel(
             baseTransform + Transform(vec(reader("pos")), vec(reader("rot")), vec(reader("size"))),
             baseTransformVector,
+            spread = (withAlternative(reader("spreadx").toDouble, 0), withAlternative(reader("spready").toDouble, 0)),
             color = color(reader("color")),
             coreTransform = Transform(vec(reader("transform")), vec0, vec0))
             //alpha, phi, theta, baseVector, coreTransform)
@@ -188,6 +189,7 @@ final object Models {
     def setPosX(d: Double): Unit = { pos = pos.withX(d) }
     def setPosY(d: Double): Unit = { pos = pos.withY(d) }
     def setPosZ(d: Double): Unit = { pos = pos.withZ(d) }
+    def setPos(d: Double): Unit = { pos = pos.withZ(d) }
 
     def +=(vector: TransformLike): Unit = {
       pos = pos + vector.pos
@@ -232,12 +234,16 @@ final object Models {
         transform: MutableTransform = transform001,
         transformVector: MutableTransform = transform000,
         tex: Int = -1,
+        spread: (Double, Double) = (0, 0),
         color: Color,
         alpha: Double = 1d,
         phi: Double = 2*Pi*nextDouble,
         theta: Double = 0,
         baseVector: Vec = vec0,
-        coreTransform: MutableTransform = transform000): Model = Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform)
+        coreTransform: MutableTransform = transform000): Model = {
+      
+      Model(displayList, transform, transformVector, tex, color, alpha, phi, theta, baseVector, coreTransform, spread)
+    }
   }
   
   class RawModel(vertices: Vertices, /*//uv/uvVertices: UVVertices,*/ normals: Normals, faces: Faces) {
@@ -283,12 +289,13 @@ final object Models {
       val transform: MutableTransform,
       val transformVector: MutableTransform,
       val tex: Int,
-      val color: Color,
-      val alpha: Double,
+      var color: Color,
+      var alpha: Double,
       var phi: Double,
       var theta: Double,
       var baseVector: Vec,
-      var coreTransform: MutableTransform) {
+      var coreTransform: MutableTransform, 
+      var spread: (Double, Double) = (0,0)) {
 
     def render(transform: TransformLike = transform, tex: Int = tex, color: Color = color, alpha: Double = alpha): Unit = {
       render3D {
@@ -354,12 +361,33 @@ final object Models {
             nodes :+= node 
             if(strings.size > 2) liminoidTexMap += node -> Texture(strings(2))
           case 2 =>
-            val strings = line.split("->")
-            def parse(str: String): Point = 
-              if(str(0) != 'i') nodes(str.toInt)
-              else initNodes(str.tail.toInt)
+            try {
+              var strings = line.split("->")
+              var direction = 1
+              if (strings.size == 1) {
+                strings = line.split("<-")
+                direction = -1
+              }
+              def parse(str: String) = {
+                if(str(0) != 'i') nodes(str.toInt-1)
+                else initNodes(str.tail.toInt-1)
+              }
+              
 
-            lines :+= Line(parse(strings(0)), parse(strings(1)))
+            lines :+= 
+              (if (direction == 1) {
+                Line(parse(strings(0)), parse(strings(1)))
+              } else {
+                Line(parse(strings(1)), parse(strings(0)))
+              })
+            } catch {
+              case e: Exception =>
+                println(initNodes)
+                println(initNodes.size)
+                println(nodes)
+                println(nodes.size)
+                throw e
+            }
         }
       }
 
@@ -387,6 +415,9 @@ final object Models {
   }
 
   case class ThreadNetwork(initNodes: Vector[ThreadNode], nodes: Vector[ThreadNode], lines: Vector[Line]) extends RenderObject {
+    
+    def fullyVisible = nodes.forall(_.fullyVisible)
+    
     def init(): Unit = {
       for(node <- nodes) {
         node.init()
@@ -404,7 +435,8 @@ final object Models {
     }
     def render(implicit data: RenderRenderData): Unit = {
       initNodes.foreach(_.render)
-      nodes.foreach(_.render)
+      nodes.foreach(_.renderThreads)
+      nodes.foreach(_.renderNode)
     }
   }
 
@@ -439,17 +471,10 @@ final object Models {
     }
 
     def render(implicit data: RenderRenderData): Unit = {
-      val liminoidSize = 100
-      val coords = Coord(position.x-liminoidSize/2, position.y-liminoidSize/2, liminoidSize, liminoidSize)
-      quad(coords, texture, false, false, visible,
-          preRender = {
-            glPushMatrix
-            glTranslated(data.camx, data.camy, 0)
-            glScaled(data.camw/1920d, data.camh/1080d, 1)
-          },
-          postRender = {
-            glPopMatrix
-          })
+      renderThreads
+      renderNode
+    }
+    def renderThreads(implicit data: RenderRenderData): Unit = {
       glCapability(GL_BLEND) {
         glTheUsualBlendFunc
         render2D {
@@ -461,6 +486,19 @@ final object Models {
         }
       }
     }
+    def renderNode(implicit data: RenderRenderData): Unit = {
+      val liminoidSize = 50
+      val coords = Coord(position.x-liminoidSize/2, position.y-liminoidSize/2, liminoidSize, liminoidSize)
+      quad(coords, texture, false, false, visible,
+        preRender = {
+          glPushMatrix
+          glTranslated(data.camx, data.camy, 0)
+          glScaled(data.camw/1920d, data.camh/1080d, 1)
+        },
+        postRender = {
+          glPopMatrix
+        })
+    }
   }
 
   object Point {
@@ -470,8 +508,8 @@ final object Models {
     def toTuple() = (x, y)
   }
   object ThreadPoint {
-    val visibilityThreshold = 0.0001d
-    val visibilityVelocity = 0.002d
+    val visibilityThreshold = 0.00035d
+    val visibilityVelocity = 0.0055d
   }
   case class ThreadPoint(var desiredx: Double, var desiredy: Double) {
     var x: Double = desiredx
@@ -521,15 +559,15 @@ final object Models {
         Thread({
           val (sx, sy) = l.p1.toTuple
           val (dx, dy) = l.p2.toTuple
-          val segments = max(5, math.hypot(sx-dx, sy-dy)/20d)
+          val segments = max(5, math.hypot(sx-dx, sy-dy)/30d)
           val segmentsInt = segments.toInt
           var prev: Option[ThreadPoint] = None
           Vector.tabulate(segmentsInt){ i => 
             val (ratio1, ratio2) = getRatio(1 - i/segments)
             val out = 
-              if(i == 0)
+              if(i <= 0)
                 ThreadPoint(sx, sy)
-              else if(i == segmentsInt)
+              else if(i >= segmentsInt-1)
                 ThreadPoint(dx, dy)
               else
                 ThreadPoint(
@@ -608,7 +646,7 @@ final object Models {
     }
     
     def render(implicit data: RenderRenderData): Unit = {
-      glLineWidth((2d + (testNum1/10d)*(osc1+1)).toFloat)
+      glLineWidth((2d + (testNum2/10d)*(osc1+1)).toFloat)
       glPrimitive(GL_LINE_STRIP) {
         var i = 0
         while(i < nodes.length && nodes(i).isVisible) {

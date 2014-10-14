@@ -160,7 +160,7 @@ final object Models {
       if(split.size == 1) vec(s.toDouble)
       else Vec(split(0).toDouble, split(1).toDouble, split(2).toDouble)
     }
-  } 
+  }
   def vec(d: Double) = Vec(d, d, d)
   def vecx(d: Double) = Vec(d, 0, 0)
   def vecy(d: Double) = Vec(0, d, 0)
@@ -399,7 +399,8 @@ final object Models {
               node,
               ins  = lines.filter{ _.p2 eq node }.flatMap(threadMap),
               outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
-              liminoidTexMap(node))
+              liminoidTexMap(node),
+              20+nextInt(15))
           }
         val initThreadNodes = 
           initNodes.map{ node => 
@@ -407,7 +408,8 @@ final object Models {
               node,
               ins  = Vector.empty,
               outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
-              liminoidTexMap(node))
+              liminoidTexMap(node),
+              20+nextInt(15))
           }
         
         return ThreadNetwork(initThreadNodes, threadNodes, lines)
@@ -434,7 +436,7 @@ final object Models {
       nodes.foreach(_.process)
     }
     def render(implicit data: RenderRenderData): Unit = {
-      initNodes.foreach(_.render)
+      initNodes.foreach(_.renderThreads)
       nodes.foreach(_.renderThreads)
       nodes.foreach(_.renderNode)
     }
@@ -444,12 +446,13 @@ final object Models {
       position: Point,
       ins: Vector[Thread],
       outs: Vector[Thread],
-      texture: Int) extends RenderObject {
+      texture: Int,
+      nodeSize: Double) extends RenderObject {
     
     var outsInitialized = false
     
     def visible = 
-      if(ins.isEmpty) 0 else ins.map{ thread => min(thread.visible/3, 1d) }.sum
+      if(ins.isEmpty) 0 else ins.map{ thread => min(pow2(thread.visible), 1d) }.max
         
     def fullyVisible = 
       ins.isEmpty || ins.maxBy{ thread => thread.visible }.visible >= 1d
@@ -487,8 +490,12 @@ final object Models {
       }
     }
     def renderNode(implicit data: RenderRenderData): Unit = {
-      val liminoidSize = 50
-      val coords = Coord(position.x-liminoidSize/2, position.y-liminoidSize/2, liminoidSize, liminoidSize)
+      val liminoidSizex = nodeSize + (TableRandom.nextGaussianUnsafe/100d) * nodeSize
+      val liminoidSizey = nodeSize + (TableRandom.nextGaussianUnsafe/100d) * nodeSize
+      val posx = position.x-liminoidSizex/2 + (TableRandom.nextGaussianUnsafe/50d) * nodeSize
+      val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * nodeSize
+      
+      val coords = Coord(posx, posy, liminoidSizex, liminoidSizey)
       quad(coords, texture, false, false, visible,
         preRender = {
           glPushMatrix
@@ -604,8 +611,8 @@ final object Models {
         val node = nodes(i)
         //node.x += node.xv
         //node.y += node.yv
-        node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussian/4d
-        node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussian/4d
+        node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussian/1.5d
+        node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussian/1.5d
         //node.desiredx = node.desiredx*0.96 + node.x*0.04
         //node.desiredy = node.desiredy*0.96 + node.y*0.04
         if(i > 0) {
@@ -648,6 +655,7 @@ final object Models {
     def render(implicit data: RenderRenderData): Unit = {
       glLineWidth((2d + (testNum2/10d)*(osc1+1)).toFloat)
       glPrimitive(GL_LINE_STRIP) {
+      //glPrimitive(GL_LINES) {
         var i = 0
         while(i < nodes.length && nodes(i).isVisible) {
           val node = nodes(i)

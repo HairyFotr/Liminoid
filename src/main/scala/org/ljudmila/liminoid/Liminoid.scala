@@ -212,7 +212,7 @@ final object Liminoid {
       "Setup" -> 0,
       "Radiolarians" -> 1,
       "Mandalas" -> 2,
-      "Schizo" -> 3,
+      "Schizoid" -> 3,
       "Threads" -> 4,
       "FlyingRock" -> 5
     )
@@ -220,7 +220,7 @@ final object Liminoid {
   val Setup        = phases("Setup")
   val Radiolarians = phases("Radiolarians")
   val Mandalas     = phases("Mandalas")
-  val Schizo       = phases("Schizo")
+  val Schizoid     = phases("Schizoid")
   val Threads      = phases("Threads")
   val FlyingRock   = phases("FlyingRock")
   val PhaseTerminator = phases.last._2 // Last phase
@@ -349,7 +349,7 @@ final object Liminoid {
   lazy val whiteHeartMandala     = Texture(settings("whiteHeartMandala"))
   var zoom = 0d
 
-  // Schizo phase objects
+  // Schizoid phase objects
   var wallTex = -1
   var backCamSnapSeq = 
     TexSequence(
@@ -472,15 +472,15 @@ final object Liminoid {
         //startLiminoid = true
         var startingPhase = phases(settings("startingPhase"))
         //startingPhase = Mandalas
-        //startingPhase = Schizo
+        //startingPhase = Schizoid
         //gotoPhase(Threads)
 
         // Triggers lazy load or preload of some resources
         println("Time" + frames + ": " + Utils.time(
           frames match {
             case 1 => 
-            case 2 => if(startingPhase <= Radiolarians) radiolarian
-            case 3 => if(startingPhase <= Radiolarians) rocks
+            case 2 => if(startingPhase <= Radiolarians || startingPhase == FlyingRock) radiolarian
+            case 3 => if(startingPhase <= Radiolarians || startingPhase == FlyingRock) rocks
             case 4 => 
             case 5 => if(startingPhase <= Mandalas) blackMandala.preload(300)
             case 6 => if(startingPhase <= Mandalas) blackHeartMandala
@@ -729,7 +729,7 @@ final object Liminoid {
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
-      case Schizo => ///////////////////////////////////////////////////////////////////////////
+      case Schizoid => ////////////////////////////////////////////////////////////////////////////
         initPhase {
           fade1 = 0
           fade2 = 0
@@ -838,14 +838,13 @@ final object Liminoid {
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
-      case Threads => ///////////////////////////////////////////////////////////////////////////
+      case Threads => /////////////////////////////////////////////////////////////////////////////
         initPhase {
           //fade1 = 0
           //fade2 = 0
 
           //backCamera.saveImage(dataFolder + "img/Image.png")
           backPixels = Vector.empty
-          phaseTimer = now
           //backCamSnap = Texture.getImage(dataFolder + "img/Image.png")
           //backCamSnapTex = Texture(dataFolder + "img/Image.png")
         }
@@ -896,6 +895,7 @@ final object Liminoid {
               flash += 1
             }
           } else if (flash == i) {
+            nextPhase
             flash += 1
             /*core.color = whiteish
             core.transform.pos = startPos
@@ -909,9 +909,36 @@ final object Liminoid {
             flash = 0
           }
         }
-
-      case FlyingRock =>
         
+        backBlendRender
+        
+        
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      case FlyingRock => //////////////////////////////////////////////////////////////////////////
+        initPhase {
+          core.color = whiteish
+          core.transform.pos = startPos
+          core.transform.size = radiolarian.transform.size * radiolarian.coreTransform.pos.x
+          core.transformVector.pos = radioBasePosVec
+          core.transformVector.rot = basicRot
+        }
+        
+        val f = 1400d
+        val (camw, camh) = (f*16/9d, f) //(winHeight*4/3d, winHeight)
+        val (camx, camy) = (rotx*0.7-camw/7, roty*0.7-camh/7)
+
+        glClear1d(0)
+        quad(Coord(camx,camy, camw,camh), backCamera.getTextureID, flipx = false)
+
+        if(!pause) core.transform += core.transformVector ** renderTime
+        core.render(transform = core.transform)
+        
+        backBlendRender
+        
+                
       case _ =>
     }
   }

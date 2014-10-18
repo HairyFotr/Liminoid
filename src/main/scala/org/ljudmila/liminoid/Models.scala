@@ -359,7 +359,9 @@ final object Models {
             val strings = line.split(",")  
             val node = Point(strings)
             nodes :+= node 
-            if(strings.size > 2) liminoidTexMap += node -> Texture(strings(2))
+            if(strings.size > 2) {
+              liminoidTexMap += node -> Texture(strings(3))
+            }
           case 2 =>
             try {
               var strings = line.split("->")
@@ -490,10 +492,10 @@ final object Models {
       }
     }
     def renderNode(implicit data: RenderRenderData): Unit = {
-      val liminoidSizex = nodeSize + (TableRandom.nextGaussianUnsafe/100d) * nodeSize
-      val liminoidSizey = nodeSize + (TableRandom.nextGaussianUnsafe/100d) * nodeSize
-      val posx = position.x-liminoidSizex/2 + (TableRandom.nextGaussianUnsafe/50d) * nodeSize
-      val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * nodeSize
+      val liminoidSizex = position.s + (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val liminoidSizey = position.s + (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val posx = position.x-liminoidSizex/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
+      val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       
       val coords = Coord(posx, posy, liminoidSizex, liminoidSizey)
       quad(coords, texture, false, false, visible,
@@ -509,10 +511,17 @@ final object Models {
   }
 
   object Point {
-    def apply(str: Array[String]): Point = Point(str(0).toDouble, str(1).toDouble)
+    def apply(str: Array[String]): Point = {
+      if(str.size == 2)
+        Point(str(0).toDouble, str(1).toDouble)
+      else
+        Point(str(0).toDouble, str(1).toDouble, str(2).toDouble) 
+    }
   }  
-  case class Point(x: Double, y: Double) {
+  case class Point(x: Double, y: Double, var s: Double = 1.0) {
+    s = s*30;
     def toTuple() = (x, y)
+    //def toTuple() = (x, y, s)
   }
   object ThreadPoint {
     val visibilityThreshold = 0.00035d
@@ -655,7 +664,7 @@ final object Models {
     def render(implicit data: RenderRenderData): Unit = {
       glLineWidth((2d + (testNum2/10d)*(osc1+1)).toFloat)
       glPrimitive(GL_LINE_STRIP) {
-      //glPrimitive(GL_LINES) {
+      //glPrimitive(GL_LINES) {// Dashed
         var i = 0
         while(i < nodes.length && nodes(i).isVisible) {
           val node = nodes(i)

@@ -28,7 +28,7 @@ scalacOptions += "-P:linter:disable:UseHypot"
 // Scapegoat
 // add this to project/plugins.sbt
 //addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "<version>")
-scapegoatDisabledInspections := Seq("VarUse", "NullParameter", "NullAssignment", "WildcardImport")
+//scapegoatDisabledInspections := Seq("VarUse", "NullParameter", "NullAssignment", "WildcardImport")
 
 // Scalastyle
 ScalastylePlugin.Settings

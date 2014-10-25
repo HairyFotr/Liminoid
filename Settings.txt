@@ -3,14 +3,29 @@ imgs = "@dataFolder@img/"
 objs = "@dataFolder@obj/"
 seqs = "@dataFolder@seq/"
 
+backN="@seqs@BackSpaceNew/"
+back0="@seqs@LayerNight0/"
+back1="@seqs@LayerNightCard1/"
+back2="@seqs@LayerNightCard2/"
+back3="@seqs@Layer3/"
 
-frontCamera=0, 640x480
-backCamera=1, 640x480
+renderMode=stereo
+renderMode=mono
 
-startingPhase=Mandalas
+frontCameraId=0
+frontCameraX=640
+frontCameraY=480
+backCameraId=1
+backCameraX=1280
+backCameraY=720
+
+threshold=25
+
 startingPhase=FlyingRock
 startingPhase=Threads
 startingPhase=Radiolarians
+startingPhase=Mandalas
+startingPhase=Schizoid
 
 liminoidSplash = "@imgs@liminoid.png"
 liminoidSplashLoading = "@imgs@liminoidLoading.png"
@@ -84,7 +99,8 @@ transform = 5
 blackMandala = "@seqs@optipng_Sekvenca_mandala_crno_ozadje"
 blackHeartMandala = "@seqs@Srcni_utrip_CO/Srcni_utrip_CO_01290.png"
 blackHeartDustMandala = "@seqs@Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png"
-whiteMandala = "@seqs@Sekvenca_mandala_belo_ozadje_II"
+#whiteMandala = "@seqs@Sekvenca_mandala_belo_ozadje_II"
+whiteMandala = "@seqs@optipng_Sekvenca_mandala_belo_ozadje"
 whiteHeartMandala = "@seqs@Srcni_utrip_BO/Srcni_utrip_BO_05848.png"
 
 rockimgs = "@dataFolder@img/Rocks/"
@@ -140,8 +156,24 @@ threadNetwork="""
 358, 276, 1.0, "@rockimgs@rock22.png"
 1033, 274, 1.0, "@rockimgs@rock23.png"
 
-
 -
+1010, 344
+666, 720
+1199, 500
+690, 867
+769, 440
+677, 580
+1277, 792
+1245, 900
+-
+23 -> d1
+10 -> d2
+20 -> d3
+11 -> d4
+21 -> d5
+3 -> d6
+14 -> d7
+5 -> d8
 # connections
 1 <- i1
 1 <- i3

@@ -7,7 +7,7 @@ import org.ljudmila.Utils.{ thread, getFile }
 import scala.collection.mutable
 
 final object Sound {
-  private var muted = false
+  private var muted = true
   def mute(): Unit = synchronized {
     stopAll()
     muted = true
@@ -31,7 +31,7 @@ final object Sound {
   }
   
   var players = Set.empty[Player]
-  def stopAll(): Unit = synchronized {
+  def stopAll(): Unit = players.synchronized {
     players.foreach(_.close)
     players = Set.empty
   }
@@ -40,13 +40,13 @@ final object Sound {
     if(!muted) {
       thread {
         val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
-        synchronized {
+        players.synchronized {
           players += player
         }
 
         player.play
 
-        synchronized {
+        players.synchronized {
           players -= player
           player.close
         }

@@ -12,6 +12,12 @@ import scala.annotation.switch
 import org.ljudmila.Utils.{ TableRandom, pow2, getRatio }
 
 sealed trait RenderMode
+final object RenderMode {
+  def apply(s: String) = {
+    if(s.toLowerCase() == "mono") Mono
+    else Stereo
+  }
+}
 case object Mono extends RenderMode
 case object Stereo extends RenderMode
 

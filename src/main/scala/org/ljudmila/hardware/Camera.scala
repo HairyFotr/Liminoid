@@ -1,8 +1,12 @@
 package org.ljudmila.hardware
 
-import org.bytedeco.javacv._
-import org.bytedeco.javacpp.opencv_core._
-import org.bytedeco.javacpp.opencv_highgui._
+//import org.bytedeco.javacv._
+//import org.bytedeco.javacpp.opencv_core._
+//import org.bytedeco.javacpp.opencv_highgui._
+import com.googlecode.javacv._
+import com.googlecode.javacv.cpp.opencv_core._
+import com.googlecode.javacv.cpp.opencv_highgui._;
+
 import collection.mutable
 import scala.actors.Futures._
 import System.err
@@ -26,7 +30,7 @@ object Camera {
     try {
       val cam = new OpenCVFrameGrabber(camId)
       cam.setImageWidth(width)
-      cam.setImageHeight(width)
+      cam.setImageHeight(height)
       cam.start
       cam.grab
       FrameGrabbers += camId -> cam
@@ -93,9 +97,21 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
   }
 
-  def getDiffBlob(pixels1: Array[Int]): Vector[Pixel] = {
+  def getSnap(): Array[Int] = {
+    return image2Snap(captureFrameImg())
+  }
+  def image2Snap(img: IplImage): Array[Int] = {
+    val image = img.getBufferedImage
+    val (w, h) = (image.getWidth, image.getHeight)
+    val size = w*h
+    val pixels = Array.ofDim[Int](size)
+
+    image.getRGB(0,0, w,h, pixels, 0,w)
+    pixels
+  }
+  
+  def getDiffBlob(pixels1: Array[Int], threshold: Int): Vector[Pixel] = {
     val img = captureFrameImg()
-    if(img == null) return Vector.empty
     val image = img.getBufferedImage
     val (w, h) = (image.getWidth, image.getHeight)
     val size = w*h
@@ -103,29 +119,42 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
 
     image.getRGB(0,0, w,h, pixels2, 0,w)
 
-    val threshold = 70
-    def compare(c1: Int, c2: Int): Int = math.abs(
+    getDiffBlob(pixels1, pixels2, threshold, w,h)
+  }
+
+  def getDiffBlob(pixels1: Array[Int], pixels2: Array[Int], threshold: Int, w: Int, h: Int): Vector[Pixel] = {
+    val size = w*h
+    
+    /*def compare(c1: Int, c2: Int): Int = math.abs(
       ((c1 & 255) - (c2 & 255)) //+
       //(((c1 >> 8) & 255) - ((c2 >> 8) & 255)) +
       //(((c1 >> 16) & 255) - ((c2 >> 16) & 255))
-    ) /// 3
+    ) /// 3*/
+    def compare(c1: Int, c2: Int): Int = math.abs(
+      ((c1 & 255) - (c2 & 255)) +
+      (((c1 >> 8) & 255) - ((c2 >> 8) & 255)) +
+      (((c1 >> 16) & 255) - ((c2 >> 16) & 255))
+    ) / 3
 
     val pix = Vector.newBuilder[Pixel]
+    val margin = 5
     var i = 0 
     do {
       val idw = i/w
-      if (idw%2 == 0) {
-        val imw = i%w
-        
-        if(imw > 1 && imw < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold)
-          pix += Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
-        
-        i += 2
-      } else {
-        i += w
+      val imw = i%w
+      if(imw > 1+margin && imw < w-1-margin && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) {
+        pix += Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
       }
+      
+      i += 1
     } while(i < size)
     pix.result
+
+    /*var pix = Vector.empty[Pixel]
+    for(i <- 0 until size) if(i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) {
+      pix :+= Pixel(sx = i%w, sy = i/w, color = Color.BGR(pixels2(i)))
+    }
+    pix*/
   }
 
   private var camtexFuture = future[IplImage] { null }
@@ -141,6 +170,26 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
     camTex
   } catch { case x: Exception => if(Camera.supressErrors) -1 else throw x } }
+
+  private var camCapture: IplImage = null
+  private var camSnap = Array[Int]()
+  
+  def getTextureIDandSnap(): (Int, Array[Int]) = synchronized { try {
+    if(camTex == -1) {
+      camCapture = captureFrameImg()
+      camTex = captureFrameTex(camCapture)
+      camtexFuture = future { captureFrameImg() }
+      camSnap = image2Snap(camCapture) 
+    } else if(camtexFuture.isSet) {
+      glDeleteTextures(camTex)
+      camCapture = camtexFuture()
+      camTex = captureFrameTex(camCapture)
+      camtexFuture = future { captureFrameImg() }
+      camSnap = image2Snap(camCapture) 
+    }
+    
+    (camTex, camSnap)
+  } catch { case x: Exception => if(Camera.supressErrors) (-1, Array()) else throw x } }
 
   def getTextureIDWait(): Int = synchronized { try {
     var limit = 100

@@ -115,7 +115,8 @@ case class TexSequence(
     var bounce: Boolean = false,
     var stopAtEnd: Boolean = true,
     var selfDestruct: Boolean = false,
-    val ext: String = ".png") extends FolderSource2[Int, Int](path, ext) {
+    val ext: String = ".png",
+    val snap: Array[Int] = null) extends FolderSource2[Int, Int](path, ext) {
 
   var prev = ""
   override def get(): Int = {

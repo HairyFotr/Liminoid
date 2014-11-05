@@ -95,8 +95,8 @@ final object Render {
         dis
       case Stereo =>
         //TODO: name these
-        val x = 0.5f       //+ Liminoid.testNum
-        val x2 = 126+30+22 //+ Liminoid.testNum
+        val x = (0.5f)     //+ Liminoid.testNum
+        val x2 = (126+30+22-22) //+ Liminoid.testNum4
         glCapability(GL_SCISSOR_TEST) {
           glMatrix {
             glScissor(0,0, winWidth/2,winHeight)

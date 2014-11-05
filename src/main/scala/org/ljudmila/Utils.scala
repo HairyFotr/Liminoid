@@ -27,12 +27,15 @@ final object Utils {
     private[this] val length = 10000
     private[this] val intTable   = Array.fill(length)(Random.nextInt(length))
     private[this] val gaussTable = Array.fill(length)(Random.nextGaussian)
+    private[this] val doubleTable = Array.fill(length)(Random.nextDouble)
+    
     def nextGaussian: Double = gaussTable(Random.nextInt(length))
     def nextGaussianUnsafe: Double = { // Thread Unsafe //TODO: Measure with synchronization
       index += 1
       if(index >= length) index = 0
       gaussTable(intTable(index))
     }
+    def nextDouble: Double = doubleTable(Random.nextInt(length))
   }
 
   def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}

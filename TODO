@@ -1,4 +1,61 @@
 TASKS
+
+  Zid
+    prehod
+      //ne smejo it partikli nazaj skupi
+      vedno vec noisa
+      po n sekundah se zacne network
+   
+   Network
+    se naredi
+    potem pridejo nitke proti sredini
+    tam se sformira liminoid
+      naredi tuptup hearbeat
+    zid potegne v liminoid
+    
+    ---zacne vlect kamne v liminoid
+
+
+  gibanje kamnov, razprsitev, globina
+  
+  Possible bug source:
+    !!! torender se v 2d/3d 2x poklice, preveri da se ne racuna prevec v stereo
+    frame independent
+      fade
+      particle creation
+      movement
+
+  Galerija Tweek:
+    Mandale
+      mogoce noise
+  
+  Galerija Kalibracija:
+    Definicija podrocja stola
+    Kamera nekje v visini glave  
+    
+  Galerija Panic:
+    Stol je prevelik
+      nekako zajamemo sliko se malo naokrog
+    Pulsesensor je crap
+      ga uporabimo le za BPM, ali sploh ne
+  
+  Possibly deprecated:
+    white noise -> formiranje kamna
+      convex hull / premikanje proti sredini
+      flash
+      3d kamen poleti + sound
+    
+    back to front
+    
+    network
+      po networku kamni v sredino
+      frame independant
+      prehitro se pojavi kamen
+    
+    senzorji
+  
+
+
   /// some things belong in config files (which?)
   //// make camera id config and/or autodetect
   /// first view postavitev in sound

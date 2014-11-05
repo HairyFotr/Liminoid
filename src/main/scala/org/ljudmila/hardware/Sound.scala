@@ -7,7 +7,7 @@ import org.ljudmila.Utils.{ thread, getFile }
 import scala.collection.mutable
 
 final object Sound {
-  private var muted = true
+  private var muted = false
   def mute(): Unit = synchronized {
     stopAll()
     muted = true

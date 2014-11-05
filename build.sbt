@@ -1,4 +1,4 @@
-scalaVersion := "2.11.3"
+scalaVersion := "2.11.4"
 
 javaOptions += "-Djava.library.path=lib"
 
@@ -27,7 +27,7 @@ javaOptions ++= Seq(
   "-XX:MaxGCPauseMillis=15")
 
 scalacOptions ++= Seq(
-  "-optimize",  "-target:jvm-1.7",
+  "-optimize", "-target:jvm-1.7",
   "-Yinline", "-Yclosure-elim")
 
 initialCommands := """

@@ -9,22 +9,45 @@ back1="@seqs@LayerNightCard1/"
 back2="@seqs@LayerNightCard2/"
 back3="@seqs@Layer3/"
 
+backN="@seqs@BackSpaceNew/"
+back0="@seqs@SEBackSpace0/"
+back1="@seqs@SEBackSpace1/"
+back2="@seqs@SEBackSpace1/"
+back3="@seqs@SEBackSpace1/"
+
+backN="@seqs@BackSpaceNew/"
+back0="@seqs@Ljudmila0/"
+back1="@seqs@Ljudmila1/"
+back2="@seqs@Ljudmila2/"
+back3="@seqs@Ljudmila3/"
+
+backN="@seqs@BackSpaceNew/"
+back0="@seqs@Sasa0/"
+back1="@seqs@Sasa2/"
+back2="@seqs@Sasa1/"
+back3="@seqs@Sasa2/"
+
+threadNetworkOffsetx=0
+threadNetworkOffsety=-70
+
 renderMode=stereo
 renderMode=mono
+screenx=1280
+screeny=800
 
-frontCameraId=0
-frontCameraX=640
-frontCameraY=480
-backCameraId=1
+frontCameraId=3
+frontCameraX=1280
+frontCameraY=720
+backCameraId=2
 backCameraX=1280
 backCameraY=720
 
-threshold=25
+threshold=50
 
 startingPhase=FlyingRock
 startingPhase=Threads
-startingPhase=Radiolarians
 startingPhase=Mandalas
+startingPhase=Radiolarians
 startingPhase=Schizoid
 
 liminoidSplash = "@imgs@liminoid.png"
@@ -47,10 +70,10 @@ ds3 = 1.5
 dd3 = 16
 dh3 = 77
 
-rockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
+rockPath="@objs@Prihod_iz_stene_Decimated_min/Prihod iz stene_normale"
 rockInd={choose(II,III,V)}
 
-radiolarianFolder="@objs@OBJ_the_radiolarian_normale"
+radiolarianFolder="@objs@OBJ_the_radiolarian_normale_min"
 coreModel="@rockPath@_II.obj"
 
 ### White center rocks ###
@@ -157,14 +180,26 @@ threadNetwork="""
 1033, 274, 1.0, "@rockimgs@rock23.png"
 
 -
-1010, 344
-666, 720
-1199, 500
-690, 867
-769, 440
-677, 580
-1277, 792
-1245, 900
+# dangling nodes
+#1010, 344
+#666, 720
+#1199, 500
+#690, 867
+#769, 440
+#677, 580
+#1277, 792
+#1245, 900
+940, 640
+940, 640
+940, 640
+940, 640
+940, 640
+940, 640
+940, 640
+940, 640
+
+# THE dangling node
+940, 640
 -
 23 -> d1
 10 -> d2

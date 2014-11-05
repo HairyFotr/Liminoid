@@ -12,6 +12,7 @@ import Render.{ render3D, render2D }
 import org.ljudmila.SettingsReader
 import org.ljudmila.Utils.{ TableRandom, pow2, getRatio, withAlternative }
 import GLadDOnS._
+import org.ljudmila.hardware.Sound;
 
 final object Models {
   private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
@@ -212,6 +213,13 @@ final object Models {
   case class Color(var r: Double, var g: Double, var b: Double) {
     def -=(f: Double): Unit = { r -= f; g -= f; b -= f }
     def *=(f: Double): Unit = { r *= f; g *= f; b *= f }
+
+    def *(f: Double): Color = Color(r * f, g * f, b * f)
+
+    def toRGB(): Int = 
+      ((r*255).toInt) + 
+      ((g*255).toInt >> 8) +
+      ((b*255).toInt >> 16)
   }
   object Color {
     def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
@@ -398,7 +406,7 @@ final object Models {
         }
       }
 
-      val threadMap = lines.map{ line => line -> Thread.generateMultiThread(3)(line) }.toMap
+      val threadMap = lines.map{ line => line -> Thread.generateMultiThread(2)(line) }.toMap
 
       val threadNodes = 
           nodes.map{ node => 
@@ -416,7 +424,8 @@ final object Models {
               ins  = Vector.empty,
               outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
               liminoidTexMap(node),
-              20+nextInt(15))
+              20+nextInt(15),
+              InitNode)
           }
       val danglingThreadNodes = 
           danglingNodes.map{ node => 
@@ -425,7 +434,8 @@ final object Models {
               ins  = lines.filter{ _.p2 eq node }.flatMap(threadMap),
               outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
               -1,
-              20+nextInt(15))
+              20+nextInt(15),
+              DanglingNode)
           }
         
         return ThreadNetwork(initThreadNodes, threadNodes, danglingThreadNodes, lines)
@@ -434,8 +444,17 @@ final object Models {
 
   case class ThreadNetwork(initNodes: Vector[ThreadNode], nodes: Vector[ThreadNode], danglingNodes: Vector[ThreadNode], lines: Vector[Line]) extends RenderObject {
     
-    def fullyVisible = nodes.forall(_.fullyVisible)
+    def fullyVisible = 
+      nodes.forall(_.fullyVisible) &&
+      danglingNodes.forall(_.fullyVisible)
     
+    def totallyVisibleNodes = 
+      nodes.forall(_.totallyVisible)
+
+    def totallyVisible = 
+      nodes.forall(_.totallyVisible) &&
+      danglingNodes.forall(_.totallyVisible)
+
     def init(): Unit = {
       for(node <- nodes) {
         node.init()
@@ -450,7 +469,9 @@ final object Models {
     def process(implicit data: RenderProcessData): Unit = {
       initNodes.foreach(_.process)
       nodes.foreach(_.process)
-      danglingNodes.foreach(_.process)
+      if (totallyVisibleNodes) {
+        danglingNodes.foreach(_.process)
+      }
     }
     def render(implicit data: RenderRenderData): Unit = {
       initNodes.foreach(_.renderThreads)
@@ -460,20 +481,36 @@ final object Models {
     }
   }
 
+  sealed trait ThreadNodeType
+  case object InitNode extends ThreadNodeType
+  case object RegularNode extends ThreadNodeType
+  case object DanglingNode extends ThreadNodeType
+  
   case class ThreadNode(
       position: Point,
       ins: Vector[Thread],
       outs: Vector[Thread],
       texture: Int,
-      nodeSize: Double) extends RenderObject {
+      nodeSize: Double,
+      nodeType: ThreadNodeType = RegularNode) extends RenderObject {
     
     var outsInitialized = false
     
     def visible = 
       if(ins.isEmpty) 0 else ins.map{ thread => min(pow2(thread.visible), 1d) }.max
-        
+      
+    var exvisible = 0d
+    def wasInvisible = {
+      val out = (exvisible < 0.5) && (visible > 0.5)
+      exvisible = visible
+      out
+    }
+    
     def fullyVisible = 
       ins.isEmpty || ins.maxBy{ thread => thread.visible }.visible >= 1d
+
+    def totallyVisible = 
+      ins.isEmpty || ins.minBy{ thread => thread.visible }.visible >= 1d
     
     def init(): Unit = {
       //
@@ -487,7 +524,10 @@ final object Models {
           for(out <- outs) out.init()
         }
         for(out <- outs) out.process
-      } 
+      }
+      if (wasInvisible && nodeType == RegularNode) {
+        Sound.play("network"+(nextInt(6)+1));
+      }      
       //for(in <- ins) if(in.isInitialized) in.process
     }
 
@@ -529,9 +569,9 @@ final object Models {
   object Point {
     def apply(str: Array[String]): Point = {
       if(str.size == 2)
-        Point(str(0).toDouble, str(1).toDouble)
+        Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety)
       else
-        Point(str(0).toDouble, str(1).toDouble, str(2).toDouble) 
+        Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety, str(2).toDouble) 
     }
   }  
   case class Point(x: Double, y: Double, var s: Double = 1.0) {
@@ -703,66 +743,70 @@ final object Models {
     }
   }
 
-  case class Pixel(val sx: Double, val sy: Double, var transformVector: Vec = vec0,
-    var color: Color, var colorg: Double = 70,
-    var isDead: Boolean = false, var g: Double = 0, var acc: Double = 0.75, var original: Boolean = true) {
+  object Pixel {
+    def convexHull(_points: Seq[Pixel]): Seq[Pixel] = {
+      if (_points.isEmpty) return _points
+      val points = _points.sortBy(_.x)
+      val upper = halfHull(points)
+      val lower = halfHull(points.reverse)
+      upper.remove(0)
+      lower.remove(0)
+      upper ++: lower
+    }
     
+    private def halfHull(points: Seq[Pixel]) = {
+      val upper = new mutable.ListBuffer[Pixel]()
+      for (p <- points) {
+        while (upper.size >= 2 && leftTurn(p, upper(0), upper(1))) {
+          upper.remove(0)
+        }
+        upper.prepend(p)
+      }
+      upper
+    }
+    
+    private def leftTurn(p1: Pixel, p2: Pixel, p3: Pixel) = {
+      val slope = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)
+      val collinear = math.abs(slope) <= 1e-9
+      val leftTurn = slope < 0
+      collinear || leftTurn
+    }
+  }
+  
+  case class Pixel(
+      val sx: Double, val sy: Double,
+      var transformVector: Vec = vec0,
+      var color: Color) {
+    
+    var isDead: Boolean = false
+    var isDying: Boolean = false
+    var original: Boolean = true
+    var isFlipped: Boolean = false
+    
+    //private[this] val colorF = 1
+    //color *= colorF
     var newColor = color
-    
+    //var newNewColor = newColor
+
     var x = sx
     var y = sy
 
-    //val ssize = TableRandom.nextGaussianUnsafe*2.5
-    var ssize = scala.util.Random.nextDouble()*0.7+0.3
+    private[this] val ssize = TableRandom.nextDouble*0.7+0.3
+    
+    // try this for a good time, also different sssizes
+    //val xssize = x+ssize
+    //val yssize = y+ssize
 
-    def render(): Unit = {
-      val randVec = {
-        val randVec = Vec.randomGaussian(0.007)
+    def render() = {//(camx: Double, camy: Double, camw: Double, camh: Double): Unit = {
+      glColor3d(color.r, color.g, color.b)
+      //glColor4d(color.r/colorDiv, color.g/colorDiv, color.b/colorDiv, transparency)
+      //val xx = ((x+camx)*camw/1280d).toInt
+      //val yy = ((y+camx)*camh/720d).toInt
 
-        if(Liminoid.frames % Liminoid.shakeBumpN > Liminoid.shakeBumpN/3d)
-          Vec(randVec.x*5.0, randVec.y*3.4, randVec.z)
-        else
-          randVec
-      }
-
-      transformVector = transformVector * 0.995 + randVec
-      //val actualTransformVector = transformVector
-
-      x += transformVector.x
-      y += transformVector.y + g
-      //if(Liminoid.backPixelDrop) g += acc
-      /*if(Liminoid.backPixelMerge || !Liminoid.backPixelMerged) {
-        x = x*0.95 + sx*0.05
-        y = y*0.95 + sy*0.05
-        transformVector = transformVector*0.95
-        colorg -= acc
-      } else {
-        colorg += acc
-      }*/
-      if (color != newColor) {
-        color.r = color.r * 0.9 + newColor.r * 0.1
-        color.g = color.g * 0.9 + newColor.g * 0.1
-        color.b = color.b * 0.9 + newColor.b * 0.1
-        val diffSum = 
-          (abs(color.r - newColor.r) + 
-           abs(color.g - newColor.g) + 
-           abs(color.b - newColor.b))
-         if (diffSum < 0.005) isDead = true
-       
-      }
-      if(colorg <= 75) colorg = 75
-      if(y > 2000) isDead = true //TODO: Why not 1080? Can they flow back?
-
-      //val size: Double = (ssize + TableRandom.nextGaussianUnsafe*0.4)/2
-      val colorDiv = (colorg/50)
-      if(y <= 1080) {
-        glColor3d(color.r, color.g, color.b)
-        //glColor4d(color.r/colorDiv, color.g/colorDiv, color.b/colorDiv, transparency)
-        glVertex2d(x,       y)
-        glVertex2d(x+ssize, y)
-        glVertex2d(x+ssize, y+ssize)
-        glVertex2d(x,       y+ssize)
-      }
+      glVertex2d(x,       y)
+      glVertex2d(x+ssize, y)
+      glVertex2d(x+ssize, y+ssize)
+      glVertex2d(x,       y+ssize)
     }
   }
 

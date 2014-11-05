@@ -82,13 +82,13 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     try {
       val img = captureFrameImg()
       // FIXME issues with libpng versions
-      //thread { cvSaveImage(filename, img) }
-      thread {
+      thread { cvSaveImage(filename, img) }
+      /*thread {
         javax.imageio.ImageIO.write(
           img.getBufferedImage(),
           "png",
           new java.io.File(filename))
-      }
+      }*/
       
     } catch {
       case e: Exception =>
@@ -137,17 +137,16 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     ) / 3
 
     val pix = Vector.newBuilder[Pixel]
-    val margin = 5
-    var i = 0 
+    var i = w 
     do {
       val idw = i/w
       val imw = i%w
-      if(imw > 1+margin && imw < w-1-margin && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) {
+      if(imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold) {
         pix += Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
       }
       
       i += 1
-    } while(i < size)
+    } while(i < size-w)
     pix.result
 
     /*var pix = Vector.empty[Pixel]

@@ -19,11 +19,11 @@ scalacOptions ++= Seq(
   "-Ywarn-value-discard")
 
 // Linter
-resolvers += "linter" at "http://hairyfotr.github.io/linteRepo/releases"
+//resolvers += "linter" at "http://hairyfotr.github.io/linteRepo/releases"
 
-addCompilerPlugin("com.foursquare.lint" %% "linter" % "0.1-SNAPSHOT")
+//addCompilerPlugin("com.foursquare.lint" %% "linter" % "0.1-SNAPSHOT")
 
-scalacOptions += "-P:linter:disable:UseHypot"
+//scalacOptions += "-P:linter:disable:UseHypot"
 
 // Scapegoat
 // add this to project/plugins.sbt

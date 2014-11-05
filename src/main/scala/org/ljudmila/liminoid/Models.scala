@@ -403,6 +403,8 @@ final object Models {
                 println(nodes.size)
                 throw e
             }
+          case 4 => //TODO
+          case _ => println("WTF mate in loading network")
         }
       }
 
@@ -469,9 +471,9 @@ final object Models {
     def process(implicit data: RenderProcessData): Unit = {
       initNodes.foreach(_.process)
       nodes.foreach(_.process)
-      if (totallyVisibleNodes) {
+      //if (totallyVisibleNodes) {
         danglingNodes.foreach(_.process)
-      }
+      //}
     }
     def render(implicit data: RenderRenderData): Unit = {
       initNodes.foreach(_.renderThreads)
@@ -774,7 +776,7 @@ final object Models {
   }
   
   case class Pixel(
-      val sx: Double, val sy: Double,
+      var sx: Double, var sy: Double,
       var transformVector: Vec = vec0,
       var color: Color) {
     

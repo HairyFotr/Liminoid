@@ -35,10 +35,10 @@ renderMode=mono
 screenx=1280
 screeny=800
 
-frontCameraId=3
+frontCameraId=2
 frontCameraX=1280
 frontCameraY=720
-backCameraId=2
+backCameraId=1
 backCameraX=1280
 backCameraY=720
 
@@ -292,4 +292,26 @@ i11 -> 23
 12 -> 3
 2 <- i16
 
+#node goto
+-
+11 -> d1
+10 -> d1
+3 -> d1
+21 -> d1
+23 -> d1
+14 -> d1
+5 -> d1
+
+17 -> 5
+7 -> 14
+16 -> 7
+19 -> 23
+12 -> 21
+2 -> 3
+1 -> 10
+6 -> 13
+8 -> 13
+18 -> 7
+4 -> 23
+9 -> 18
 """

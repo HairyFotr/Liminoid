@@ -294,6 +294,7 @@ final object Liminoid {
 
   val eyeCorrection = -64 // Eye shift for 2D rift view
   var testNum1, testNum2, testNum3, testNum4, testNum5, testNum6 = 0 // Numbers for testing
+  var exTestSum, testSum = 0
 
   val winCoord = Coord(0,0, winWidth,winHeight)
   val coord2000 = Coord(0,0, 2000,2000)
@@ -469,6 +470,7 @@ final object Liminoid {
   
   var noiseFrames = 0
   var wallTimer = 0
+  var ballSize = 100d
   
   lazy val threadNetwork = ThreadNetwork(settings("threadNetwork"))
 
@@ -507,6 +509,7 @@ final object Liminoid {
 
   var softHeart = 0d
   var softHeart2 = 0d
+  var triggerPull = false
 
   var frames = 0L
   def renderFrame(): Unit = {
@@ -522,6 +525,7 @@ final object Liminoid {
     val heart = if(beat) 1d else 0d
     softHeart = (heart + softHeart)*0.8
     softHeart2 = (softHeart + softHeart2)*0.7
+    
 
     osc1 = oscillator(phi = 0*Pi/4)
     osc2 = oscillator(phi = 1*Pi/4)
@@ -1010,8 +1014,9 @@ final object Liminoid {
           }
         }*/
 
-        if (noiseWall && backPixels.size < 123456+nextInt(1234)) {
+        if (noiseWall && !triggerPull && backPixels.size < 123456+nextInt(1234)) {
           noiseFrames += 1
+          
           val noiseLimit = 2133
           if (noiseFrames > noiseLimit) noiseFrames = noiseLimit
           backPixels ++= Array.fill(noiseFrames*5+nextInt(noiseFrames*2)) {
@@ -1036,17 +1041,17 @@ final object Liminoid {
               //glScaled(camw/camw, camh/camh, 1)
             	//glTranslated(camx*(1920/1280d)+testNum1, camy*(1080/720d)+testNum2, 0)
               glPrimitive(GL_QUADS) {
-                val posRatio = 0.99
+                val posRatio = if(triggerPull) 0.8 else 0.99 
                 val posRatio1m = 1 - posRatio
-                val colorRatio = 0.99
+                val colorRatio = posRatio
                 val colorRatio1m = 1 - colorRatio
                 
                 backPixels = backPixels.filterNot { bp =>
                   if (bp.isDying && TableRandom.nextDouble < 0.35) {
                     bp.isDead = true
                   } else {
-                	  bp.transformVector = bp.transformVector*0.90 + Vec.randomGaussian(0.07)
-                    if (schizoidPhase < schEnd) {
+                	  bp.transformVector = bp.transformVector*0.95 + Vec.randomGaussian(0.07)
+                    if (schizoidPhase < schEnd || triggerPull) {
                       bp.x = bp.x * posRatio + bp.sx*posRatio1m
                       bp.y = bp.y * posRatio + bp.sy*posRatio1m
                     }
@@ -1109,7 +1114,7 @@ final object Liminoid {
           //quad(coord2000, alpha = 1-fade1)
         }
         
-        if (schizoidPhase >= schEnd && sinceWall(10)) {
+        if (schizoidPhase >= schEnd && sinceWall(10) || testNum5 != 0) {
           implicit val rpd = RenderProcessData(beat)
           implicit val rrd = RenderRenderData(camx, camy, camw, camh)
           threadNetwork.process
@@ -1117,63 +1122,66 @@ final object Liminoid {
         }
         
         if (threadNetwork.fullyVisible || testNum5 != 0) {
-          var _i = 0
-          def i() = { _i += 1; _i - 1 } 
-          if (flash == i) {
-            fadeFlash = 0
-            flash = 1
-          } else if (flash == i) {
-            quad(coord2000, alpha = fadeFlash)
-            if(fadeFlash == 1) {
-              fadeFlash = 0
-              flash += 1
-            }
-          } else if (flash == i) {
-            quad(coord2000, alpha = 1)
-            Sound.play("heartbeat")
-            if(fadeFlash == 1) {
-              fadeFlash = 0
-              flash += 1
-            }
-          } else if (flash == i) {//4
-            if(core.transform.pos.z != 100) {
-              core.transform.pos = Vec(0, 0, 100)
-            }
-            quad(coord2000, alpha = 1-fadeFlash)
-            if(fadeFlash == 1) {
-              fadeFlash = 0
-              flash += 1
-              core.transformVector.pos = Vec(0, 0, -0.1)
-            }
-          }
-          
-          if (flash >= 3) {
-            Render.cam.pos = Vec3(testNum3-3-2, testNum6-7+3, 0)
-            Render.cam.lookAt(Vec3(testNum3-3-2, testNum6-7+3, 500))
-            Render.cam.render
-            val rotationCalibration = 4 + (testNum1+700)/100f
-            Render.cam.rot = 
-              Vec3(
-                -rotation.pitch/rotationCalibration, 
-                +rotation.yaw/rotationCalibration,
-                +rotation.roll/rotationCalibration)
+          //val bpcenterx = ((940+threadNetworkOffsetx)+camx)*1280/1920d
+          //val bpcentery = ((640+threadNetworkOffsety)+camy)*720/1080d
+        	val (bpcenterx, bpcentery) = (640-13, 360+testNum6+19)
+          if (!triggerPull) {
+            //val bpcenterx = 940+threadNetworkOffsetx
+            //val bpcentery = 640+threadNetworkOffsety
+
+            /*val (bpcenterx, bpcentery) = {
+              var x, y = 0d
+              for(bp <- backPixels) {
+                x += bp.x
+                y += bp.y
+              }
+              
+              (x/backPixels.size, y/backPixels.size)
+            }*/
+            println("Pay attention to me (it's $3.50): "+(bpcenterx, bpcentery))
+
+            /*for(bp <- backPixels) {
+              bp.transformVector = Vec(
+                  -(bp.x - bpcenterx)/50d,
+                  -(bp.y - bpcentery)/50d,
+                  0)
+            }*/
             
-            //core.transform.pos += Vec(testNum6,testNum3,0)
-            if (testNum6 != 0) {
-              println("Attention whoring: "+core.transform.pos)
-              println("Attention whoring: "+core.transformVector.pos)
-              //testNum6 = 0
-            }
-            if (testNum3 != 0) {
-              println("Attention whoring: "+core.transform.pos)
-              println("Attention whoring: "+core.transformVector.pos)
-              //testNum3 = 0
-            }
-            if(!pause) core.transform += core.transformVector ** renderTime
-            core.render(transform = core.transform, color = whiteish)
-            //testNum1 = 0
-            //flash = 0
+            triggerPull = true
+
+            //might as well use the same trigger
+            core.transform.pos = Vec(0, 0, 100)
+            core.transformVector.pos = Vec(0, 0, -0.1)
           }
+          for(bp <- backPixels) {
+            bp.sx = bpcenterx + TableRandom.nextGaussian*(3+ballSize+testNum3/3d) 
+            bp.sy = bpcentery + TableRandom.nextGaussian*(3+ballSize+testNum3/3d)
+            if(nextBoolean) {
+              bp.color = Color.Gray(nextInt(170))
+            }
+            if(ballSize > 20) ballSize -= 0.003
+          }
+          Render.cam.pos = Vec3(-3-2-6+testNum5, -7+3+testNum6, 0)
+          Render.cam.lookAt(Vec3(-3-2-6+testNum5, -7+3+testNum6, 500))
+          Render.cam.render
+          val rotationCalibration = 4 + (testNum1+700)/100f
+          Render.cam.rot = 
+            Vec3(
+              -rotation.pitch/rotationCalibration, 
+              +rotation.yaw/rotationCalibration,
+              +rotation.roll/rotationCalibration)
+          
+          //core.transform.pos += Vec(testNum6,testNum3,0)
+          testSum = testNum5+testNum6
+          if (testSum != exTestSum) {
+            core.transform.pos = Vec(0, 0, 100)
+            core.transformVector.pos = Vec(0, 0, -0.1)
+          }
+          exTestSum = testSum
+          if(!pause) core.transform += core.transformVector ** renderTime
+          core.render(transform = core.transform, color = whiteish)
+          //testNum1 = 0
+          //flash = 0
         }
 
         /*else if(sincen(break2)) {

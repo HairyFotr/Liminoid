@@ -3,18 +3,28 @@ TASKS
   Zid
     prehod
       //ne smejo it partikli nazaj skupi
-      vedno vec noisa
-      po n sekundah se zacne network
+      //vedno vec noisa
+      //po n sekundah se zacne network
    
    Network
-    se naredi
-    potem pridejo nitke proti sredini
+    //se naredi
+    //potem pridejo nitke proti sredini
+      zid
+      vedno manjsa kugla zid (vecja od ostalih vseeno)
+      vedno bolj srebrna
+      potegne notr
+        definiraj x -> dx za vse
+        nodePresent, nodePending, nodeFree
+          manjsi node ima prednost ob socasnem
+          kdaj je Free
+        samo x*0.1 + dx*0.9
+      pride ven liminoid
+      liminoid leti
+      zid izginja
+      
     tam se sformira liminoid
       naredi tuptup hearbeat
     zid potegne v liminoid
-    
-    ---zacne vlect kamne v liminoid
-
 
   gibanje kamnov, razprsitev, globina
   
@@ -25,9 +35,11 @@ TASKS
       particle creation
       movement
 
-  Galerija Tweek:
+  Galerija/Parallel Tweek:
     Mandale
       mogoce noise
+    Network
+      left/right/center zvokci, da se ve kje se formirajo
   
   Galerija Kalibracija:
     Definicija podrocja stola

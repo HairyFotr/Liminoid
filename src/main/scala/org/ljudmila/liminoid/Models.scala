@@ -544,7 +544,7 @@ final object Models {
     var scheduledPulling: Boolean = false
     
     def visible = 
-      if(ins.isEmpty) 0 else ins.map{ thread => min(pow2(thread.visible), 1d) }.max
+      if(ins.isEmpty) 0 else ins.map{ thread => min(pow2(thread.backupvisible), 1d) }.max
       
     var exvisible = 0d
     def wasInvisible = {
@@ -554,10 +554,10 @@ final object Models {
     }
     
     def fullyVisible = 
-      ins.isEmpty || ins.maxBy{ thread => thread.visible }.visible >= 1d
+      ins.isEmpty || ins.maxBy{ thread => thread.backupvisible }.backupvisible >= 1d
 
     def totallyVisible = 
-      ins.isEmpty || ins.minBy{ thread => thread.visible }.visible >= 1d
+      ins.isEmpty || ins.minBy{ thread => thread.backupvisible }.backupvisible >= 1d
     
     def init(): Unit = {
       //
@@ -620,7 +620,7 @@ final object Models {
       val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       
       val coords = Coord(posx, posy, liminoidSizex, liminoidSizey)
-      quad(coords, texture, false, false, visible,
+      quad(coords, texture, false, false, if(pulling) 1 else visible,
         preRender = {
           glPushMatrix
           glTranslated(data.camx, data.camy, 0)
@@ -727,7 +727,7 @@ final object Models {
     var currentLength = 1
     
     def nodesLast = nodes.last//(nodes.size-2)
-    def visible(): Double = nodesLast.visible
+    def backupvisible(): Double = nodesLast.visible
     def fullyVisible(): Boolean = nodesLast.fullyVisible
     
     var isInitialized = false
@@ -797,7 +797,7 @@ final object Models {
       //glPrimitive(GL_LINES) {// Dashed
         var i = 0
         while(i < nodes.length && nodes(i).isVisible) {
-          val node = nodes(i)
+        	val node = nodes(i)
           if(node.y < 0-20 || node.y > 1080+20) {
             //nop
           } else if(i > 0 && (node.visible < 1d || data.pullingThisThread)) {

@@ -851,7 +851,7 @@ final object Liminoid {
           phaseTimer = now
         }
         
-        val schEnd = 6-2
+        val schEnd = 6-4
         if (schizoidPhase >= schEnd) {
           schizoidPhase = schEnd
           //phaseTimer = now
@@ -901,7 +901,7 @@ final object Liminoid {
             back0Frame, back1Frame,
             back0Frame, back2Frame,
             back0Frame, backCFrame)
-
+        
         quad(Coord(camx,camy, camw,camh), phases(schizoidPhase), flipx = false)
         if (fade2 < 1) {
           quad(Coord(camx,camy, camw,camh), phases(schizoidPhase-1), flipx = false, alpha = 1-fade2);
@@ -1032,8 +1032,12 @@ final object Liminoid {
           }
         }
         
-        if (backPixels.nonEmpty) {
+        if (false && backPixels.nonEmpty) {
           glDisable(GL_BLEND)
+          val posRatio = if(triggerPull) 0.8 else 0.99 
+          val posRatio1m = 1 - posRatio
+          val colorRatio = posRatio
+          val colorRatio1m = 1 - colorRatio
           render2D {
             glMatrix {
               glTranslated(camx+testNum1, camy+testNum2, 0)
@@ -1041,52 +1045,37 @@ final object Liminoid {
               //glScaled(camw/camw, camh/camh, 1)
             	//glTranslated(camx*(1920/1280d)+testNum1, camy*(1080/720d)+testNum2, 0)
               glPrimitive(GL_QUADS) {
-                val posRatio = if(triggerPull) 0.8 else 0.99 
-                val posRatio1m = 1 - posRatio
-                val colorRatio = posRatio
-                val colorRatio1m = 1 - colorRatio
                 
                 backPixels = backPixels.filterNot { bp =>
                   if (bp.isDying && TableRandom.nextDouble < 0.35) {
                     bp.isDead = true
                   } else {
-                	  bp.transformVector = bp.transformVector*0.95 + Vec.randomGaussian(0.07)
                     if (schizoidPhase < schEnd || triggerPull) {
                       bp.x = bp.x * posRatio + bp.sx*posRatio1m
                       bp.y = bp.y * posRatio + bp.sy*posRatio1m
+                    }
+                    bp.transformVector = bp.transformVector*0.95 + Vec.randomGaussian(0.07)
+                    bp.x += bp.transformVector.x
+                    bp.y += bp.transformVector.y
+                    if (polygon.contains(bp.x, bp.y)) {
+                      bp.render()
+                      bp.isFlipped = false
+                    } else {
+                      if(noiseWall) {
+                        bp.isDead = true
+                      } else if(!bp.isFlipped) {
+                        if(nextBoolean) {
+                          bp.isDying = true
+                        } else {
+                          bp.transformVector = -bp.transformVector * 1.3
+                          bp.isFlipped = true
+                        }
+                      }
                     }
                     if (bp.color != bp.newColor || !bp.original) {
                       bp.color.r = bp.color.r * colorRatio + bp.newColor.r * colorRatio1m
                       bp.color.g = bp.color.g * colorRatio + bp.newColor.g * colorRatio1m
                       bp.color.b = bp.color.b * colorRatio + bp.newColor.b * colorRatio1m
-                      /*val diffSum = 
-                        (abs(bp.color.r - bp.newColor.r) + 
-                         abs(bp.color.g - bp.newColor.g) + 
-                         abs(bp.color.b - bp.newColor.b))
-                       if (diffSum < 0.001) bp.isDying = true*/
-                      //colormgmt
-                      /*if (bp.newNewColor != bp.newColor) {
-                        bp.newColor *= bp.colorF
-                        bp.newNewColor = bp.newColor
-                      }*/
-                
-                      bp.x += bp.transformVector.x
-                      bp.y += bp.transformVector.y
-                      if (polygon.contains(bp.x, bp.y)) {
-                        bp.render()
-                        bp.isFlipped = false
-                      } else {
-                        if(noiseWall) {
-                          bp.isDead = true
-                        } else if(!bp.isFlipped) {
-                          if(nextBoolean) {
-                            bp.isDying = true
-                          } else {
-                            bp.transformVector = -bp.transformVector * 1.3
-                            bp.isFlipped = true
-                          }
-                        }
-                      }
                     }
                   }
                   
@@ -1114,8 +1103,10 @@ final object Liminoid {
           //quad(coord2000, alpha = 1-fade1)
         }
         
-        if (schizoidPhase >= schEnd && sinceWall(10) || testNum5 != 0) {
-          implicit val rpd = RenderProcessData(beat)
+        val (bpcenterx, bpcentery) = (640-13, 360+testNum6+19)
+        val wallTiem = 5
+        if (schizoidPhase >= schEnd && sinceWall(wallTiem) || testNum5 != 0) {
+          implicit val rpd = RenderProcessData(beat, triggerPull, bpcenterx, bpcentery, if(sinceWall(wallTiem+3) || testNum6 != 0) 0.99 else 1)
           implicit val rrd = RenderRenderData(camx, camy, camw, camh)
           threadNetwork.process
           threadNetwork.render
@@ -1124,7 +1115,6 @@ final object Liminoid {
         if (threadNetwork.fullyVisible || testNum5 != 0) {
           //val bpcenterx = ((940+threadNetworkOffsetx)+camx)*1280/1920d
           //val bpcentery = ((640+threadNetworkOffsety)+camy)*720/1080d
-        	val (bpcenterx, bpcentery) = (640-13, 360+testNum6+19)
           if (!triggerPull) {
             //val bpcenterx = 940+threadNetworkOffsetx
             //val bpcentery = 640+threadNetworkOffsety
@@ -1179,7 +1169,9 @@ final object Liminoid {
           }
           exTestSum = testSum
           if(!pause) core.transform += core.transformVector ** renderTime
-          core.render(transform = core.transform, color = whiteish)
+          
+          //core.render(transform = core.transform, color = whiteish)
+          
           //testNum1 = 0
           //flash = 0
         }

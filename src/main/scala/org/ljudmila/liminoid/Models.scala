@@ -12,7 +12,7 @@ import Render.{ render3D, render2D }
 import org.ljudmila.SettingsReader
 import org.ljudmila.Utils.{ TableRandom, pow2, getRatio, withAlternative }
 import GLadDOnS._
-import org.ljudmila.hardware.Sound;
+import org.ljudmila.hardware.Sound
 
 final object Models {
   private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
@@ -334,13 +334,22 @@ final object Models {
     }
   }
 
+  // It's made of state and fail
   case class RenderProcessData(
-      beat: Boolean = false)
+      beat: Boolean = false,
+      pullMode: Boolean = false,
+      var centerx: Double, var centery: Double,
+      ratio: Double) 
+  {
+      val ratio1m = 1-ratio
+  }
 
   case class RenderRenderData(
       camx: Double, camy: Double,
       camw: Double, camh: Double)
-      
+  {
+    var pullingThisThread = false
+  }
   trait RenderObject {
     def init(): Unit
     def process(implicit data: RenderProcessData): Unit
@@ -348,6 +357,12 @@ final object Models {
   }
 
   object ThreadNetwork {
+    // It's made of state and fail
+    var threadMap: Map[Line, Vector[Thread]] = null
+    var allNodes: Vector[ThreadNode] = null
+    var noonePulling = true
+    var setPulling = false
+    
     def apply(str: String): ThreadNetwork = {
       var initNodes = Vector.empty[Point]
       var nodes = Vector.empty[Point]
@@ -408,14 +423,15 @@ final object Models {
         }
       }
 
-      val threadMap = lines.map{ line => line -> Thread.generateMultiThread(2)(line) }.toMap
-
+      threadMap = lines.map{ line => line -> Thread.generateMultiThread(2)(line) }.toMap
+      
       val threadNodes = 
           nodes.map{ node => 
             ThreadNode(
               node,
-              ins  = lines.filter{ _.p2 eq node }.flatMap(threadMap),
-              outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
+              insNodes  = lines.filter{ _.p2 eq node },
+              outsNodes = lines.filter{ _.p1 eq node },
+
               liminoidTexMap(node),
               20+nextInt(15))
           }
@@ -423,8 +439,8 @@ final object Models {
           initNodes.map{ node => 
             ThreadNode(
               node,
-              ins  = Vector.empty,
-              outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
+              insNodes  = Vector.empty,
+              outsNodes = lines.filter{ _.p1 eq node },
               liminoidTexMap(node),
               20+nextInt(15),
               InitNode)
@@ -433,18 +449,25 @@ final object Models {
           danglingNodes.map{ node => 
             ThreadNode(
               node,
-              ins  = lines.filter{ _.p2 eq node }.flatMap(threadMap),
-              outs = lines.filter{ _.p1 eq node }.flatMap(threadMap),
+              insNodes  = lines.filter{ _.p2 eq node },
+              outsNodes = lines.filter{ _.p1 eq node },
               -1,
               20+nextInt(15),
               DanglingNode)
           }
         
-        return ThreadNetwork(initThreadNodes, threadNodes, danglingThreadNodes, lines)
+        return ThreadNetwork(initThreadNodes, threadNodes, danglingThreadNodes, lines, threadMap)
     }
   }
 
-  case class ThreadNetwork(initNodes: Vector[ThreadNode], nodes: Vector[ThreadNode], danglingNodes: Vector[ThreadNode], lines: Vector[Line]) extends RenderObject {
+  case class ThreadNetwork(
+      initNodes: Vector[ThreadNode],
+      nodes: Vector[ThreadNode],
+      danglingNodes: Vector[ThreadNode],
+      lines: Vector[Line],
+      threadMap: Map[Line, Vector[Thread]]) extends RenderObject {
+    
+    ThreadNetwork.allNodes = initNodes ++ nodes ++ danglingNodes
     
     def fullyVisible = 
       nodes.forall(_.fullyVisible) &&
@@ -469,6 +492,22 @@ final object Models {
       }
     }
     def process(implicit data: RenderProcessData): Unit = {
+      if (data.pullMode) {
+        data.centerx = danglingNodes.head.position.x
+        data.centery = danglingNodes.head.position.y
+        if (ThreadNetwork.setPulling) {
+          ThreadNetwork.noonePulling = true
+          ThreadNetwork.setPulling = false
+          val nodes = ThreadNetwork.allNodes.filter { node => !node.pulling }
+          if (nodes.nonEmpty) {
+            nodes.minBy { node =>
+              sqrt(pow2(node.position.x - data.centerx) + pow2(node.position.y - data.centery))
+            }.pulling = true
+          } // TODO finished pulling
+        }
+        danglingNodes.foreach { x => x.pulling = true }
+      }
+      
       initNodes.foreach(_.process)
       nodes.foreach(_.process)
       //if (totallyVisibleNodes) {
@@ -490,13 +529,19 @@ final object Models {
   
   case class ThreadNode(
       position: Point,
-      ins: Vector[Thread],
-      outs: Vector[Thread],
+      insNodes: Vector[Line],
+      outsNodes: Vector[Line],
       texture: Int,
       nodeSize: Double,
       nodeType: ThreadNodeType = RegularNode) extends RenderObject {
     
+    val ins  = insNodes.flatMap(ThreadNetwork.threadMap)
+    val outs = outsNodes.flatMap(ThreadNetwork.threadMap)
+
     var outsInitialized = false
+    var pulled: Boolean = false
+    var pulling: Boolean = false
+    var scheduledPulling: Boolean = false
     
     def visible = 
       if(ins.isEmpty) 0 else ins.map{ thread => min(pow2(thread.visible), 1d) }.max
@@ -525,11 +570,29 @@ final object Models {
           outsInitialized = true
           for(out <- outs) out.init()
         }
-        for(out <- outs) out.process
+        for(out <- outs) {
+          out.process
+        }
+      }
+      if (data.pullMode) {
+        if (pulling) {
+          position.x = position.x*data.ratio + data.centerx*data.ratio1m
+          position.y = position.y*data.ratio + data.centery*data.ratio1m
+        }
+        if (abs(position.x - data.centerx) + abs(position.y - data.centery) < 200 && !pulled) {
+        	pulled = true
+          ThreadNetwork.setPulling = true
+    		  ThreadNetwork.allNodes.filter { n => 
+            n.outsNodes.exists { o => (o.p2 eq position) || (o.p1 eq position) } ||
+            n.insNodes.exists { o => (o.p2 eq position) || (o.p1 eq position) }
+          }.foreach {
+            x => x.scheduledPulling = true
+          }
+        }
       }
       if (wasInvisible && nodeType == RegularNode) {
         Sound.play("network"+(nextInt(6)+1));
-      }      
+      }
       //for(in <- ins) if(in.isInitialized) in.process
     }
 
@@ -538,6 +601,7 @@ final object Models {
       renderNode
     }
     def renderThreads(implicit data: RenderRenderData): Unit = {
+      data.pullingThisThread = pulling
       glCapability(GL_BLEND) {
         glTheUsualBlendFunc
         render2D {
@@ -576,7 +640,7 @@ final object Models {
         Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety, str(2).toDouble) 
     }
   }  
-  case class Point(x: Double, y: Double, var s: Double = 1.0) {
+  case class Point(var x: Double, var y: Double, var s: Double = 1.0) {
     s = s*30;
     def toTuple() = (x, y)
     //def toTuple() = (x, y, s)
@@ -717,6 +781,14 @@ final object Models {
           nodes(i).init()
         }
       }
+      if (data.pullMode) {
+        for(node <- nodes) {
+          //node.x = node.x*data.ratio + data.centerx*data.ratio1m
+          //node.y = node.y*data.ratio + data.centery*data.ratio1m
+          //node.desiredx = node.desiredx*data.ratio + data.centerx*data.ratio1m
+          //node.desiredy = node.desiredy*data.ratio + data.centery*data.ratio1m
+        }
+      }
     }
     
     def render(implicit data: RenderRenderData): Unit = {
@@ -728,8 +800,12 @@ final object Models {
           val node = nodes(i)
           if(node.y < 0-20 || node.y > 1080+20) {
             //nop
-          } else if(i > 0 && node.visible < 1d) {
+          } else if(i > 0 && (node.visible < 1d || data.pullingThisThread)) {
             val prevNode = nodes(i-1)
+            if (data.pullingThisThread) {
+              node.visible = node.visible * 0.8 
+              node.visiblev = 0
+            }
             glColor4d(node.i, node.i, node.i, node.visible)
             //glColor3d(node.i, node.i, node.i)
             val (ratio1, ratio2) = getRatio(node.visible)

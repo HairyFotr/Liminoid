@@ -103,7 +103,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     glDisable(GL_DEPTH_TEST)
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-    glClearColor(1.0f, 0.0f, 0.0f, 0.5f)
+    glClearColor(0f, 0f, 0f, 0f)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     glBindTexture(GL_TEXTURE_2D, colorTextureID)

@@ -13,6 +13,7 @@ import org.ljudmila.SettingsReader
 import org.ljudmila.Utils.{ TableRandom, pow2, getRatio, withAlternative }
 import GLadDOnS._
 import org.ljudmila.hardware.Sound
+import java.nio._
 
 final object Models {
   private[this] val modelCache = mutable.AnyRefMap[String, DisplayModel]()
@@ -151,8 +152,8 @@ final object Models {
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
   implicit def mutableVec(it: Vec): MutableVec = MutableVec(it.x, it.y, it.z)
   case class MutableVec(var x: Double, var y: Double, var z: Double) extends VecLike {
-    //def +=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
-    def *=(f: Double): Unit = { x *= f; y *= f; z *= f }
+    def ++=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
+    def **=(f: Double): Unit = { x *= f; y *= f; z *= f }
   }
   def vec(s: String): Vec = {
     if(s.isEmpty()) vec0
@@ -162,6 +163,7 @@ final object Models {
       else Vec(split(0).toDouble, split(1).toDouble, split(2).toDouble)
     }
   }
+  val mutavec0: MutableVec = vec(0)
   def vec(d: Double) = Vec(d, d, d)
   def vecx(d: Double) = Vec(d, 0, 0)
   def vecy(d: Double) = Vec(0, d, 0)
@@ -207,6 +209,10 @@ final object Models {
     def +(r: Rotation): Rotation = Rotation(yaw+r.yaw, pitch+r.pitch, roll+r.roll)
     def -(r: Rotation): Rotation = Rotation(yaw-r.yaw, pitch-r.pitch, roll-r.roll)
     def *(f: Float): Rotation = Rotation(yaw*f, pitch*f, roll*f)
+    def limit(n: Float) = Rotation(
+        if(abs(yaw) > abs(n)) signum(yaw) * n else yaw,
+        if(abs(pitch) > abs(n)) signum(pitch) * n else pitch,
+        if(abs(roll) > abs(n)) signum(roll) * n else roll)
   }
   val rotation0 = Rotation(0, 0, 0)
   
@@ -469,6 +475,8 @@ final object Models {
     
     ThreadNetwork.allNodes = initNodes ++ nodes ++ danglingNodes
     
+    var fullyOver = false
+
     def fullyVisible = 
       nodes.forall(_.fullyVisible) &&
       danglingNodes.forall(_.fullyVisible)
@@ -503,7 +511,9 @@ final object Models {
             nodes.minBy { node =>
               sqrt(pow2(node.position.x - data.centerx) + pow2(node.position.y - data.centery))
             }.pulling = true
-          } // TODO finished pulling
+          } else {
+            fullyOver = true
+          }
         }
         danglingNodes.foreach { x => x.pulling = true }
       }
@@ -547,8 +557,9 @@ final object Models {
       if(ins.isEmpty) 0 else ins.map{ thread => min(pow2(thread.backupvisible), 1d) }.max
       
     var exvisible = 0d
+    val invisibleThreshold = 0.5
     def wasInvisible = {
-      val out = (exvisible < 0.5) && (visible > 0.5)
+      val out = (exvisible < invisibleThreshold) && (visible > invisibleThreshold)
       exvisible = visible
       out
     }
@@ -591,7 +602,12 @@ final object Models {
         }
       }
       if (wasInvisible && nodeType == RegularNode) {
-        Sound.play("network"+(nextInt(6)+1));
+        val soundPan = 
+          if (position.x > data.centerx+200) "R"
+          else if (position.x < data.centerx-200) "L"
+          else ""
+            
+        Sound.play("network"+soundPan+(nextInt(6)+1));
       }
       //for(in <- ins) if(in.isInitialized) in.process
     }
@@ -781,14 +797,15 @@ final object Models {
           nodes(i).init()
         }
       }
-      if (data.pullMode) {
+      // lame scaling pull
+      /*if (data.pullMode) {
         for(node <- nodes) {
-          //node.x = node.x*data.ratio + data.centerx*data.ratio1m
-          //node.y = node.y*data.ratio + data.centery*data.ratio1m
-          //node.desiredx = node.desiredx*data.ratio + data.centerx*data.ratio1m
-          //node.desiredy = node.desiredy*data.ratio + data.centery*data.ratio1m
+          node.x = node.x*data.ratio + data.centerx*data.ratio1m
+          node.y = node.y*data.ratio + data.centery*data.ratio1m
+          node.desiredx = node.desiredx*data.ratio + data.centerx*data.ratio1m
+          node.desiredy = node.desiredy*data.ratio + data.centery*data.ratio1m
         }
-      }
+      }*/
     }
     
     def render(implicit data: RenderRenderData): Unit = {
@@ -803,7 +820,7 @@ final object Models {
           } else if(i > 0 && (node.visible < 1d || data.pullingThisThread)) {
             val prevNode = nodes(i-1)
             if (data.pullingThisThread) {
-              node.visible = node.visible * 0.8 
+              node.visible = node.visible * 0.9 
               node.visiblev = 0
             }
             glColor4d(node.i, node.i, node.i, node.visible)
@@ -853,13 +870,14 @@ final object Models {
   
   case class Pixel(
       var sx: Double, var sy: Double,
-      var transformVector: Vec = vec0,
+      var transformVector: MutableVec = mutavec0,
       var color: Color) {
     
     var isDead: Boolean = false
     var isDying: Boolean = false
     var original: Boolean = true
     var isFlipped: Boolean = false
+    var isContained: Boolean = true
     
     //private[this] val colorF = 1
     //color *= colorF
@@ -869,13 +887,30 @@ final object Models {
     var x = sx
     var y = sy
 
-    private[this] val ssize = TableRandom.nextDouble*0.7+0.3
+    //private[this] val ssize = TableRandom.nextDouble*0.7+0.3
+    private[this] val ssize = TableRandom.nextDouble*0.9+0.5
     
     // try this for a good time, also different sssizes
     //val xssize = x+ssize
     //val yssize = y+ssize
 
-    def render() = {//(camx: Double, camy: Double, camw: Double, camh: Double): Unit = {
+    /*def renderToBuffer(vertexBuff: FloatBuffer, colorBuff: FloatBuffer) = {
+      colorBuff
+        .put(color.r.toFloat)
+        .put(color.g.toFloat)
+        .put(color.b.toFloat)
+
+      val xx1 = x.toFloat
+      val xx2 = (x+ssize).toFloat
+      val yy1 = y.toFloat
+      val yy2 = (y+ssize).toFloat
+      vertexBuff
+        .put(xx1).put(yy1)
+        .put(xx2).put(yy2)
+        .put(xx2).put(yy2)
+        .put(xx1).put(yy2)      
+    }*/
+    def render() = {
       glColor3d(color.r, color.g, color.b)
       //glColor4d(color.r/colorDiv, color.g/colorDiv, color.b/colorDiv, transparency)
       //val xx = ((x+camx)*camw/1280d).toInt

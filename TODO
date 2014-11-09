@@ -1,32 +1,27 @@
 TASKS
 
+  Radiolarians
+    gibanje kamnov, razprsitev, globina, vec njih
+    shaderji na 3D
+    
   Zid
-    prehod
-      //ne smejo it partikli nazaj skupi
-      //vedno vec noisa
-      //po n sekundah se zacne network
+    ko skupaj zleze se kr od nekje vlecejo  
    
-   Network
-    //se naredi
-    //potem pridejo nitke proti sredini
-      zid
-      vedno manjsa kugla zid (vecja od ostalih vseeno)
-      vedno bolj srebrna
-      potegne notr
-        definiraj x -> dx za vse
-        nodePresent, nodePending, nodeFree
-          manjsi node ima prednost ob socasnem
-          kdaj je Free
-        samo x*0.1 + dx*0.9
-      pride ven liminoid
-      liminoid leti
-      zid izginja
-      
-    tam se sformira liminoid
-      naredi tuptup hearbeat
-    zid potegne v liminoid
+ Network
+  soundi so narobe timeani + pofejdajo predn pride crta do njih
+  nitke pred zid
+  network skalibrirat, da najprej pogleda na eno stran
 
-  gibanje kamnov, razprsitev, globina
+    vedno manjsa kugla zid (vecja od ostalih vseeno)
+    vedno bolj srebrna
+    potegne notr
+    pride ven liminoid
+    liminoid leti
+    zid izginja
+    
+  tam se sformira liminoid
+    naredi tuptup hearbeat
+  zid potegne v liminoid
   
   Possible bug source:
     !!! torender se v 2d/3d 2x poklice, preveri da se ne racuna prevec v stereo
@@ -34,12 +29,9 @@ TASKS
       fade
       particle creation
       movement
-
-  Galerija/Parallel Tweek:
-    Mandale
-      mogoce noise
-    Network
-      left/right/center zvokci, da se ve kje se formirajo
+  
+  Galerija Tweek
+    Ramdrive copies
   
   Galerija Kalibracija:
     Definicija podrocja stola
@@ -47,11 +39,13 @@ TASKS
     
   Galerija Panic:
     Stol je prevelik
-      nekako zajamemo sliko se malo naokrog
+      damo kuglo na pol in na zid
+      nekako zajamemo sliko se malo naokrog in stitchamo
     Pulsesensor je crap
       ga uporabimo le za BPM, ali sploh ne
   
-  Possibly deprecated:
+  
+  Possibly deprecated todo:
     white noise -> formiranje kamna
       convex hull / premikanje proti sredini
       flash

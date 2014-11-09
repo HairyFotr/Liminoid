@@ -26,6 +26,10 @@ final object GLadDOnS {
     glClearColor(c.toFloat, c.toFloat, c.toFloat, 1)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
   }
+  def glClear3d(r: Double, g: Double, b: Double): Unit = {
+    glClearColor(r.toFloat, g.toFloat, b.toFloat, 1)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  }
   def glMatrix(func: => Unit): Unit = {
     glPushMatrix
     func

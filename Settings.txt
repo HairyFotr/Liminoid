@@ -2,24 +2,13 @@ dataFolder = "../LiminoiData/"
 imgs = "@dataFolder@img/"
 objs = "@dataFolder@obj/"
 seqs = "@dataFolder@seq/"
+snds = "@dataFolder@snd/"
 
-backN="@seqs@BackSpaceNew/"
-back0="@seqs@LayerNight0/"
-back1="@seqs@LayerNightCard1/"
-back2="@seqs@LayerNightCard2/"
-back3="@seqs@Layer3/"
-
-backN="@seqs@BackSpaceNew/"
-back0="@seqs@SEBackSpace0/"
-back1="@seqs@SEBackSpace1/"
-back2="@seqs@SEBackSpace1/"
-back3="@seqs@SEBackSpace1/"
-
-backN="@seqs@BackSpaceNew/"
-back0="@seqs@Ljudmila0/"
-back1="@seqs@Ljudmila1/"
-back2="@seqs@Ljudmila2/"
-back3="@seqs@Ljudmila3/"
+startingPhase=FlyingRock
+startingPhase=Threads
+startingPhase=Mandalas
+startingPhase=Schizoid
+startingPhase=Radiolarians
 
 backN="@seqs@BackSpaceNew/"
 back0="@seqs@Sasa0/"
@@ -27,11 +16,13 @@ back1="@seqs@Sasa2/"
 back2="@seqs@Sasa1/"
 back3="@seqs@Sasa2/"
 
+back0="@seqs@AksiomaFTS/"
+
 threadNetworkOffsetx=0
 threadNetworkOffsety=-70
 
-renderMode=stereo
 renderMode=mono
+renderMode=stereo
 screenx=1280
 screeny=800
 
@@ -44,12 +35,6 @@ backCameraY=720
 
 threshold=50
 
-startingPhase=FlyingRock
-startingPhase=Threads
-startingPhase=Mandalas
-startingPhase=Radiolarians
-startingPhase=Schizoid
-
 liminoidSplash = "@imgs@liminoid.png"
 liminoidSplashLoading = "@imgs@liminoidLoading.png"
 
@@ -58,17 +43,19 @@ wallz = 700
 whiteish = 0.9
 blackish = 0.1
 
-d = {35 + {rand(2)}}
-ds = {3 + {rand(0.25)}}
+d = {85 + {rand(4)}}
+ds = {4 + {rand(0.25)}}
 dd = {7 + {rand(2)}}
 
-d2 = 60
+d2 = 90
 ds2 = {4 + {rand(0.5)}}
 dd2 = {20 + {rand(2)}}
 
 ds3 = 1.5
 dd3 = 16
-dh3 = 77
+dw3 = 400
+dh3 = 300
+autostart="true"
 
 rockPath="@objs@Prihod_iz_stene_Decimated_min/Prihod iz stene_normale"
 rockInd={choose(II,III,V)}
@@ -78,7 +65,7 @@ coreModel="@rockPath@_II.obj"
 
 ### White center rocks ###
 rocks1="""
-%(10)
+%(17)
 model = "@rockPath@_@rockInd@.obj"
 pos = {{sin(@iC@)} * @d@}, {{cos(@iC@)} * @d@}, @dd@
 size = @ds@
@@ -88,21 +75,21 @@ color = @whiteish@
 """
 
 ### Black outer rocks ###
-rocks2="""
-%(12)
-model = "@rockPath@_@rockInd@.obj"
-pos = {{sin(@iC@)} * @d2@}, {{cos(@iC@)} * @d2@}, @dd2@
-size = @ds2@
-color = {select({@i@ mod 2}, @blackish@, @whiteish@)}
--
-%
-"""
+#rocks2="""
+#%(20)
+#model = "@rockPath@_@rockInd@.obj"
+#pos = {{sin(@iC@)} * @d2@}, {{cos(@iC@)} * @d2@}, @dd2@
+#size = @ds2@
+#color = {select({@i@ mod 2}, @blackish@, @whiteish@)}
+#-
+#%
+#"""
 
 ### Random outer rocks ###
 rocks3="""
-%(15)model = "@rockPath@_@rockInd@.obj"
-pos = {rand(@dh3@)}, {rand(@dh3@)}, {@dd3@ + {rand(5)}}
-size = {@ds3@ + {rand(1)}}
+%(65)model = "@rockPath@_@rockInd@.obj"
+pos = {rand(@dw3@)}, {rand(@dh3@)}, {@dd3@ + {rand(35)}}
+size = {@ds3@ + {rand(2)}}
 color = @whiteish@
 spreadx = {rand(1)}
 spready = {rand(1)}

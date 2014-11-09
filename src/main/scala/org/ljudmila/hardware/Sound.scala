@@ -23,13 +23,13 @@ final object Sound {
   
   def stopAll(): Unit = {
       import sys.process._
-      Seq("pkill", "-9", "play").!!
+      Seq("pkill", "-9", "play").!
   }
 
   def play(sound: String): Unit = {
     if(!muted) thread {
       import sys.process._
-      Seq("play", "-q", soundMap(sound)).!!
+      Seq("play", "-q", soundMap(sound)).!
     }
   }
 }

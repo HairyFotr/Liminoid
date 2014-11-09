@@ -36,6 +36,11 @@ final object Utils {
       gaussTable(intTable(index))
     }
     def nextDouble: Double = doubleTable(Random.nextInt(length))
+    def nextDoubleUnsafe: Double = { // Thread Unsafe //TODO: Measure with synchronization
+      index += 1
+      if(index >= length) index = 0
+      doubleTable(intTable(index))
+    }
   }
 
   def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}

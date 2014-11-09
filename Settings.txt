@@ -4,11 +4,13 @@ objs = "@dataFolder@obj/"
 seqs = "@dataFolder@seq/"
 snds = "@dataFolder@snd/"
 
+noiseseq="@seqs@noise/"
+
 startingPhase=FlyingRock
 startingPhase=Threads
 startingPhase=Mandalas
-startingPhase=Schizoid
 startingPhase=Radiolarians
+startingPhase=Schizoid
 
 backN="@seqs@BackSpaceNew/"
 back0="@seqs@Sasa0/"
@@ -29,7 +31,7 @@ screeny=800
 frontCameraId=2
 frontCameraX=1280
 frontCameraY=720
-backCameraId=1
+backCameraId=0
 backCameraX=1280
 backCameraY=720
 
@@ -41,9 +43,10 @@ liminoidSplashLoading = "@imgs@liminoidLoading.png"
 wallz = 700
 
 whiteish = 0.9
-blackish = 0.1
+blackish = 0.2
 
-d = {85 + {rand(4)}}
+d1h = {100 + {rand(5)}}
+d1w = {95 + {rand(5)}}
 ds = {4 + {rand(0.25)}}
 dd = {7 + {rand(2)}}
 
@@ -57,17 +60,19 @@ dw3 = 400
 dh3 = 300
 autostart="true"
 
+#rockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 rockPath="@objs@Prihod_iz_stene_Decimated_min/Prihod iz stene_normale"
 rockInd={choose(II,III,V)}
 
 radiolarianFolder="@objs@OBJ_the_radiolarian_normale_min"
+coreRockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 coreModel="@rockPath@_II.obj"
 
 ### White center rocks ###
 rocks1="""
-%(17)
-model = "@rockPath@_@rockInd@.obj"
-pos = {{sin(@iC@)} * @d@}, {{cos(@iC@)} * @d@}, @dd@
+%(18)
+model = "@coreRockPath@_@rockInd@.obj"
+pos = {{sin(@iC@)} * @d1w@}, {{cos(@iC@)} * @d1h@}, {@dd@ + {rand(2)}}
 size = @ds@
 color = @whiteish@
 -

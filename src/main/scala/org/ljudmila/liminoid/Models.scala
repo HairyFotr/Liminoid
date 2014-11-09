@@ -912,10 +912,6 @@ final object Models {
     }*/
     def render() = {
       glColor3d(color.r, color.g, color.b)
-      //glColor4d(color.r/colorDiv, color.g/colorDiv, color.b/colorDiv, transparency)
-      //val xx = ((x+camx)*camw/1280d).toInt
-      //val yy = ((y+camx)*camh/720d).toInt
-
       glVertex2d(x,       y)
       glVertex2d(x+ssize, y)
       glVertex2d(x+ssize, y+ssize)

@@ -110,7 +110,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     pixels
   }
   
-  def getDiffBlob(pixels1: Array[Int], threshold: Int): Vector[Pixel] = {
+  def getDiffBlob(pixels1: Array[Int], threshold: Int, p: java.awt.Polygon): Vector[Pixel] = {
     val img = captureFrameImg()
     val image = img.getBufferedImage
     val (w, h) = (image.getWidth, image.getHeight)
@@ -119,10 +119,10 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
 
     image.getRGB(0,0, w,h, pixels2, 0,w)
 
-    getDiffBlob(pixels1, pixels2, threshold, w,h)
+    getDiffBlob(pixels1, pixels2, threshold, w,h, p)
   }
 
-  def getDiffBlob(pixels1: Array[Int], pixels2: Array[Int], threshold: Int, w: Int, h: Int): Vector[Pixel] = {
+  def getDiffBlob(pixels1: Array[Int], pixels2: Array[Int], threshold: Int, w: Int, h: Int, p: java.awt.Polygon): Vector[Pixel] = {
     val size = w*h
     
     /*def compare(c1: Int, c2: Int): Int = math.abs(
@@ -141,7 +141,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     do {
       val idw = i/w
       val imw = i%w
-      if(imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold) {
+      if(imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold && p.contains(imw, idw)) {
         pix += Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
       }
       

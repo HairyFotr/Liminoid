@@ -1,11 +1,13 @@
 package org.ljudmila.hardware
 
+import java.io.FileInputStream
+import java.io.BufferedInputStream
+import javazoom.jl.player.Player
 import org.ljudmila.Utils.{ thread, getFile }
 import scala.collection.mutable
 
-// http://memeorama.com/wp-content/uploads/2012/02/call-the-cops-i-dont-give-a-fuck-llama.jpg
 final object Sound {
-  private[this] var muted = false
+  private var muted = false
   def mute(): Unit = synchronized {
     stopAll()
     muted = true
@@ -15,24 +17,40 @@ final object Sound {
   }
   val soundMap = mutable.HashMap.empty[String, String]
   
-  def init(folder: String): Unit = {
+  def init(folder: String): Unit = synchronized {
     for(line <- getFile(folder + "list.txt")) {
       val (name, file) = line.splitAt(line.indexOf(' '))
       soundMap += name -> (folder + file.trim)
     }
+
+    for((_, file) <- soundMap) {
+      val player = new Player(new BufferedInputStream(new FileInputStream(file)))
+      player.play(0)
+      player.close()
+    }
   }
   
-  val command = "cvlc"
-  
-  def stopAll(): Unit = {
-      import sys.process._
-      Seq("pkill", "-9", command).!
+  var players = Set.empty[Player]
+  def stopAll(): Unit = players.synchronized {
+    players.foreach(_.close)
+    players = Set.empty
   }
 
   def play(sound: String): Unit = {
-    if(!muted) thread {
-      import sys.process._
-      Seq(command, "-q", soundMap(sound)).!
+    if(!muted) {
+      thread {
+        val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
+        players.synchronized {
+          players += player
+        }
+
+        player.play
+
+        players.synchronized {
+          players -= player
+          player.close
+        }
+      }
     }
   }
 }

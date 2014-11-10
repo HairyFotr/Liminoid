@@ -2,7 +2,7 @@ dataFolder = "../LiminoiData/"
 imgs = "@dataFolder@img/"
 objs = "@dataFolder@obj/"
 seqs = "@dataFolder@seq/"
-snds = "@dataFolder@snd/"
+snds = "@dataFolder@ramsnd/"
 
 autostart="false"
 
@@ -10,9 +10,12 @@ noiseseq="@seqs@noise/"
 
 startingPhase=FlyingRock
 startingPhase=Threads
-startingPhase=Mandalas
 startingPhase=Radiolarians
+startingPhase=Mandalas
 startingPhase=Schizoid
+
+noiseWallOffsetx=-85
+noiseWallOffsety=0
 
 backN="@seqs@BackSpaceNew/"
 back0="@seqs@AksiomaXXX/"

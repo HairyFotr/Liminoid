@@ -96,7 +96,7 @@ abstract class FolderSource[T](path: String, ext: String) extends Source[T] with
       .filter { _.isFile }
       .filter { _.toString endsWith ext }
       
-  val frames = files.map { _.toString }.sortBy { x => x.replaceAll("^.*/", "").dropRight(4).toInt }
+  val frames = files.map { _.toString }.sortBy { x => x.replaceAll("^.*/[^0-9]*", "").dropRight(4).toInt }
   
   val lastFrame = frames.size - 1
   

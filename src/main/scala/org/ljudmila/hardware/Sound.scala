@@ -22,15 +22,17 @@ final object Sound {
     }
   }
   
+  val command = "cvlc"
+  
   def stopAll(): Unit = {
       import sys.process._
-      Seq("pkill", "-9", "play").!
+      Seq("pkill", "-9", command).!
   }
 
   def play(sound: String): Unit = {
     if(!muted) thread {
       import sys.process._
-      Seq("play", "-q", soundMap(sound)).!
+      Seq(command, "-q", soundMap(sound)).!
     }
   }
 }

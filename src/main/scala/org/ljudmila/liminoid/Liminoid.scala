@@ -349,12 +349,12 @@ final object Liminoid {
 
   /// Mandalas phase objects ///
   val startFrameNum = 2162 // filenames for mandalas start with this
-  lazy val blackMandala = 
+  var blackMandala = 
     TexSequence(
       settings("blackMandala"),
       delay = 24.FPS,
       selfDestruct = true)
-  lazy val whiteMandala = 
+  var whiteMandala = 
     TexSequence(
       settings("whiteMandala"),
       delay = 24.FPS * 0.8,
@@ -429,8 +429,8 @@ final object Liminoid {
           val spl = n.split(" *, *")
           //glTranslated(camx+testNum1, camy+testNum2, 0)
           //glScaled(camw/camresx, camh/camresy, 1)
-          val xx = spl(0).toInt*1280/1920d
-          val yy = spl(1).toInt*720/1080d
+          val xx = spl(0).toInt*1280/1920d + settings("noiseWallOffsetx").toDouble
+          val yy = spl(1).toInt*720/1080d  + settings("noiseWallOffsety").toDouble
           //val x = ((xx+camx)*camw/1920d).toInt
           //val y = ((yy+camy)*camh/1080d).toInt
           //val x = ((xx*camw/1920d+camx)).toInt
@@ -581,7 +581,7 @@ final object Liminoid {
           val rotDelta = (rot - prevRotation)
           
           //println(rot)
-          /*if (frames%2 == 0) { 
+          /*if (frames%2 == 0) {
             println(rotDelta)
             println(rot)
             println(prevRotation)
@@ -596,7 +596,6 @@ final object Liminoid {
 
 
     currentPhase match {
-      
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -656,6 +655,7 @@ final object Liminoid {
       case Radiolarians => ////////////////////////////////////////////////////////////////////////
         initPhase {
           Sound.play("intro")
+          for (i <- 1 to 10) frontCamera.getTextureIDWait()
         }
 
         /// Parts of the Radiolarians phase
@@ -884,11 +884,16 @@ final object Liminoid {
           diffDone = false
           
           Texture.dumpCache
+          blackMandala = null
+          whiteMandala = null
           
           backPixels = Vector.empty
           backPixelDrop = true
           Sound.play("razpaddron")
           for(i <- 1 to 7) backCamera.getTextureIDWait
+          
+          System.gc()
+          System.gc()
         }
         
         glClear3d(0.175, 0.15, 0.15)
@@ -898,15 +903,15 @@ final object Liminoid {
         
         val schEnd = 6
         val break1 = 15
-        val break2 = break1 + 7
-        val break3 = break2 + 3
+        val break2 = break1 + 7 + 5
+        val break3 = break2 + 3 + 5
         if (schizoidPhase >= schEnd) { 
           schizoidPhase = schEnd
           //phaseTimer = now
         }
         
-        /*val rotlimitx = (-310, 310)
-        val rotlimity = (-90, 90)
+        val rotlimitx = (-435, 435)
+        val rotlimity = (-87, 92)
         val rotxl = 
           if (rotx < rotlimitx._1) rotlimitx._1
           else if (rotx > rotlimitx._2) rotlimitx._2
@@ -914,13 +919,13 @@ final object Liminoid {
         val rotyl = 
           if (roty < rotlimity._1) rotlimity._1
           else if (roty > rotlimity._2) rotlimity._2
-          else roty*/
+          else roty//*/
         
         val f = 1400d -600 + 7*20 + (testNum4-14/*+50*/)*20
         val (camresx, camresy) = (backCamera.width, backCamera.height)
         val camaspect = camresx/camresy.toDouble
         val (camw, camh) = (f*camaspect, f+testNum3+100) //(winHeight*4/3d, winHeight)
-        val (camx, camy) = (rotx*0.7-camw/7+  211 + testNum5, roty*0.7-camh/7 + 166 + testNum6)
+        val (camx, camy) = (rotxl*0.7-camw/7+  211 + testNum1, rotyl*0.7-camh/7 + 166 + testNum2)
         
         val back0 @ (back0Frame, back0Snap) = (back0Seq(), back0Seq.snap)//(backCamera.getTextureID(), null)//(back0Seq(), back0Seq.snap)
         val backC @ (backCFrame, backCSnap) = (backCamera.getTextureID(), null)//if(noiseWall) back0 else (backCamera.getTextureID(), null)
@@ -1005,11 +1010,11 @@ final object Liminoid {
               //Sound.stopAll()
               //Sound.play("ziddron")
               Sound.play("razpadheart1")
-              Sound.play("razpad1")
+              Sound.play("razpad3")
               wallTimer = now
             } else {
               Sound.play("razpadheart1")
-              Sound.play("razpad1")
+              Sound.play("razpad3")
             }
             middlemomment = false
             diffDone = true
@@ -1160,7 +1165,7 @@ final object Liminoid {
           glDisable(GL_BLEND)
           render2D {
             glMatrix {
-              glTranslated(camx+testNum1, camy+testNum2, 0)
+              glTranslated(camx, camy, 0)
               glScaled(camw/camresx, camh/camresy, 1)
               //glScaled(camw/camw, camh/camh, 1)
             	//glTranslated(camx*(1920/1280d)+testNum1, camy*(1080/720d)+testNum2, 0)
@@ -1214,7 +1219,7 @@ final object Liminoid {
           glDisable(GL_BLEND)
           render2D {
             glMatrix {
-              glTranslated(camx+testNum1, camy+testNum2, 0)
+              glTranslated(camx, camy, 0)
               glScaled(camw/camresx, camh/camresy, 1)
               glPrimitive(GL_QUADS) {
                 for(bp <- noisePixels) {

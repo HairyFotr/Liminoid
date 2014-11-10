@@ -4,6 +4,8 @@ objs = "@dataFolder@obj/"
 seqs = "@dataFolder@seq/"
 snds = "@dataFolder@snd/"
 
+autostart="false"
+
 noiseseq="@seqs@noise/"
 
 startingPhase=FlyingRock
@@ -13,12 +15,10 @@ startingPhase=Radiolarians
 startingPhase=Schizoid
 
 backN="@seqs@BackSpaceNew/"
-back0="@seqs@Sasa0/"
-back1="@seqs@Sasa2/"
-back2="@seqs@Sasa1/"
-back3="@seqs@Sasa2/"
-
-back0="@seqs@AksiomaFTS/"
+back0="@seqs@AksiomaXXX/"
+back1="@seqs@AksiomaMatic/"
+back2="@seqs@AksiomaSasa/"
+back3="@seqs@AksiomaMatic/"
 
 threadNetworkOffsetx=0
 threadNetworkOffsety=-70
@@ -28,7 +28,7 @@ renderMode=stereo
 screenx=1280
 screeny=800
 
-frontCameraId=2
+frontCameraId=1
 frontCameraX=1280
 frontCameraY=720
 backCameraId=0
@@ -58,7 +58,6 @@ ds3 = 1.5
 dd3 = 16
 dw3 = 400
 dh3 = 300
-autostart="true"
 
 #rockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 rockPath="@objs@Prihod_iz_stene_Decimated_min/Prihod iz stene_normale"
@@ -66,7 +65,7 @@ rockInd={choose(II,III,V)}
 
 radiolarianFolder="@objs@OBJ_the_radiolarian_normale_min"
 coreRockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
-coreModel="@rockPath@_II.obj"
+coreModel="@coreRockPath@_II.obj"
 
 ### White center rocks ###
 rocks1="""

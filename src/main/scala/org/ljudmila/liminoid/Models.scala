@@ -10,7 +10,7 @@ import scala.language.implicitConversions
 import scala.annotation.switch
 import Render.{ render3D, render2D }
 import org.ljudmila.SettingsReader
-import org.ljudmila.Utils.{ TableRandom, pow2, getRatio, withAlternative }
+import org.ljudmila.Utils.{ TableRandom, pow2, angleDist, angleAvg, angleAvgW, getRatio, withAlternative }
 import GLadDOnS._
 import org.ljudmila.hardware.Sound
 import java.nio._
@@ -147,6 +147,7 @@ final object Models {
     def random01(): Vec = Vec(nextDouble, nextDouble, nextDouble)
     def randomGaussian(): Vec = Vec(TableRandom.nextGaussian, TableRandom.nextGaussian, TableRandom.nextGaussian)
     def randomGaussian(d: Double): Vec = Vec(TableRandom.nextGaussian*d, TableRandom.nextGaussian*d, TableRandom.nextGaussian*d)
+    def randomGaussianUnsafe(d: Double): Vec = Vec(TableRandom.nextGaussianUnsafe*d, TableRandom.nextGaussianUnsafe*d, TableRandom.nextGaussianUnsafe*d)
     def randomUniform01(): Vec = { val rnd = nextDouble; Vec(rnd, rnd, rnd) }
   }
   case class Vec(val x: Double, val y: Double, val z: Double) extends VecLike
@@ -154,6 +155,8 @@ final object Models {
   case class MutableVec(var x: Double, var y: Double, var z: Double) extends VecLike {
     def ++=(v: VecLike): Unit = { x += v.x; y += v.y; z += v.z; }
     def **=(f: Double): Unit = { x *= f; y *= f; z *= f }
+    def fliptwo(times: Double): Unit = { x *= -times;  y *= -times }
+    def flip(times: Double): Unit = { x *= -times; y *= -times; z *= -times; }
   }
   def vec(s: String): Vec = {
     if(s.isEmpty()) vec0
@@ -207,20 +210,36 @@ final object Models {
 
   case class Rotation(yaw: Float, pitch: Float, roll: Float) {
     def +(r: Rotation): Rotation = Rotation(yaw+r.yaw, pitch+r.pitch, roll+r.roll)
-    def -(r: Rotation): Rotation = Rotation(yaw-r.yaw, pitch-r.pitch, roll-r.roll)
+    def -(r: Rotation): Rotation = {
+      Rotation(
+          angleDist(yaw, r.yaw).toFloat,
+          angleDist(pitch, r.pitch).toFloat,
+          angleDist(roll,r.roll).toFloat)
+    }
+    def avg(r: Rotation): Rotation = {
+      Rotation(
+          angleAvg(yaw, r.yaw).toFloat,
+          angleAvg(pitch, r.pitch).toFloat,
+          angleAvg(roll,r.roll).toFloat)
+    }
+    def avgW(r: Rotation, ratio: Double) = {
+      Rotation(
+          angleAvgW(yaw, r.yaw, ratio).toFloat, 
+          angleAvgW(pitch, r.pitch, ratio).toFloat,
+          angleAvgW(roll,r.roll, ratio).toFloat)
+    }
+    def naiveMinus(r: Rotation): Rotation = {
+      Rotation(yaw-r.yaw, pitch-r.pitch, roll-r.roll)
+    }
     def *(f: Float): Rotation = Rotation(yaw*f, pitch*f, roll*f)
-    def limit(n: Float) = Rotation(
-        if(abs(yaw) > abs(n)) signum(yaw) * n else yaw,
-        if(abs(pitch) > abs(n)) signum(pitch) * n else pitch,
-        if(abs(roll) > abs(n)) signum(roll) * n else roll)
   }
   val rotation0 = Rotation(0, 0, 0)
   
-  case class Color(var r: Double, var g: Double, var b: Double) {
+  class Color(var r: Double, var g: Double, var b: Double) {
     def -=(f: Double): Unit = { r -= f; g -= f; b -= f }
     def *=(f: Double): Unit = { r *= f; g *= f; b *= f }
 
-    def *(f: Double): Color = Color(r * f, g * f, b * f)
+    def *(f: Double): Color = new Color(r * f, g * f, b * f)
 
     def toRGB(): Int = 
       ((r*255).toInt) + 
@@ -228,19 +247,19 @@ final object Models {
       ((b*255).toInt >> 16)
   }
   object Color {
-    def RGB(i: Int): Color = Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
-    def BGR(i: Int): Color = Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
-    def Gray(i: Int): Color = Color((i & 255)/255d, (i & 255)/255d, (i & 255)/255d)
+    def RGB(i: Int): Color = new Color(((i & 255)/255d), (((i >> 8) & 255)/255d), (((i >> 16) & 255)/255d))
+    def BGR(i: Int): Color = new Color((((i >> 16) & 255)/256d), (((i >> 8) & 255)/256d), ((i & 255)/256d))
+    def Gray(i: Int): Color = new Color((i & 255)/255d, (i & 255)/255d, (i & 255)/255d)
   }
   def color(s: String): Color = {
     if(s.isEmpty()) grey0
     else {
       val split = s.split(" *, *")
       if(split.size == 1) grey(s.toDouble)
-      else Color(split(0).toDouble, split(1).toDouble, split(2).toDouble)
+      else new Color(split(0).toDouble, split(1).toDouble, split(2).toDouble)
     }
   }
-  def grey(d: Double): Color = Color(d, d, d)
+  def grey(d: Double): Color = new Color(d, d, d)
   val grey0 = grey(0)
   val grey1 = grey(1)
 
@@ -341,18 +360,19 @@ final object Models {
   }
 
   // It's made of state and fail
-  case class RenderProcessData(
-      beat: Boolean = false,
-      pullMode: Boolean = false,
+  class RenderProcessData(
+      val beat: Boolean = false,
+      val pullMode: Boolean = false,
       var centerx: Double, var centery: Double,
-      ratio: Double) 
+      val ratio: Double) 
   {
       val ratio1m = 1-ratio
   }
 
-  case class RenderRenderData(
-      camx: Double, camy: Double,
-      camw: Double, camh: Double)
+  class RenderRenderData(
+      val camx: Double, val camy: Double,
+      val camw: Double, val camh: Double,
+      val extraSize: Double)
   {
     var pullingThisThread = false
   }
@@ -366,7 +386,6 @@ final object Models {
     // It's made of state and fail
     var threadMap: Map[Line, Vector[Thread]] = null
     var allNodes: Vector[ThreadNode] = null
-    var noonePulling = true
     var setPulling = false
     
     def apply(str: String): ThreadNetwork = {
@@ -412,9 +431,9 @@ final object Models {
 
             lines :+= 
               (if (direction == 1) {
-                Line(parse(strings(0)), parse(strings(1)))
+                new Line(parse(strings(0)), parse(strings(1)))
               } else {
-                Line(parse(strings(1)), parse(strings(0)))
+                new Line(parse(strings(1)), parse(strings(0)))
               })
             } catch {
               case e: Exception =>
@@ -433,7 +452,7 @@ final object Models {
       
       val threadNodes = 
           nodes.map{ node => 
-            ThreadNode(
+            new ThreadNode(
               node,
               insNodes  = lines.filter{ _.p2 eq node },
               outsNodes = lines.filter{ _.p1 eq node },
@@ -443,7 +462,7 @@ final object Models {
           }
         val initThreadNodes = 
           initNodes.map{ node => 
-            ThreadNode(
+           new ThreadNode(
               node,
               insNodes  = Vector.empty,
               outsNodes = lines.filter{ _.p1 eq node },
@@ -453,7 +472,7 @@ final object Models {
           }
       val danglingThreadNodes = 
           danglingNodes.map{ node => 
-            ThreadNode(
+           new ThreadNode(
               node,
               insNodes  = lines.filter{ _.p2 eq node },
               outsNodes = lines.filter{ _.p1 eq node },
@@ -462,16 +481,16 @@ final object Models {
               DanglingNode)
           }
         
-        return ThreadNetwork(initThreadNodes, threadNodes, danglingThreadNodes, lines, threadMap)
+        return new ThreadNetwork(initThreadNodes, threadNodes, danglingThreadNodes, lines, threadMap)
     }
   }
 
-  case class ThreadNetwork(
-      initNodes: Vector[ThreadNode],
-      nodes: Vector[ThreadNode],
-      danglingNodes: Vector[ThreadNode],
-      lines: Vector[Line],
-      threadMap: Map[Line, Vector[Thread]]) extends RenderObject {
+  class ThreadNetwork(
+      val initNodes: Vector[ThreadNode],
+      val nodes: Vector[ThreadNode],
+      val danglingNodes: Vector[ThreadNode],
+      val lines: Vector[Line],
+      val threadMap: Map[Line, Vector[Thread]]) extends RenderObject {
     
     ThreadNetwork.allNodes = initNodes ++ nodes ++ danglingNodes
     
@@ -499,19 +518,30 @@ final object Models {
         node.outs.foreach(_.init())
       }
     }
+    
+    var almostOver = false
     def process(implicit data: RenderProcessData): Unit = {
       if (data.pullMode) {
         data.centerx = danglingNodes.head.position.x
         data.centery = danglingNodes.head.position.y
         if (ThreadNetwork.setPulling) {
-          ThreadNetwork.noonePulling = true
           ThreadNetwork.setPulling = false
-          val nodes = ThreadNetwork.allNodes.filter { node => !node.pulling }
-          if (nodes.nonEmpty) {
-            nodes.minBy { node =>
+          val nodess = nodes.filter { node => !node.pulling }
+          if (nodess.nonEmpty) {
+            nodess.minBy { node =>
               sqrt(pow2(node.position.x - data.centerx) + pow2(node.position.y - data.centery))
             }.pulling = true
           } else {
+            almostOver = true
+            println("Almost over")
+          }
+        }
+        if (!fullyOver && almostOver) {
+          val maxdist = nodes.map { node => 
+            (abs(node.position.x - data.centerx) + abs(node.position.y - data.centery))
+          }.max
+          if (maxdist < 12) {
+            println("It's over")
             fullyOver = true
           }
         }
@@ -537,29 +567,29 @@ final object Models {
   case object RegularNode extends ThreadNodeType
   case object DanglingNode extends ThreadNodeType
   
-  case class ThreadNode(
-      position: Point,
-      insNodes: Vector[Line],
-      outsNodes: Vector[Line],
-      texture: Int,
-      nodeSize: Double,
-      nodeType: ThreadNodeType = RegularNode) extends RenderObject {
+  class ThreadNode(
+      val position: Point,
+      val insNodes: Vector[Line],
+      val outsNodes: Vector[Line],
+      val texture: Int,
+      val nodeSize: Double,
+      val nodeType: ThreadNodeType = RegularNode) extends RenderObject {
     
     val ins  = insNodes.flatMap(ThreadNetwork.threadMap)
     val outs = outsNodes.flatMap(ThreadNetwork.threadMap)
-
+    
     var outsInitialized = false
     var pulled: Boolean = false
     var pulling: Boolean = false
     var scheduledPulling: Boolean = false
     
     def visible = 
-      if(ins.isEmpty) 0 else ins.map{ thread => min(pow2(thread.backupvisible), 1d) }.max
+      if(ins.isEmpty) 0 else ins.map{ thread => min(thread.backupvisible, 1d) }.max
       
     var exvisible = 0d
-    val invisibleThreshold = 0.5
+    val invisibleThreshold = 0.05
     def wasInvisible = {
-      val out = (exvisible < invisibleThreshold) && (visible > invisibleThreshold)
+      val out = (exvisible <= invisibleThreshold) && (visible > invisibleThreshold)
       exvisible = visible
       out
     }
@@ -593,18 +623,15 @@ final object Models {
         if (abs(position.x - data.centerx) + abs(position.y - data.centery) < 200 && !pulled) {
         	pulled = true
           ThreadNetwork.setPulling = true
-    		  ThreadNetwork.allNodes.filter { n => 
-            n.outsNodes.exists { o => (o.p2 eq position) || (o.p1 eq position) } ||
-            n.insNodes.exists { o => (o.p2 eq position) || (o.p1 eq position) }
-          }.foreach {
+    		  ThreadNetwork.allNodes.foreach {
             x => x.scheduledPulling = true
           }
         }
       }
       if (wasInvisible && nodeType == RegularNode) {
         val soundPan = 
-          if (position.x > data.centerx+200) "R"
-          else if (position.x < data.centerx-200) "L"
+          if (position.x > data.centerx+250) "R"
+          else if (position.x < data.centerx-250) "L"
           else ""
             
         Sound.play("network"+soundPan+(nextInt(6)+1));
@@ -635,7 +662,7 @@ final object Models {
       val posx = position.x-liminoidSizex/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       
-      val coords = Coord(posx, posy, liminoidSizex, liminoidSizey)
+      val coords = Coord(posx, posy, liminoidSizex, liminoidSizey) + (data.extraSize*10)
       quad(coords, texture, false, false, if(pulling) 1 else visible,
         preRender = {
           glPushMatrix
@@ -651,12 +678,12 @@ final object Models {
   object Point {
     def apply(str: Array[String]): Point = {
       if(str.size == 2)
-        Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety)
+        new Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety)
       else
-        Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety, str(2).toDouble) 
+        new Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety, str(2).toDouble) 
     }
   }  
-  case class Point(var x: Double, var y: Double, var s: Double = 1.0) {
+  class Point(var x: Double, var y: Double, var s: Double = 1.0) {
     s = s*30;
     def toTuple() = (x, y)
     //def toTuple() = (x, y, s)
@@ -665,12 +692,10 @@ final object Models {
     val visibilityThreshold = 0.00035d
     val visibilityVelocity = 0.0055d
   }
-  case class ThreadPoint(var desiredx: Double, var desiredy: Double) {
+  class ThreadPoint(var desiredx: Double, var desiredy: Double) {
     var x: Double = desiredx
     var y: Double = desiredy
     var i: Double = 0.5d
-    var xv: Double = 0d
-    var yv: Double = 0d
     var iv: Double = 0d
     var ivv: Double = 0d
     var visible: Double = 0d
@@ -691,16 +716,16 @@ final object Models {
     
     var children: Vector[ThreadPoint] = Vector.empty
         
-    def dist(that: ThreadPoint): Double = sqrt(pow2(this.x-that.x) + pow2(this.y-that.y))
+    //def dist(that: ThreadPoint): Double = sqrt(pow2(this.x-that.x) + pow2(this.y-that.y))
   }
   
   object Line {
     def apply(a: Array[String]): Line = 
-      Line(
-        Point(a(0).toDouble, a(1).toDouble), 
-        Point(a(2).toDouble, a(3).toDouble))
+      new Line(
+        new Point(a(0).toDouble, a(1).toDouble), 
+        new Point(a(2).toDouble, a(3).toDouble))
   }
-  case class Line(p1: Point, p2: Point) {
+  class Line(val p1: Point, val p2: Point) {
     def line = Vector(p1, p2)
   }
 
@@ -710,23 +735,23 @@ final object Models {
     }
     def generateThread(l: Line): Thread = {
       val thread = 
-        Thread({
+        new Thread({
           val (sx, sy) = l.p1.toTuple
           val (dx, dy) = l.p2.toTuple
-          val segments = max(5, math.hypot(sx-dx, sy-dy)/30d)
+          val segments = max(5, math.hypot(sx-dx, sy-dy)/39d)
           val segmentsInt = segments.toInt
           var prev: Option[ThreadPoint] = None
           Vector.tabulate(segmentsInt){ i => 
             val (ratio1, ratio2) = getRatio(1 - i/segments)
             val out = 
               if(i <= 0)
-                ThreadPoint(sx, sy)
+                new ThreadPoint(sx, sy)
               else if(i >= segmentsInt-1)
-                ThreadPoint(dx, dy)
+                new ThreadPoint(dx, dy)
               else
-                ThreadPoint(
-                    sx*ratio1+dx*ratio2 + TableRandom.nextGaussian/7d,
-                    sy*ratio1+dy*ratio2 + TableRandom.nextGaussian/7d)
+                new ThreadPoint(
+                    sx*ratio1+dx*ratio2 + TableRandom.nextGaussianUnsafe/7d,
+                    sy*ratio1+dy*ratio2 + TableRandom.nextGaussianUnsafe/7d)
 
             prev.foreach { _.children = Vector(out) }
             
@@ -739,12 +764,16 @@ final object Models {
       thread
     }
   }
-  case class Thread(var nodes: Vector[ThreadPoint]) {
+  class Thread(nodes: Vector[ThreadPoint]) {
     var currentLength = 1
     
     def nodesLast = nodes.last//(nodes.size-2)
-    def backupvisible(): Double = nodesLast.visible
-    def fullyVisible(): Boolean = nodesLast.fullyVisible
+    
+    def backupvisible(): Double = 
+      if (currentLength < nodes.size || nodesLast.visible < 0.8) 0 
+      else nodesLast.visible-0.6
+      
+    //def fullyVisible(): Boolean = nodesLast.fullyVisible
     
     var isInitialized = false
     def init(): Unit = {
@@ -756,12 +785,8 @@ final object Models {
       var i = 0
       do {
         val node = nodes(i)
-        //node.x += node.xv
-        //node.y += node.yv
-        node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussian/1.5d
-        node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussian/1.5d
-        //node.desiredx = node.desiredx*0.96 + node.x*0.04
-        //node.desiredy = node.desiredy*0.96 + node.y*0.04
+        node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussianUnsafe/1.5d
+        node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussianUnsafe/1.5d
         if(i > 0) {
           val prev = nodes(i-1)
           val dx = (node.desiredx-node.x)
@@ -868,7 +893,7 @@ final object Models {
     }
   }
   
-  case class Pixel(
+  class Pixel(
       var sx: Double, var sy: Double,
       var transformVector: MutableVec = mutavec0,
       var color: Color) {
@@ -879,43 +904,41 @@ final object Models {
     var isFlipped: Boolean = false
     var isContained: Boolean = true
     
-    //private[this] val colorF = 1
-    //color *= colorF
     var newColor = color
-    //var newNewColor = newColor
 
     var x = sx
     var y = sy
 
-    //private[this] val ssize = TableRandom.nextDouble*0.7+0.3
-    private[this] val ssize = TableRandom.nextDouble*0.9+0.5
-    
-    // try this for a good time, also different sssizes
-    //val xssize = x+ssize
-    //val yssize = y+ssize
+    //private[this] val ssize = TableRandom.nextDoubleUnsafe+0.45
+    private[this] val ssize = TableRandom.nextDoubleUnsafe*0.3+0.6
 
-    /*def renderToBuffer(vertexBuff: FloatBuffer, colorBuff: FloatBuffer) = {
-      colorBuff
-        .put(color.r.toFloat)
-        .put(color.g.toFloat)
-        .put(color.b.toFloat)
-
-      val xx1 = x.toFloat
-      val xx2 = (x+ssize).toFloat
-      val yy1 = y.toFloat
-      val yy2 = (y+ssize).toFloat
-      vertexBuff
-        .put(xx1).put(yy1)
-        .put(xx2).put(yy2)
-        .put(xx2).put(yy2)
-        .put(xx1).put(yy2)      
-    }*/
     def render() = {
       glColor3d(color.r, color.g, color.b)
       glVertex2d(x,       y)
       glVertex2d(x+ssize, y)
       glVertex2d(x+ssize, y+ssize)
       glVertex2d(x,       y+ssize)
+    }
+  }
+  
+  class NoisePixel(
+      var sx: Double, var sy: Double, 
+      val transformVector: MutableVec = mutavec0,
+      private val color: Double) {
+    
+    var x = sx
+    var y = sy
+
+    private[this] val ssize = TableRandom.nextDoubleUnsafe*0.2+0.5
+
+    def render() = {
+      glColor3d(color, color, color)
+      val xx = x+ssize
+      val yy = y+ssize
+      glVertex2d(x,  y)
+      glVertex2d(xx, y)
+      glVertex2d(xx, yy)
+      glVertex2d(x,  yy)
     }
   }
 

@@ -3,8 +3,9 @@ package org.ljudmila.hardware
 import org.ljudmila.Utils.{ thread, getFile }
 import scala.collection.mutable
 
+// http://memeorama.com/wp-content/uploads/2012/02/call-the-cops-i-dont-give-a-fuck-llama.jpg
 final object Sound {
-  private var muted = false
+  private[this] var muted = false
   def mute(): Unit = synchronized {
     stopAll()
     muted = true

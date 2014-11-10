@@ -16,8 +16,8 @@ libraryDependencies <++= scalaVersion(v => Seq(
   //"org.bytedeco" % "javacpp" % "0.9", // TODO exclude a bunch of stuff
   //"org.bytedeco.javacpp-presets" % "opencv" % "2.4.9-0.9" classifier "" classifier "linux-x86_64",
   "org.l33tlabs.twl" % "pngdecoder" % "1.0",
-  "org.scream3r" % "jssc" % "2.8.0",
-  "javazoom" % "jlayer" % "1.0.1"
+  "org.scream3r" % "jssc" % "2.8.0"
+  //"javazoom" % "jlayer" % "1.0.1"
 ))
 
 fork := true

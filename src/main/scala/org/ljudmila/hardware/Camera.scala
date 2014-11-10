@@ -81,7 +81,6 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   def saveImage(filename: String): Unit = {
     try {
       val img = captureFrameImg()
-      // FIXME issues with libpng versions
       thread { cvSaveImage(filename, img) }
       /*thread {
         javax.imageio.ImageIO.write(
@@ -142,7 +141,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
       val idw = i/w
       val imw = i%w
       if(imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold && p.contains(imw, idw)) {
-        pix += Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
+        pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
       }
       
       i += 1

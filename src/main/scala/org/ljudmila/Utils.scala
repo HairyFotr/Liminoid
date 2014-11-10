@@ -17,6 +17,24 @@ final object Utils {
   def pow2(d: Double): Double = d*d
   def getRatio(p: Double): (Double, Double) = (p, 1 - p)
   
+  def angleDist(a1: Double, a2: Double) = {
+    var d = a1-a2
+    if (math.abs(d) > 180) d = 360 - d
+    d % 360
+  }
+  def angleAvg(a1: Double, a2: Double) = {
+    a1 + angleDist(a1, a2)/2
+  }
+  def angleAvgW(a: Double, b: Double, ratio: Double): Double = {
+      var x = math.abs(a-b) % 360
+      if(x >=0 && x <= 180)
+         (a*ratio + b*(1-ratio)) % 360
+      else if(x > 180 && x < 270)
+         (((a*ratio + b*(1-ratio))) % 360) + 180
+      else
+         (((a*ratio + b*(1-ratio))) % 360) - 180
+  }
+  
   implicit class Seqs[A](val s: Seq[A]) { 
     def random: A = s(nextInt(s.size))
     def randomOption: Option[A] = if(s.isEmpty) None else Some(random)

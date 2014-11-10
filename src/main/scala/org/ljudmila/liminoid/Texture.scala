@@ -109,4 +109,12 @@ object Texture {
       cache -= a
     }
   }
+  def dumpCache(): Unit = {
+    for(item <- cache) {
+      glDeleteTextures(item._2)
+    }
+    println("Dumped "+cache.size+" textures.")
+    cache.clear()
+  }
+  
 }

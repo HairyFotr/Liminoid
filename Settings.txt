@@ -10,8 +10,8 @@ noiseseq="@seqs@noise/"
 
 startingPhase=FlyingRock
 startingPhase=Threads
-startingPhase=Radiolarians
 startingPhase=Mandalas
+startingPhase=Radiolarians
 startingPhase=Schizoid
 
 noiseWallOffsetx=-85
@@ -94,7 +94,7 @@ color = @whiteish@
 
 ### Random outer rocks ###
 rocks3="""
-%(65)model = "@rockPath@_@rockInd@.obj"
+%(80)model = "@rockPath@_@rockInd@.obj"
 pos = {rand(@dw3@)}, {rand(@dh3@)}, {@dd3@ + {rand(35)}}
 size = {@ds3@ + {rand(2)}}
 color = @whiteish@

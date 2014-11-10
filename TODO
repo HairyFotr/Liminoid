@@ -1,5 +1,10 @@
 TASKS
 
+  Network reloaded
+    Kamni na obodu so zacetni => visible initial nodes
+    Nodi zuni so koncni => invisible nodes
+    Obrni vse povezave do novih zacetnih? 
+
   Radiolarians
     gibanje kamnov, razprsitev, globina, vec njih
     shaderji na 3D

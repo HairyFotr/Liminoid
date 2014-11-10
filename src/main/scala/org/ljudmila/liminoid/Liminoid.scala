@@ -910,8 +910,8 @@ final object Liminoid {
           //phaseTimer = now
         }
         
-        val rotlimitx = (-435, 435)
-        val rotlimity = (-87, 92)
+        val rotlimitx = (-430, 430)
+        val rotlimity = (-87, 97)
         val rotxl = 
           if (rotx < rotlimitx._1) rotlimitx._1
           else if (rotx > rotlimitx._2) rotlimitx._2

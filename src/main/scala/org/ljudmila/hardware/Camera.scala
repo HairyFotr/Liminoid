@@ -49,6 +49,14 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   private var camOpt: Option[OpenCVFrameGrabber] = Camera.getFrameGrabber(camId, width, height)
   def isStarted: Boolean = camOpt.isDefined
   private lazy val cam = camOpt.get
+  var _hasNewFrame = false
+  def hasNewFrame(): Boolean = {
+    val out = _hasNewFrame
+    if (out) {
+      _hasNewFrame = false
+    }
+    out
+  }
 
   import org.lwjgl.opengl.GL11._
   import org.lwjgl.opengl.GL12._
@@ -75,6 +83,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     //Return the texture ID so we can bind it later again
     //println(textureID)
     prevTextureID = textureID
+    _hasNewFrame = true
     textureID
   }
 
@@ -136,11 +145,13 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     ) / 3
 
     val pix = Vector.newBuilder[Pixel]
-    var i = w 
+    val bound = p.getBounds
+    var i = bound.x
     do {
       val idw = i/w
       val imw = i%w
       if(imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold && p.contains(imw, idw)) {
+        pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
         pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
       }
       
@@ -168,6 +179,21 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
     camTex
   } catch { case x: Exception => if(Camera.supressErrors) -1 else throw x } }
+  
+  def getTextureIDNew(): (Int, Boolean) = synchronized { try {
+    if(camTex == -1) {
+      camTex = captureFrameTex(captureFrameImg())
+      camtexFuture = future { captureFrameImg() }
+      (camTex, true)
+    } else if(camtexFuture.isSet) {
+      glDeleteTextures(camTex)
+      camTex = captureFrameTex(camtexFuture())
+      camtexFuture = future { captureFrameImg() }
+      (camTex, true)
+    } else {
+      (camTex, false)
+    }
+  } catch { case x: Exception => if(Camera.supressErrors) (-1, false) else throw x } }
 
   private var camCapture: IplImage = null
   private var camSnap = Array[Int]()

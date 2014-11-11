@@ -2,7 +2,7 @@ dataFolder = "../LiminoiData/"
 imgs = "@dataFolder@img/"
 objs = "@dataFolder@obj/"
 seqs = "@dataFolder@seq/"
-snds = "@dataFolder@ramsnd/"
+snds = "@dataFolder@snd/"
 
 autostart="false"
 
@@ -14,13 +14,23 @@ startingPhase=Mandalas
 startingPhase=Radiolarians
 startingPhase=Schizoid
 
-noiseWallOffsetx=-85
-noiseWallOffsety=0
+noiseWallOffsetx=-94
+noiseWallOffsety=3
+
+#this is the true threadnetwork offset, the other one is an impostor
+networkOffsetx=-12
+networkOffsety=18
+networkOffsetw=0
+networkOffseth=0
+
+commonOffsetx=21
+commonOffsety=23
 
 backN="@seqs@BackSpaceNew/"
-back0="@seqs@AksiomaXXX/"
-back1="@seqs@AksiomaMatic/"
-back2="@seqs@AksiomaSasa/"
+back0="@seqs@AksiomaNewBack/"
+back0back="@seqs@"
+back1="@seqs@AksiomaSasa/"
+back2="@seqs@AksiomaMatic/"
 back3="@seqs@AksiomaMatic/"
 
 threadNetworkOffsetx=0
@@ -31,14 +41,14 @@ renderMode=stereo
 screenx=1280
 screeny=800
 
-frontCameraId=1
+frontCameraId=`./cameraId`UVC
 frontCameraX=1280
 frontCameraY=720
-backCameraId=0
+backCameraId=`./cameraId`615
 backCameraX=1280
 backCameraY=720
 
-threshold=50
+threshold=60
 
 liminoidSplash = "@imgs@liminoid.png"
 liminoidSplashLoading = "@imgs@liminoidLoading.png"
@@ -58,9 +68,14 @@ ds2 = {4 + {rand(0.5)}}
 dd2 = {20 + {rand(2)}}
 
 ds3 = 1.5
-dd3 = 16
-dw3 = 400
-dh3 = 300
+dd3 = 40
+dw3 = 250
+dh3 = 200
+
+ds4 = 1.5
+dd4 = 55
+dw4 = 400
+dh4 = 300
 
 #rockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 rockPath="@objs@Prihod_iz_stene_Decimated_min/Prihod iz stene_normale"
@@ -92,19 +107,39 @@ color = @whiteish@
 #%
 #"""
 
-### Random outer rocks ###
+### Random inner outer rocks ###
 rocks3="""
 %(80)model = "@rockPath@_@rockInd@.obj"
-pos = {rand(@dw3@)}, {rand(@dh3@)}, {@dd3@ + {rand(35)}}
-size = {@ds3@ + {rand(2)}}
+pos = {rand(@dw3@)}, {rand(@dh3@)}, {@dd3@ + {rand(45)}}
+size = {@ds3@ + {rand(3)}}
 color = @whiteish@
 spreadx = {rand(1)}
 spready = {rand(1)}
 transform = 5
 -
 model = "@rockPath@_@rockInd@.obj"
-pos = {rand(@dh3@)}, {rand(@dh3@)}, {@dd3@ + {rand(5)}}
-size = {@ds3@ + {rand(1)}}
+pos = {rand(@dh3@)}, {rand(@dh3@)}, {@dd3@ + {rand(45)}}
+size = {@ds3@ + {rand(3)}}
+color = @blackish@
+spreadx = {rand(1)}
+spready = {rand(1)}
+transform = 5
+-
+%
+"""
+### Random outer rocks ###
+rocks4="""
+%(80)model = "@rockPath@_@rockInd@.obj"
+pos = {rand(@dw4@)}, {rand(@dh4@)}, {@dd4@ + {rand(45)}}
+size = {@ds4@ + {rand(3)}}
+color = @whiteish@
+spreadx = {rand(1)}
+spready = {rand(1)}
+transform = 5
+-
+model = "@rockPath@_@rockInd@.obj"
+pos = {rand(@dh4@)}, {rand(@dh4@)}, {@dd4@ + {rand(45)}}
+size = {@ds4@ + {rand(3)}}
 color = @blackish@
 spreadx = {rand(1)}
 spready = {rand(1)}
@@ -124,54 +159,54 @@ rockimgs = "@dataFolder@img/Rocks/"
 threadNetwork="""
 # initial nodes
 -100, 1600
-600, -100
+600, -150
 500, 1200
 1000, -400
 1600, 1700
 
-1850, 300
-1500, -300
+1920, 300
+1500, -350
 -150, 800
-1900, 877
-1500, -200
+1950, 877
+1500, -250
 
-850, -100
+850, -150
 1950, 520
 1888, -200
-100, -100
-750, -200
+100, -150
+750, -250
 
 -111, 877
 
 -
 # visible nodes
-400, 750, 1.0, "@rockimgs@rock1.png"
-#300, 390, 1.0, "@rockimgs@rock2.png"
-323, 423, 1.0, "@rockimgs@rock2.png"
-650, 550, 1.0, "@rockimgs@rock3.png"
+300, 750, 1.0, "@rockimgs@rock1.png"
+223, 423, 1.0, "@rockimgs@rock2.png"
+520, 550, 1.0, "@rockimgs@rock3.png"
 
-1100, 200, 1.0, "@rockimgs@rock4.png"
-1275, 940, 1.0, "@rockimgs@rock5.png"
+990, 160, 1.0, "@rockimgs@rock4.png"
+1175, 940, 1.0, "@rockimgs@rock5.png"
 1584, 330, 1.0, "@rockimgs@rock6.png"
 1500, 810, 1.0, "@rockimgs@rock7.png"
 1332, 265, 1.0, "@rockimgs@rock8.png"
 
-512, 213, 1.0, "@rockimgs@rock9.png"
-600, 720, 1.0, "@rockimgs@rock10.png"
-677, 924, 1.0, "@rockimgs@rock11.png"
-647, 337, 1.0, "@rockimgs@rock12.png"
+482, 183, 1.0, "@rockimgs@rock9.png"
+515, 730, 1.0, "@rockimgs@rock10.png"
+647, 924, 1.0, "@rockimgs@rock11.png"
+627, 187, 1.0, "@rockimgs@rock12.png"
 
-1400, 500, 1.0, "@rockimgs@rock13.png"
-1330, 777, 1.0, "@rockimgs@rock14.png"
+1311, 600, 1.0, "@rockimgs@rock13.png"
+1288, 757, 1.0, "@rockimgs@rock14.png"
 1477, 220, 1.0, "@rockimgs@rock15.png"
 1666, 785, 1.0, "@rockimgs@rock16.png"
 1566, 955, 1.0, "@rockimgs@rock17.png"
 1566, 565, 1.0, "@rockimgs@rock18.png"
-810, 244, 1.0, "@rockimgs@rock19.png"
-1277, 465, 1.0, "@rockimgs@rock20.png"
-729, 400, 1.0, "@rockimgs@rock21.png"
-358, 276, 1.0, "@rockimgs@rock22.png"
-1033, 274, 1.0, "@rockimgs@rock23.png"
+810, 254, 1.0, "@rockimgs@rock19.png"
+1217, 375, 1.0, "@rockimgs@rock20.png"
+647, 337, 1.0, "@rockimgs@rock21.png"
+#729, 400, 1.0, "@rockimgs@rock21.png"
+258, 276, 1.0, "@rockimgs@rock22.png"
+1033, 264, 1.0, "@rockimgs@rock23.png"
 
 -
 # dangling nodes
@@ -183,17 +218,17 @@ threadNetwork="""
 #677, 580
 #1277, 792
 #1245, 900
-940, 640
-940, 640
-940, 640
-940, 640
-940, 640
-940, 640
-940, 640
-940, 640
-
 # THE dangling node
-940, 640
+915, 555
+915, 555
+915, 555
+915, 555
+915, 555
+915, 555
+915, 555
+915, 555
+915, 555
+915, 555
 -
 23 -> d1
 10 -> d2
@@ -203,6 +238,8 @@ threadNetwork="""
 3 -> d6
 14 -> d7
 5 -> d8
+13 -> d9
+19 -> d10
 # connections
 1 <- i1
 1 <- i3
@@ -226,7 +263,7 @@ threadNetwork="""
 
 
 4 <- i4
-4 -> 7
+4 -> 20
 4 <- 8
 5 <- i5
 5 <- 7
@@ -236,13 +273,13 @@ threadNetwork="""
 13 <- i6
 13 <- 6
 14 <- 13
-14 <- 20
+#14 <- 20
 7 -> 13
 14 <- i5
 15 <- i6
 16 <- 7
 16 <- 13
-13 -> 4
+#13 -> 4
 6 <- 15
 16 <- 17
 15 -> 18
@@ -269,7 +306,7 @@ i11 -> 23
 
 21 <- 3
 12 <- 21
-19 <- 21
+19 -> 21
 8 -> 13
 
 2 <- 22
@@ -277,7 +314,7 @@ i11 -> 23
 22 <- i14
 
 4 -> 23
-23 -> 21
+#23 -> 21
 23 -> 20
 
 6 <- i13
@@ -285,6 +322,9 @@ i11 -> 23
 19 -> 23
 12 -> 3
 2 <- i16
+
+20 -> 13
+4 -> 19
 
 #node goto
 -
@@ -295,6 +335,7 @@ i11 -> 23
 23 -> d1
 14 -> d1
 5 -> d1
+19 -> d1
 
 17 -> 5
 7 -> 14

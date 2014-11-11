@@ -38,10 +38,10 @@ final object Sound {
 
   def play(sound: String): Unit = {
     if(!muted) {
-      thread {
+       if (players.size <= 12) thread {
         val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
         players.synchronized {
-          players += player
+        	players += player
         }
 
         player.play
@@ -50,6 +50,8 @@ final object Sound {
           players -= player
           player.close
         }
+      } else {
+        println("Too much sounds, dropping: "+sound)
       }
     }
   }

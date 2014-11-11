@@ -64,6 +64,14 @@ final object SettingsReader {
           else m.group(0))
     }
 
+    // Run
+    settingsMap = settingsMap.mapValues { value =>
+      "`(.*)`([a-zA-Z0-9]+)".r.replaceAllIn(value, m => { 
+        import sys.process._
+        Seq(m.group(1), m.group(2)).!!.trim()
+      })
+    }
+
     // Loop
     settingsMap = settingsMap.mapValues { value =>
       "(?s)[%][(]([0-9]+|[a-zA-Z, ]+)[)](.+?)[%]".r.replaceAllIn(value, m => {

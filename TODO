@@ -1,13 +1,19 @@
 TASKS
-
+  Sound
+    razpad sound se ne ugasne, a bi se moral kje?
+    network sound
+    
   Network reloaded
     Kamni na obodu so zacetni => visible initial nodes
     Nodi zuni so koncni => invisible nodes
-    Obrni vse povezave do novih zacetnih? 
+    Obrni vse povezave do novih zacetnih?
+    - sneg narest
+  Network reloaded 2
+     Zacetni so v centru
+     Obrni vse povezave iz njih ven
 
   Radiolarians
     gibanje kamnov, razprsitev, globina, vec njih
-    shaderji na 3D
     
   Zid
     ko skupaj zleze se kr od nekje vlecejo  
@@ -42,14 +48,7 @@ TASKS
     Definicija podrocja stola
     Kamera nekje v visini glave  
     
-  Galerija Panic:
-    Stol je prevelik
-      damo kuglo na pol in na zid
-      nekako zajamemo sliko se malo naokrog in stitchamo
-    Pulsesensor je crap
-      ga uporabimo le za BPM, ali sploh ne
-  
-  
+
   Possibly deprecated todo:
     white noise -> formiranje kamna
       convex hull / premikanje proti sredini

@@ -1,0 +1,5 @@
+while true; do
+  enablerift
+  defuck mem
+  sbt run
+done

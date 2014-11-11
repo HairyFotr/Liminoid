@@ -1,0 +1,3 @@
+#!/bin/bash
+v4l2-ctl --list-devices | grep -C2 $1 | grep -o '/dev/video[0-9]'
+

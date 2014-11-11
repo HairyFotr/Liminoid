@@ -20,7 +20,7 @@ final object Utils {
   def angleDist(a1: Double, a2: Double) = {
     var d = a1-a2
     if (math.abs(d) > 180) d = 360 - d
-    d % 360
+    (d + 360) % 360
   }
   def angleAvg(a1: Double, a2: Double) = {
     a1 + angleDist(a1, a2)/2

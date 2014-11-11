@@ -528,9 +528,15 @@ final object Models {
           ThreadNetwork.setPulling = false
           val nodess = nodes.filter { node => !node.pulling }
           if (nodess.nonEmpty) {
-            nodess.minBy { node =>
-              sqrt(pow2(node.position.x - data.centerx) + pow2(node.position.y - data.centery))
-            }.pulling = true
+            val nn = nodess.minBy { node =>
+              -sqrt(pow2(node.position.x - data.centerx) + pow2(node.position.y - data.centery))
+            }
+            
+            nn.pulling = true
+            ThreadNetwork.allNodes
+              .filter(_.nodeType == DanglingNode)
+              .find { dn => dn.ins.exists { t => nn.outs contains t } }
+              .map { _.pulling = true }
           } else {
             almostOver = true
             println("Almost over")
@@ -545,7 +551,7 @@ final object Models {
             fullyOver = true
           }
         }
-        danglingNodes.foreach { x => x.pulling = true }
+        //danglingNodes.foreach { x => x.pulling = true }
       }
       
       initNodes.foreach(_.process)
@@ -657,13 +663,13 @@ final object Models {
       }
     }
     def renderNode(implicit data: RenderRenderData): Unit = {
-      val liminoidSizex = position.s + (TableRandom.nextGaussianUnsafe/100d) * position.s
-      val liminoidSizey = position.s + (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val liminoidSizex = position.s*(if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val liminoidSizey = position.s*(if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
       val posx = position.x-liminoidSizex/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       
       val coords = Coord(posx, posy, liminoidSizex, liminoidSizey) + (data.extraSize*10)
-      quad(coords, texture, false, false, if(pulling) 1 else visible,
+      quad(coords, texture, false, false, if(pulling) 1 else visible*2,
         preRender = {
           glPushMatrix
           glTranslated(data.camx, data.camy, 0)
@@ -770,8 +776,8 @@ final object Models {
     def nodesLast = nodes.last//(nodes.size-2)
     
     def backupvisible(): Double = 
-      if (currentLength < nodes.size || nodesLast.visible < 0.8) 0 
-      else nodesLast.visible-0.6
+      if (currentLength < nodes.size || nodesLast.visible < 1.5) 0 
+      else 1
       
     //def fullyVisible(): Boolean = nodesLast.fullyVisible
     
@@ -834,13 +840,13 @@ final object Models {
     }
     
     def render(implicit data: RenderRenderData): Unit = {
-      glLineWidth((2d + (testNum2/10d)*(osc1+1)).toFloat)
+      glLineWidth((2d /*+ (testNum2/10d)*(osc1+1)*/).toFloat)
       glPrimitive(GL_LINE_STRIP) {
       //glPrimitive(GL_LINES) {// Dashed
         var i = 0
         while(i < nodes.length && nodes(i).isVisible) {
         	val node = nodes(i)
-          if(node.y < 0-20 || node.y > 1080+20) {
+          if(node.y < 0-120 || node.y > 1080+120) {
             //nop
           } else if(i > 0 && (node.visible < 1d || data.pullingThisThread)) {
             val prevNode = nodes(i-1)
@@ -900,7 +906,6 @@ final object Models {
     
     var isDead: Boolean = false
     var isDying: Boolean = false
-    var original: Boolean = true
     var isFlipped: Boolean = false
     var isContained: Boolean = true
     
@@ -910,10 +915,11 @@ final object Models {
     var y = sy
 
     //private[this] val ssize = TableRandom.nextDoubleUnsafe+0.45
-    private[this] val ssize = TableRandom.nextDoubleUnsafe*0.3+0.6
+    private[this] val ssize = TableRandom.nextDoubleUnsafe*0.6+0.8
 
     def render() = {
-      glColor3d(color.r, color.g, color.b)
+      val rat = 2d//+testNum1/100d
+      glColor3d(color.r*rat, color.g*rat, color.b*rat)
       glVertex2d(x,       y)
       glVertex2d(x+ssize, y)
       glVertex2d(x+ssize, y+ssize)
@@ -929,7 +935,7 @@ final object Models {
     var x = sx
     var y = sy
 
-    private[this] val ssize = TableRandom.nextDoubleUnsafe*0.2+0.5
+    private[this] val ssize = TableRandom.nextDoubleUnsafe*0.4+0.5
 
     def render() = {
       glColor3d(color, color, color)

@@ -23,7 +23,7 @@ libraryDependencies <++= scalaVersion(v => Seq(
 fork := true
 
 javaOptions ++= Seq(
-  "-Xmx2G",
+  "-Xmx3G",
   "-XX:MaxGCPauseMillis=15")
 
 scalacOptions ++= Seq(

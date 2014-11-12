@@ -1,5 +1,10 @@
 while true; do
-  enablerift
-  defuck mem
+  xrandr --output LVDS1 --mode 1920x1080 --output HDMI1 --mode 1280x800 --same-as LVDS1
+  
+  echo 'echo 3 > /proc/sys/vm/drop_caches' | sudo bash
+  sudo sync
+  sudo swapoff -a
+  sudo swapon -a
+          
   sbt run
 done

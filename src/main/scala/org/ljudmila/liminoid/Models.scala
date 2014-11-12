@@ -56,7 +56,7 @@ final object Models {
       load(reader("model"))
         .toModel(
             baseTransform + Transform(vec(reader("pos")), vec(reader("rot")), vec(reader("size"))),
-            baseTransformVector,
+            baseTransformVector + Transform(vec(withAlternative({val a = reader("speed"); println(a); a}, "0, 0, 0")) * -0.05),
             spread = (withAlternative(reader("spreadx").toDouble, 0), withAlternative(reader("spready").toDouble, 0)),
             color = color(reader("color")),
             coreTransform = Transform(vec(reader("transform")), vec0, vec0))
@@ -215,6 +215,15 @@ final object Models {
           angleDist(yaw, r.yaw).toFloat,
           angleDist(pitch, r.pitch).toFloat,
           angleDist(roll,r.roll).toFloat)
+    }
+    def toC(a: Float, f: Float) = {
+      (if (a > 0+f) (a - f) else if (a < 0-f) (a + f) else 0f)
+    }
+    def toCenter(f: Float): Rotation = {
+      Rotation(
+          toC(yaw, f), 
+          toC(pitch, f),
+          toC(roll, f))
     }
     def avg(r: Rotation): Rotation = {
       Rotation(
@@ -592,6 +601,8 @@ final object Models {
     def visible = 
       if(ins.isEmpty) 0 else ins.map{ thread => min(thread.backupvisible, 1d) }.max
       
+    var ownvisible = 1d
+    
     var exvisible = 0d
     val invisibleThreshold = 0.05
     def wasInvisible = {
@@ -640,7 +651,10 @@ final object Models {
           else if (position.x < data.centerx-250) "L"
           else ""
             
-        Sound.play("network"+soundPan+(nextInt(6)+1));
+        //Sound.play("network"+soundPan+(nextInt(6)+1));
+      }
+      if (abs(position.x - data.centerx) + abs(position.y - data.centery) < 20) {
+        ownvisible -= 0.01
       }
       //for(in <- ins) if(in.isInitialized) in.process
     }
@@ -663,13 +677,13 @@ final object Models {
       }
     }
     def renderNode(implicit data: RenderRenderData): Unit = {
-      val liminoidSizex = position.s*(if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
-      val liminoidSizey = position.s*(if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val liminoidSizex = position.s*(if(pulled) ownvisible else if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val liminoidSizey = position.s*(if(pulled) ownvisible else if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
       val posx = position.x-liminoidSizex/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       
       val coords = Coord(posx, posy, liminoidSizex, liminoidSizey) + (data.extraSize*10)
-      quad(coords, texture, false, false, if(pulling) 1 else visible*2,
+      quad(coords, texture, false, false, if(pulled) ownvisible else if(pulling) 1 else visible*2,
         preRender = {
           glPushMatrix
           glTranslated(data.camx, data.camy, 0)
@@ -775,9 +789,15 @@ final object Models {
     
     def nodesLast = nodes.last//(nodes.size-2)
     
+    var fejd = 0.4
+    
     def backupvisible(): Double = 
       if (currentLength < nodes.size || nodesLast.visible < 1.5) 0 
-      else 1
+      else {
+        fejd = fejd * 0.97 + 1*0.03
+        if(fejd > 0.95) fejd = 1
+        fejd
+      }
       
     //def fullyVisible(): Boolean = nodesLast.fullyVisible
     

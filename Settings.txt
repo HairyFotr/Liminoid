@@ -11,8 +11,8 @@ noiseseq="@seqs@noise/"
 startingPhase=FlyingRock
 startingPhase=Threads
 startingPhase=Mandalas
-startingPhase=Radiolarians
 startingPhase=Schizoid
+startingPhase=Radiolarians
 
 noiseWallOffsetx=-94
 noiseWallOffsety=3
@@ -27,10 +27,10 @@ commonOffsetx=21
 commonOffsety=23
 
 backN="@seqs@BackSpaceNew/"
-back0="@seqs@AksiomaNewBack/"
+back0="@seqs@Aksioma0/"
 back0back="@seqs@"
-back1="@seqs@AksiomaSasa/"
-back2="@seqs@AksiomaMatic/"
+back1="@seqs@AksiomaSasa2/"
+back2="@seqs@AksiomaMatic2/"
 back3="@seqs@AksiomaMatic/"
 
 threadNetworkOffsetx=0
@@ -71,11 +71,13 @@ ds3 = 1.5
 dd3 = 40
 dw3 = 250
 dh3 = 200
+dv3 = 1
 
 ds4 = 1.5
 dd4 = 55
 dw4 = 400
 dh4 = 300
+dv4 = 0
 
 #rockPath="@objs@Prihod_iz_stene/Prihod iz stene_normale"
 rockPath="@objs@Prihod_iz_stene_Decimated_min/Prihod iz stene_normale"
@@ -109,10 +111,11 @@ color = @whiteish@
 
 ### Random inner outer rocks ###
 rocks3="""
-%(80)model = "@rockPath@_@rockInd@.obj"
+%(50)model = "@rockPath@_@rockInd@.obj"
 pos = {rand(@dw3@)}, {rand(@dh3@)}, {@dd3@ + {rand(45)}}
 size = {@ds3@ + {rand(3)}}
-color = @whiteish@
+speed = 0, 0, {randp(6)}
+color = {@whiteish@ + {rand(0.1)}}
 spreadx = {rand(1)}
 spready = {rand(1)}
 transform = 5
@@ -120,19 +123,43 @@ transform = 5
 model = "@rockPath@_@rockInd@.obj"
 pos = {rand(@dh3@)}, {rand(@dh3@)}, {@dd3@ + {rand(45)}}
 size = {@ds3@ + {rand(3)}}
-color = @blackish@
+speed = 0, 0, {randp(6)}
+color = {@blackish@ + {rand(0.1)}}
 spreadx = {rand(1)}
 spready = {rand(1)}
 transform = 5
 -
 %
 """
+rocks35="""
+%(7)model = "@coreRockPath@_@rockInd@.obj"
+pos = {rand(@dw3@)}, {rand(@dh3@)}, {@dd3@ + {rand(45)}}
+size = {@ds3@ + {rand(3)}}
+speed = 0, 0, {randp(6)}
+color = {@whiteish@ + {rand(0.1)}}
+spreadx = {rand(1)}
+spready = {rand(1)}
+transform = 5
+-
+model = "@coreRockPath@_@rockInd@.obj"
+pos = {rand(@dh3@)}, {rand(@dh3@)}, {@dd3@ + {rand(45)}}
+size = {@ds3@ + {rand(3)}}
+speed = 0, 0, {randp(6)}
+color = {@blackish@ + {rand(0.1)}}
+spreadx = {rand(1)}
+spready = {rand(1)}
+transform = 5
+-
+%
+"""
+
 ### Random outer rocks ###
 rocks4="""
-%(80)model = "@rockPath@_@rockInd@.obj"
+%(70)model = "@rockPath@_@rockInd@.obj"
 pos = {rand(@dw4@)}, {rand(@dh4@)}, {@dd4@ + {rand(45)}}
 size = {@ds4@ + {rand(3)}}
-color = @whiteish@
+speed = 0, 0, {randp(5)}
+color = {@whiteish@ - {rand(0.1)}}
 spreadx = {rand(1)}
 spready = {rand(1)}
 transform = 5
@@ -140,7 +167,29 @@ transform = 5
 model = "@rockPath@_@rockInd@.obj"
 pos = {rand(@dh4@)}, {rand(@dh4@)}, {@dd4@ + {rand(45)}}
 size = {@ds4@ + {rand(3)}}
-color = @blackish@
+speed = 0, 0, {randp(5)}
+color = {@blackish@ + {rand(0.1)}}
+spreadx = {rand(1)}
+spready = {rand(1)}
+transform = 5
+-
+%
+"""
+rocks45="""
+%(7)model = "@coreRockPath@_@rockInd@.obj"
+pos = {rand(@dw4@)}, {rand(@dh4@)}, {@dd4@ + {rand(45)}}
+size = {@ds4@ + {rand(3)}}
+speed = 0, 0, {randp(5)}
+color = {@whiteish@ + {rand(0.1)}}
+spreadx = {rand(1)}
+spready = {rand(1)}
+transform = 5
+-
+model = "@coreRockPath@_@rockInd@.obj"
+pos = {rand(@dh4@)}, {rand(@dh4@)}, {@dd4@ + {rand(45)}}
+size = {@ds4@ + {rand(3)}}
+speed = 0, 0, {randp(5)}
+color = {@blackish@ + {rand(0.1)}}
 spreadx = {rand(1)}
 spready = {rand(1)}
 transform = 5
@@ -155,7 +204,7 @@ blackHeartDustMandala = "@seqs@Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png"
 whiteMandala = "@seqs@optipng_Sekvenca_mandala_belo_ozadje"
 whiteHeartMandala = "@seqs@Srcni_utrip_BO/Srcni_utrip_BO_05848.png"
 
-rockimgs = "@dataFolder@img/Rocks/"
+rockimgs = "@dataFolder@img/RocksDD/"
 threadNetwork="""
 # initial nodes
 -100, 1600
@@ -325,6 +374,7 @@ i11 -> 23
 
 20 -> 13
 4 -> 19
+11 -> 5
 
 #node goto
 -

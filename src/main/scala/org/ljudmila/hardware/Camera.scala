@@ -152,7 +152,9 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
       val imw = i%w
       if(imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold && p.contains(imw, idw)) {
         pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
-        pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
+        if (imw % 3 == 0 && idw % 3 == 0) { 
+          pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
+        }
       }
       
       i += 1

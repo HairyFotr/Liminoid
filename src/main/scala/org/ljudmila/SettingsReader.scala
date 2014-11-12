@@ -114,6 +114,7 @@ final object SettingsReader {
       // TODO map => case partial map for added parsing
       val funcMap = Map[String, Array[String] => String](
           "rand"   -> (a => ((nextDouble*2 - 1) * a(0).toDouble).toString),
+          "randp"  -> (a => ((nextDouble) * a(0).toDouble).toString),
           "choose" -> (a => a.toSeq.random),
           "sin"    -> (a => math.sin(a(0).toDouble).toString),
           "cos"    -> (a => math.cos(a(0).toDouble).toString),

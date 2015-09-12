@@ -5,7 +5,7 @@ package org.ljudmila.hardware
 //import org.bytedeco.javacpp.opencv_highgui._
 import com.googlecode.javacv._
 import com.googlecode.javacv.cpp.opencv_core._
-import com.googlecode.javacv.cpp.opencv_highgui._;
+import com.googlecode.javacv.cpp.opencv_highgui._
 
 import collection.mutable
 import scala.actors.Futures._
@@ -18,9 +18,9 @@ object Camera {
   val supressErrors = true
   
   def getCamera(camIds: Seq[Int], width: Int = 640, height: Int = 480): Option[Camera] = {
-    for(camId <- camIds) {
+    for (camId <- camIds) {
       val out = Camera(camId, width, height)
-      if(out.isStarted) return Some(out)
+      if (out.isStarted) return Some(out)
     }
     
     None
@@ -63,7 +63,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   private def captureFrameImg(): IplImage = cam.grab
   var prevTextureID = -1
   private def captureFrameTex(img: IplImage): Int = {
-    if(img == null) return prevTextureID // fixes ocassional dropped frame
+    if (img == null) return prevTextureID // fixes occasional dropped frame
     
     //Generate texture and bind ID
     val textureID = glGenTextures
@@ -105,9 +105,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
   }
 
-  def getSnap(): Array[Int] = {
-    return image2Snap(captureFrameImg())
-  }
+  def getSnap(): Array[Int] = image2Snap(captureFrameImg())
   def image2Snap(img: IplImage): Array[Int] = {
     val image = img.getBufferedImage
     val (w, h) = (image.getWidth, image.getHeight)
@@ -150,7 +148,7 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     do {
       val idw = i/w
       val imw = i%w
-      if(imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold && p.contains(imw, idw)) {
+      if (imw > 1 && imw < w-1 && compare(pixels1(i), pixels2(i)) > threshold && p.contains(imw, idw)) {
         pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
         if (imw % 3 == 0 && idw % 3 == 0) { 
           pix += new Pixel(sx = imw, sy = idw, color = Color.BGR(pixels2(i)))
@@ -158,11 +156,11 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
       }
       
       i += 1
-    } while(i < size-w)
+    } while (i < size-w)
     pix.result
 
     /*var pix = Vector.empty[Pixel]
-    for(i <- 0 until size) if(i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) {
+    for (i <- 0 until size) if (i%w > 1 && i%w < w-1 && i > w && i < size-w && compare(pixels1(i), pixels2(i)) > threshold) {
       pix :+= Pixel(sx = i%w, sy = i/w, color = Color.BGR(pixels2(i)))
     }
     pix*/
@@ -171,23 +169,23 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
   private var camtexFuture = future[IplImage] { null }
   private var camTex = -1
   def getTextureID(): Int = synchronized { try {
-    if(camTex == -1) {
+    if (camTex == -1) {
       camTex = captureFrameTex(captureFrameImg())
       camtexFuture = future { captureFrameImg() }
-    } else if(camtexFuture.isSet) {
+    } else if (camtexFuture.isSet) {
       glDeleteTextures(camTex)
       camTex = captureFrameTex(camtexFuture())
       camtexFuture = future { captureFrameImg() }
     }
     camTex
-  } catch { case x: Exception => if(Camera.supressErrors) -1 else throw x } }
+  } catch { case x: Exception => if (Camera.supressErrors) -1 else throw x } }
   
   def getTextureIDNew(): (Int, Boolean) = synchronized { try {
-    if(camTex == -1) {
+    if (camTex == -1) {
       camTex = captureFrameTex(captureFrameImg())
       camtexFuture = future { captureFrameImg() }
       (camTex, true)
-    } else if(camtexFuture.isSet) {
+    } else if (camtexFuture.isSet) {
       glDeleteTextures(camTex)
       camTex = captureFrameTex(camtexFuture())
       camtexFuture = future { captureFrameImg() }
@@ -195,18 +193,18 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     } else {
       (camTex, false)
     }
-  } catch { case x: Exception => if(Camera.supressErrors) (-1, false) else throw x } }
+  } catch { case x: Exception => if (Camera.supressErrors) (-1, false) else throw x } }
 
   private var camCapture: IplImage = null
   private var camSnap = Array[Int]()
   
   def getTextureIDandSnap(): (Int, Array[Int]) = synchronized { try {
-    if(camTex == -1) {
+    if (camTex == -1) {
       camCapture = captureFrameImg()
       camTex = captureFrameTex(camCapture)
       camtexFuture = future { captureFrameImg() }
       camSnap = image2Snap(camCapture) 
-    } else if(camtexFuture.isSet) {
+    } else if (camtexFuture.isSet) {
       glDeleteTextures(camTex)
       camCapture = camtexFuture()
       camTex = captureFrameTex(camCapture)
@@ -215,17 +213,17 @@ class Camera(val camId: Int = 0, val width: Int = 640, val height: Int = 480) {
     }
     
     (camTex, camSnap)
-  } catch { case x: Exception => if(Camera.supressErrors) (-1, Array()) else throw x } }
+  } catch { case x: Exception => if (Camera.supressErrors) (-1, Array()) else throw x } }
 
   def getTextureIDWait(): Int = synchronized { try {
     var limit = 100
     var tex = captureFrameTex(captureFrameImg())
-    while(tex == -1 || tex == camTex) {
+    while (tex == -1 || tex == camTex) {
       tex = captureFrameTex(captureFrameImg())
       limit -= 1
       Thread.sleep(10)
     }
 
     tex
-  } catch { case x: Exception => if(Camera.supressErrors) -1 else throw x } }
+  } catch { case x: Exception => if (Camera.supressErrors) -1 else throw x } }
 }

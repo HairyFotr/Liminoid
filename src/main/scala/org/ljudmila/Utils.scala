@@ -7,7 +7,7 @@ final object Utils {
   implicit class D(val d: Double) { def prob(): Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
   implicit class F(val f: Float) { def prob(): Boolean = util.Random.nextFloat < f }
   implicit class I(val i: Int) { // to/from ms 
-    def second(): Int = if(i == 1) i.seconds else throw new IllegalArgumentException
+    def second(): Int = if (i == 1) i.seconds else throw new IllegalArgumentException
     def seconds(): Int = i*1000
     def FPS(): Double = 1000d/i
   }
@@ -17,19 +17,19 @@ final object Utils {
   def pow2(d: Double): Double = d*d
   def getRatio(p: Double): (Double, Double) = (p, 1 - p)
   
-  def angleDist(a1: Double, a2: Double) = {
+  def angleDist(a1: Double, a2: Double): Double = {
     var d = a1-a2
     if (math.abs(d) > 180) d = 360 - d
     d % 360
   }
-  def angleAvg(a1: Double, a2: Double) = {
+  def angleAvg(a1: Double, a2: Double): Double = {
     a1 + angleDist(a1, a2)/2
   }
   def angleAvgW(a: Double, b: Double, ratio: Double): Double = {
       var x = math.abs(a-b) % 360
-      if(x >=0 && x <= 180)
+      if (x >= 0 && x <= 180)
          (a*ratio + b*(1-ratio)) % 360
-      else if(x > 180 && x < 270)
+      else if (x > 180 && x < 270)
          (((a*ratio + b*(1-ratio))) % 360) + 180
       else
          (((a*ratio + b*(1-ratio))) % 360) - 180
@@ -37,7 +37,7 @@ final object Utils {
   
   implicit class Seqs[A](val s: Seq[A]) { 
     def random: A = s(nextInt(s.size))
-    def randomOption: Option[A] = if(s.isEmpty) None else Some(random)
+    def randomOption: Option[A] = if (s.isEmpty) None else Some(random)
   }
 
   object TableRandom {
@@ -50,13 +50,13 @@ final object Utils {
     def nextGaussian: Double = gaussTable(Random.nextInt(length))
     def nextGaussianUnsafe: Double = { // Thread Unsafe //TODO: Measure with synchronization
       index += 1
-      if(index >= length) index = 0
+      if (index >= length) index = 0
       gaussTable(intTable(index))
     }
     def nextDouble: Double = doubleTable(Random.nextInt(length))
     def nextDoubleUnsafe: Double = { // Thread Unsafe //TODO: Measure with synchronization
       index += 1
-      if(index >= length) index = 0
+      if (index >= length) index = 0
       doubleTable(intTable(index))
     }
   }
@@ -80,7 +80,7 @@ final object Utils {
   class TimeLock {
     private var locked = false
     def isLocked: Boolean = {
-      if(locked && milliTime-lockTime > lockDuration) locked = false
+      if (locked && milliTime-lockTime > lockDuration) locked = false
       
       locked
     }

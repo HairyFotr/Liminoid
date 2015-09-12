@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/main/scala"/>
+	<classpathentry kind="lib" path="lib/javacpp.jar"/>
+	<classpathentry kind="lib" path="lib/javacv-linux-x86_64.jar"/>
+	<classpathentry kind="lib" path="lib/javacv.jar"/>
+	<classpathentry kind="lib" path="lib/JRift-0.2.5.1.jar"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.lwjgl.lwjgl/lwjgl/jars/lwjgl-2.9.3.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.lwjgl.lwjgl/lwjgl-platform/jars/lwjgl-platform-2.9.3-natives-windows.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.lwjgl.lwjgl/lwjgl-platform/jars/lwjgl-platform-2.9.3-natives-linux.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.lwjgl.lwjgl/lwjgl-platform/jars/lwjgl-platform-2.9.3-natives-osx.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/net.java.jinput/jinput/jars/jinput-2.0.5.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/net.java.jutils/jutils/jars/jutils-1.0.0.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/net.java.jinput/jinput-platform/jars/jinput-platform-2.0.5-natives-windows.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/net.java.jinput/jinput-platform/jars/jinput-platform-2.0.5-natives-osx.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/net.java.jinput/jinput-platform/jars/jinput-platform-2.0.5-natives-linux.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.lwjgl.lwjgl/lwjgl_util/jars/lwjgl_util-2.9.3.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.scala-lang/scala-actors/jars/scala-actors-2.11.7.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.l33tlabs.twl/pngdecoder/jars/pngdecoder-1.0.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/org.scream3r/jssc/jars/jssc-2.8.0.jar"/>
+	<classpathentry kind="lib" path="/home/hairy/.ivy2/cache/javazoom/jlayer/jars/jlayer-1.0.1.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

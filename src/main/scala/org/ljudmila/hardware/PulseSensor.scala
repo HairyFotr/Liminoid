@@ -14,7 +14,7 @@ object PulseSensor {
   var port: SerialPort = null
   var init_ = false
   def init(): Unit = {
-    if(!init_) try {
+    if (!init_) try {
       port = new SerialPort("/dev/ttyACM0")
       port.openPort
       port.setParams(BAUDRATE_115200, DATABITS_8, STOPBITS_1, PARITY_NONE)
@@ -25,15 +25,15 @@ object PulseSensor {
     }
   }
 
-  def close(): Unit = if(init_) port.closePort
+  def close(): Unit = if (init_) port.closePort
 
   /* //Untested code!
   var lastS, lastB, lastQ = 0
   class SerialPortReader extends SerialPortEventListener {
     override def serialEvent(event: SerialPortEvent) {
-      if(event.isRXCHAR()) { // If data is available
+      if (event.isRXCHAR()) { // If data is available
         val data = port.readString()
-        if(data.endsWith("\n")) synchronized {
+        if (data.endsWith("\n")) synchronized {
           val sReg = "S([0-9]+)"
           val bReg = "B([0-9]+)"
           val qReg = "Q([0-9]+)"
@@ -58,8 +58,8 @@ object PulseSensor {
   var fake = false
 
   def takeBeat(): Boolean =
-    if(fake) {
-      if(since(fakeTimer) > 900) {
+    if (fake) {
+      if (since(fakeTimer) > 900) {
         fakeTimer = now
         
         true
@@ -73,23 +73,23 @@ object PulseSensor {
       beat = false
       
       // Ignore alien heartbeats (sorry aliens)
-      if(prevBeatAlien) {
+      if (prevBeatAlien) {
         prevBeatAlien = false
       } else {
         avgBeat = avgBeat*0.99 + sinceLastBeat*0.01
-        if(avgBeat < 400) avgBeat = 400
-        if(avgBeat < 1300) avgBeat = 1300
+        if (avgBeat < 400) avgBeat = 400
+        if (avgBeat < 1300) avgBeat = 1300
       }
 
-      if(sinceLastBeat < avgBeat*0.65) {
+      if (sinceLastBeat < avgBeat*0.65) {
         out = false
         prevBeatAlien = true
-      } else if(sinceLastBeat > avgBeat * 2) {
+      } else if (sinceLastBeat > avgBeat * 2) {
         out = true
         prevBeatAlien = true
       }
 
-      if(out) prevBeat = now
+      if (out) prevBeat = now
 
       //println((out, lastBeatAlien, avgBeat))
 
@@ -98,9 +98,9 @@ object PulseSensor {
 
   class SerialPortReader extends SerialPortEventListener {
     override def serialEvent(event: SerialPortEvent): Unit = {
-      if(event.isRXCHAR()) { // If data is available
+      if (event.isRXCHAR()) { // If data is available
         val data = port.readString()
-        if(data contains "B") synchronized { beat = true }
+        if (data contains "B") synchronized { beat = true }
       }
     }
   }

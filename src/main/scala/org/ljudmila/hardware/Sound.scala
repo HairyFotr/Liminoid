@@ -18,12 +18,12 @@ final object Sound {
   val soundMap = mutable.HashMap.empty[String, String]
   
   def init(folder: String): Unit = synchronized {
-    for(line <- getFile(folder + "list.txt")) {
+    for (line <- getFile(folder + "list.txt")) {
       val (name, file) = line.splitAt(line.indexOf(' '))
       soundMap += name -> (folder + file.trim)
     }
 
-    for((_, file) <- soundMap) {
+    for ((_, file) <- soundMap) {
       val player = new Player(new BufferedInputStream(new FileInputStream(file)))
       player.play(0)
       player.close()
@@ -37,11 +37,11 @@ final object Sound {
   }
 
   def play(sound: String): Unit = {
-    if(!muted) {
+    if (!muted) {
        if (players.size <= 12) thread {
         val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
         players.synchronized {
-        	players += player
+          players += player
         }
 
         player.play

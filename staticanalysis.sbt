@@ -1,11 +1,10 @@
 import de.johoop.findbugs4sbt._
 import de.johoop.cpd4sbt.CopyPasteDetector._
 import de.johoop.cpd4sbt.{ ReportType => CPDReportType }
-import org.scalastyle.sbt.{ ScalastylePlugin, PluginKeys }
 
 scalacOptions ++= Seq(
   "-feature",
-  "-deprecation",
+  //"-deprecation",
   "-unchecked",
   "-Xlint",
   //"-Xstrict-inference",
@@ -19,11 +18,11 @@ scalacOptions ++= Seq(
   "-Ywarn-value-discard")
 
 // Linter
-//resolvers += "linter" at "http://hairyfotr.github.io/linteRepo/releases"
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1-SNAPSHOT")
 
-//addCompilerPlugin("com.foursquare.lint" %% "linter" % "0.1-SNAPSHOT")
+//scalacOptions += "-Xplugin:/home/hairy/dev/linter/target/scala-2.11/linter_2.11-0.1-SNAPSHOT.jar"
 
-//scalacOptions += "-P:linter:disable:UseHypot"
+scalacOptions += "-P:linter:disable:UseHypot"
 
 // Scapegoat
 // add this to project/plugins.sbt
@@ -31,9 +30,7 @@ scalacOptions ++= Seq(
 //scapegoatDisabledInspections := Seq("VarUse", "NullParameter", "NullAssignment", "WildcardImport")
 
 // Scalastyle
-ScalastylePlugin.Settings
-
-PluginKeys.config <<= baseDirectory { base => base / "sca" / "scalastyle-config.xml" }
+scalastyleConfig <<= baseDirectory { base => base / "sca" / "scalastyle-config.xml" }
 
 watchSources += baseDirectory.value / "sca" / "scalastyle-config.xml"
 

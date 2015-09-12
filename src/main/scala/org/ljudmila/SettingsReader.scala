@@ -26,7 +26,7 @@ final object SettingsReader {
         }.foldLeft((ListMap.empty[String,String], OneLine: State)) {
           case ((map, comment @ Comment(prevState, depth)), line) =>
             if (line.trim endsWith "*/") {
-              if(comment.depth == 0) { 
+              if (comment.depth == 0) { 
                 (map, prevState)
               } else { 
                 (map, comment.copy(depth = comment.depth - 1))
@@ -60,7 +60,7 @@ final object SettingsReader {
     // Replace
     settingsMap = settingsMap.mapValues { value =>
       "@([a-zA-Z0-9]+)@".r.replaceAllIn(value, m => 
-          if(settingsMap contains m.group(1)) settingsMap(m.group(1))
+          if (settingsMap contains m.group(1)) settingsMap(m.group(1))
           else m.group(0))
     }
 
@@ -68,7 +68,9 @@ final object SettingsReader {
     settingsMap = settingsMap.mapValues { value =>
       "`(.*)`([a-zA-Z0-9]+)".r.replaceAllIn(value, m => { 
         import sys.process._
-        Seq(m.group(1), m.group(2)).!!.trim()
+        val out = Seq(m.group(1), m.group(2)).!!.trim()
+        println(s"Result of running $value: $out")
+        out
       })
     }
 
@@ -87,7 +89,7 @@ final object SettingsReader {
             m.group(1).split(" *, *")
           })
 
-        for((elt, i) <- elts.zipWithIndex) {
+        for ((elt, i) <- elts.zipWithIndex) {
           strB.append(
             m.group(2)
               .replace("@elt@", elt)
@@ -99,7 +101,7 @@ final object SettingsReader {
     }
 
     // Calculate
-    for(iters <- 1 to 10) {
+    for (iters <- 1 to 10) {
       val infixFuncMap = Map[String, (String, String) => String](
           "-"   -> ((a, b) => (a.toDouble - b.toDouble).toString),
           "+"   -> ((a, b) => (a.toDouble + b.toDouble).toString),

@@ -45,7 +45,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     |
     |void main() {
     |   vec2 tc = HmdWarp(gl_TexCoord[0].xy);
-    |   if(any(notEqual(clamp(tc, ScreenCenter-vec2(0.25, 0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
+    |   if (any(notEqual(clamp(tc, ScreenCenter-vec2(0.25, 0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
     |       gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     |   else
     |       gl_FragColor = texture2D(tex, tc);
@@ -161,18 +161,18 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     val vertShader = createVertShader(vertexShader)
     val fragShader = createFragShader(fragmentShader)
 
-    if(vertShader != 0 && fragShader != 0) {
+    if (vertShader != 0 && fragShader != 0) {
       glAttachShader(shader, vertShader)
       glAttachShader(shader, fragShader)
 
       glLinkProgram(shader)
-      if(glGetProgrami(shader, GL_LINK_STATUS) == GL_FALSE) {
+      if (glGetProgrami(shader, GL_LINK_STATUS) == GL_FALSE) {
         println("Linkage error")
         printLogInfo(shader)
       }
 
       glValidateProgram(shader)
-      if(glGetProgrami(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
+      if (glGetProgrami(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
         println("Validation error")
         printLogInfo(shader)
       }
@@ -185,7 +185,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
 
   def validate(): Unit = {
     glValidateProgram(shader)
-    if(glGetProgrami(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
+    if (glGetProgrami(shader, GL_VALIDATE_STATUS) == GL_FALSE) {
       printLogInfo(shader)
     }
   }
@@ -193,11 +193,11 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
   def createVertShader(vertexCode: String): Int = {
     val vertShader = glCreateShader(GL_VERTEX_SHADER)
 
-    if(vertShader != 0) {
+    if (vertShader != 0) {
       glShaderSource(vertShader, vertexCode)
       glCompileShader(vertShader)
 
-      if(glGetShaderi(vertShader, GL_COMPILE_STATUS) == GL_FALSE) {
+      if (glGetShaderi(vertShader, GL_COMPILE_STATUS) == GL_FALSE) {
         printLogInfo(vertShader)
         return 0
       }
@@ -208,10 +208,10 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
 
   def createFragShader(fragCode: String): Int = {
     val fragShader = glCreateShader(GL_FRAGMENT_SHADER)
-    if(fragShader != 0) {
+    if (fragShader != 0) {
       glShaderSource(fragShader, fragCode)
       glCompileShader(fragShader)
-      if(glGetShaderi(fragShader, GL_COMPILE_STATUS) == GL_FALSE) {
+      if (glGetShaderi(fragShader, GL_COMPILE_STATUS) == GL_FALSE) {
         printLogInfo(fragShader)
         return 0
       }
@@ -225,7 +225,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     glGetShader(obj, GL_INFO_LOG_LENGTH, iVal)
 
     val length = iVal.get()
-    if(length > 1) {
+    if (length > 1) {
       val infoLog = BufferUtils.createByteBuffer(length)
       iVal.flip()
       glGetShaderInfoLog(obj, iVal, infoLog)

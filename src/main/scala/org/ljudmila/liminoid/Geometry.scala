@@ -43,7 +43,7 @@ final class Vec3(var x: Float, var y: Float, var z: Float) {
   def minCoords(v: Vec3): Vec3 = Vec3(min(v.x, x), min(v.y, y), min(v.z, z))
   
   // clamp values to some value(e.g. world size)
-  private def clamp(p: Float, clamp: Float): Float = if(clamp != 0 && abs(p) > clamp) clamp * p.signum else p
+  private def clamp(p: Float, clamp: Float): Float = if (clamp != 0 && abs(p) > clamp) clamp * p.signum else p
   def clamp(c: Float): Unit = this.each(clamp(_, c))
   def clamp(cx: Float, cy: Float, cz: Float): Unit = setPoints(clamp(x, cx), clamp(y, cy), clamp(z, cz))
 
@@ -60,7 +60,7 @@ final class BoundingBox(vec: Vec3) {
     }
     def this(points: Seq[Vec3]) = {
         this(points(0).copy)
-        for(i <- 1 until points.length) this += points(i)
+        for (i <- 1 until points.length) this += points(i)
     }
     
     def boxCollide(b: BoundingBox, offset: Vec3 = Vec3()): Boolean = { // offset = tolerance
@@ -74,12 +74,12 @@ final class BoundingBox(vec: Vec3) {
          (min.z+offset.z <= v.z) && (max.z+offset.z >= v.z))
     }
     def boxCollideDepth(b: BoundingBox, offset: Vec3 = Vec3()): Float = {
-      (if(min.x+offset.x <= b.max.x) abs(b.max.x - min.x+offset.x) else 0) +
-      (if(max.x+offset.x >= b.min.x) abs(max.x+offset.x - b.min.x) else 0) +
-      (if(min.y+offset.y <= b.max.y) abs(b.max.y - min.y+offset.y) else 0) +
-      (if(max.y+offset.y >= b.min.y) abs(max.y+offset.y - b.min.y) else 0) +
-      (if(min.z+offset.z <= b.max.z) abs(b.max.z - min.z+offset.z) else 0) +
-      (if(max.z+offset.z >= b.min.z) abs(max.z+offset.z - b.min.z) else 0)
+      (if (min.x+offset.x <= b.max.x) abs(b.max.x - min.x+offset.x) else 0) +
+      (if (max.x+offset.x >= b.min.x) abs(max.x+offset.x - b.min.x) else 0) +
+      (if (min.y+offset.y <= b.max.y) abs(b.max.y - min.y+offset.y) else 0) +
+      (if (max.y+offset.y >= b.min.y) abs(max.y+offset.y - b.min.y) else 0) +
+      (if (min.z+offset.z <= b.max.z) abs(b.max.z - min.z+offset.z) else 0) +
+      (if (max.z+offset.z >= b.min.z) abs(max.z+offset.z - b.min.z) else 0)
     }
     
     def +=(v: Vec3): Unit = {

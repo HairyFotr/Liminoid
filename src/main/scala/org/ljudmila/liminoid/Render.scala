@@ -13,8 +13,8 @@ import org.ljudmila.Utils.{ TableRandom, pow2, getRatio }
 
 sealed trait RenderMode
 final object RenderMode {
-  def apply(s: String) = {
-    if(s.toLowerCase() == "mono") Mono
+  def apply(s: String): RenderMode = {
+    if ("mono".equalsIgnoreCase(s)) Mono
     else Stereo
   }
 }
@@ -36,9 +36,9 @@ final object GLadDOnS {
     glPopMatrix
   }
   def glCapability(caps: Int*)(func: => Unit): Unit = {
-    for(cap <- caps) glEnable(cap)
+    for (cap <- caps) glEnable(cap)
     func
-    for(cap <- caps) glDisable(cap)
+    for (cap <- caps) glDisable(cap)
   }
   def glPrimitive(primitive: Int)(func: => Unit): Unit = {
     glBegin(primitive)
@@ -163,9 +163,9 @@ final object Render {
       glTranslatef(pos.x, pos.y, pos.z)
     }
     def doRotate(): Unit = {
-      if(rot.z != 0) glRotatef(rot.z, 0, 0, 1)
-      if(rot.y != 0) glRotatef(rot.y, 0, 1, 0)
-      if(rot.x != 0) glRotatef(rot.x, 1, 0, 0)
+      if (rot.z != 0) glRotatef(rot.z, 0, 0, 1)
+      if (rot.y != 0) glRotatef(rot.y, 0, 1, 0)
+      if (rot.x != 0) glRotatef(rot.x, 1, 0, 0)
     }
     def doScale(): Unit = {
       glScalef(scale.x, scale.y, scale.z)
@@ -226,13 +226,13 @@ final object Render {
       
     override def render(): Unit = {
       // setup projection matrix stack
-      //if(projectionChanged) {
+      //if (projectionChanged) {
         projectionChanged = false
         glFlush()
         glViewport(viewPort._1, viewPort._2, viewPort._3, viewPort._4)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        if(perspective) {
+        if (perspective) {
           // perspective projection
           GLU.gluPerspective(fov, aspectRatio, near,far)
         } else {
@@ -244,7 +244,7 @@ final object Render {
       // model view stack
       glMatrixMode(GL_MODELVIEW)
       glLoadIdentity()
-      if(perspective) {
+      if (perspective) {
         GLU.gluLookAt(pos.x, pos.y, pos.z,             // camera position
                       lookAtV.x, lookAtV.y, lookAtV.z, // look-at vector
                       0, 1, 0)                         // up vector

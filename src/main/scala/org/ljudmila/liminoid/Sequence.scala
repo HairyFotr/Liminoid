@@ -20,7 +20,7 @@ sealed trait Sequence[T] {
   def preload(): Unit
   def get(): T
   def apply(): T =
-    (if(active) {
+    (if (active) {
       val out = get()
       moveCursor()
       out
@@ -40,15 +40,15 @@ sealed trait Sequence[T] {
   }
 
   def moveCursor(): Unit = synchronized {
-    if(startTime == -1) startTime = now
+    if (startTime == -1) startTime = now
 
-    //if(cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
-    if(direction > 0) {
+    //if (cursor < 0 || cursor > framesm1) new Exception("Wat: " + cursor)
+    if (direction > 0) {
       //TODO: just calculate it... also, cursor + 1 or first frame gets skipped?
-      while(since(startTime) > cursor * delay) cursor += 1
-      if(cursor >= lastFrame) {
+      while (since(startTime) > cursor * delay) cursor += 1
+      if (cursor >= lastFrame) {
         val diff = cursor - lastFrame
-        if(bounce) {
+        if (bounce) {
           cursor = math.max(0, lastFrame - diff) //TODO: Possible multiple bounces, but meh
           direction = -direction
           startTime = now //TODO: not right
@@ -56,15 +56,15 @@ sealed trait Sequence[T] {
           cursor = math.min(diff, lastFrame)
         }
         
-        if(stopAtEnd) {
+        if (stopAtEnd) {
           cursor = lastFrame
           active = false
         }
       }
-    } else if(direction < 0) {
-      while(since(startTime) > (lastFrame - cursor) * delay) cursor -= 1
-      if(cursor <= 0) {
-        if(bounce) {
+    } else if (direction < 0) {
+      while (since(startTime) > (lastFrame - cursor) * delay) cursor -= 1
+      if (cursor <= 0) {
+        if (bounce) {
           cursor = math.min(-cursor, lastFrame)
           direction = -direction
           startTime = now
@@ -72,7 +72,7 @@ sealed trait Sequence[T] {
           cursor = math.max(lastFrame + cursor, 0)
         }
         
-        if(stopAtEnd) {
+        if (stopAtEnd) {
           cursor = 0
           active = false
         }
@@ -101,12 +101,8 @@ abstract class FolderSource[T](path: String, ext: String) extends Source[T] with
   val lastFrame = frames.size - 1
   
 }
-abstract class FolderSource2[T, U](path: String, ext: String) extends FolderSource[T](path: String, ext: String) with Source2[T, U] with Sequence[T] {
-  
-}
-abstract class CameraSource(cam: Camera) extends Source2[Int, Int] {
-  
-}
+abstract class FolderSource2[T, U](path: String, ext: String) extends FolderSource[T](path: String, ext: String) with Source2[T, U] with Sequence[T]
+abstract class CameraSource(cam: Camera) extends Source2[Int, Int]
 
 case class TexSequence(
     val path: String,
@@ -122,8 +118,8 @@ case class TexSequence(
   override def get(): Int = {
     val name = frames(cursor)
     val out = Texture(name)
-    if(selfDestruct && name != prev) {
-      if(prev.nonEmpty) delete(prev)
+    if (selfDestruct && name != prev) {
+      if (prev.nonEmpty) delete(prev)
       prev = name
     }
     out
@@ -131,7 +127,7 @@ case class TexSequence(
   override def preload(): Unit = { Texture.preload(files) }
   def preload(i: Int): Unit = { Texture.preload(files, i) }
   override def delete(d: String): Unit = { Texture.delete(d) }
-  def clear(): Unit = { for(f <- frames) delete(f) }
+  def clear(): Unit = { for (f <- frames) delete(f) }
 }
 case class OBJSequence(
     val path: String,

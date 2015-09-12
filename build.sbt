@@ -1,4 +1,4 @@
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.7"
 
 javaOptions += "-Djava.library.path=lib"
 
@@ -8,7 +8,7 @@ resolvers ++= Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
 
 classpathTypes += "maven-plugin" // for javacpp?
 
-lwjgl.version := "2.9.1" // newer than in plugin
+lwjgl.version := "2.9.3" // newer than in plugin
 
 libraryDependencies <++= scalaVersion(v => Seq(
   "org.scala-lang" % "scala-actors" % v,
@@ -24,10 +24,10 @@ fork := true
 
 javaOptions ++= Seq(
   "-Xmx3G",
-  "-XX:MaxGCPauseMillis=15")
+  "-XX:MaxGCPauseMillis=17")
 
 scalacOptions ++= Seq(
-  "-optimize", "-target:jvm-1.7",
+  "-optimize", "-Yopt:l:classpath", "-target:jvm-1.7",
   "-Yinline", "-Yclosure-elim")
 
 initialCommands := """

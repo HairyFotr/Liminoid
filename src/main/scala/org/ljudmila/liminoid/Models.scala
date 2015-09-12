@@ -72,7 +72,7 @@ final object Models {
       // Don't currently need UV, uncomment //uv/ if needed
       //uv/val uvVertices = Vector.newBuilder[UVVertex]
 
-      for(line <- file.getLines.buffered) {
+      for (line <- file.getLines.buffered) {
         val x = line.split(" ")
         
         (line.charAt(0): @switch) match {
@@ -85,9 +85,9 @@ final object Models {
           case 'f' =>
             faces += (x.tail.map { face =>
               val fs = face.split("/")
-              if(fs.length == 1)      (fs(0).toInt-1,            -1,            -1)
-              else if(fs.length == 2) (fs(0).toInt-1, fs(1).toInt-1,            -1)
-              else if(fs(1).isEmpty)  (fs(0).toInt-1,            -1, fs(2).toInt-1)
+              if (fs.length == 1)      (fs(0).toInt-1,            -1,            -1)
+              else if (fs.length == 2) (fs(0).toInt-1, fs(1).toInt-1,            -1)
+              else if (fs(1).isEmpty)  (fs(0).toInt-1,            -1, fs(2).toInt-1)
               else                    (fs(0).toInt-1, fs(1).toInt-1, fs(2).toInt-1)
             })
 
@@ -101,7 +101,7 @@ final object Models {
     })
 
     def preload(files: Array[File], max: Int = -1): Unit = {
-      (if(max == -1) files else files.take(max))
+      (if (max == -1) files else files.take(max))
         .filterNot { file => modelCache.contains(file.toString) }
         .par.foreach { file =>
           apply(file.toString)
@@ -159,18 +159,18 @@ final object Models {
     def flip(times: Double): Unit = { x *= -times; y *= -times; z *= -times; }
   }
   def vec(s: String): Vec = {
-    if(s.isEmpty()) vec0
+    if (s.isEmpty()) vec0
     else {
       val split = s.split(" *, *")
-      if(split.size == 1) vec(s.toDouble)
+      if (split.size == 1) vec(s.toDouble)
       else Vec(split(0).toDouble, split(1).toDouble, split(2).toDouble)
     }
   }
   val mutavec0: MutableVec = vec(0)
-  def vec(d: Double) = Vec(d, d, d)
-  def vecx(d: Double) = Vec(d, 0, 0)
-  def vecy(d: Double) = Vec(0, d, 0)
-  def vecz(d: Double) = Vec(0, 0, d)
+  def vec(d: Double): Vec = Vec(d, d, d)
+  def vecx(d: Double): Vec = Vec(d, 0, 0)
+  def vecy(d: Double): Vec = Vec(0, d, 0)
+  def vecz(d: Double): Vec = Vec(0, 0, d)
   val vec0 = vec(0)
   val vec05 = vec(0.5)
   val vec1 = vec(1)
@@ -216,7 +216,7 @@ final object Models {
           angleDist(pitch, r.pitch).toFloat,
           angleDist(roll,r.roll).toFloat)
     }
-    def toC(a: Float, f: Float) = {
+    def toC(a: Float, f: Float): Float = {
       (if (a > 0+f) (a - f) else if (a < 0-f) (a + f) else 0f)
     }
     def toCenter(f: Float): Rotation = {
@@ -231,7 +231,7 @@ final object Models {
           angleAvg(pitch, r.pitch).toFloat,
           angleAvg(roll,r.roll).toFloat)
     }
-    def avgW(r: Rotation, ratio: Double) = {
+    def avgW(r: Rotation, ratio: Double): Rotation = {
       Rotation(
           angleAvgW(yaw, r.yaw, ratio).toFloat, 
           angleAvgW(pitch, r.pitch, ratio).toFloat,
@@ -261,10 +261,10 @@ final object Models {
     def Gray(i: Int): Color = new Color((i & 255)/255d, (i & 255)/255d, (i & 255)/255d)
   }
   def color(s: String): Color = {
-    if(s.isEmpty()) grey0
+    if (s.isEmpty()) grey0
     else {
       val split = s.split(" *, *")
-      if(split.size == 1) grey(s.toDouble)
+      if (split.size == 1) grey(s.toDouble)
       else new Color(split(0).toDouble, split(1).toDouble, split(2).toDouble)
     }
   }
@@ -291,12 +291,12 @@ final object Models {
   
   class RawModel(vertices: Vertices, /*//uv/uvVertices: UVVertices,*/ normals: Normals, faces: Faces) {
     // Compile model to display list for faster drawing
-    def toDisplayModel = 
+    def toDisplayModel: DisplayModel = 
       new DisplayModel(glDisplayList {
         var n = -1
-        for(f <- faces.sortWith(_.length < _.length)) {
-          if(f.length != n || f.length >= 5) {
-            if(n != -1) glEnd
+        for (f <- faces.sortWith(_.length < _.length)) {
+          if (f.length != n || f.length >= 5) {
+            if (n != -1) glEnd
             n = f.length
             glBegin((n: @switch) match {
               case 1 => GL_POINTS
@@ -307,19 +307,19 @@ final object Models {
             })
           }
   
-          for((vi, vti, vni) <- f) {
-            if(vni != -1) glNormal3d(normals(vni).x, normals(vni).y, normals(vni).z)
-            //uv/if(vti != -1) glTexCoord2d(uvVertices(vti).u, uvVertices(vti).v)
+          for ((vi, vti, vni) <- f) {
+            if (vni != -1) glNormal3d(normals(vni).x, normals(vni).y, normals(vni).z)
+            //uv/if (vti != -1) glTexCoord2d(uvVertices(vti).u, uvVertices(vti).v)
             glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
           }
         }
-        if(n != -1) glEnd
+        if (n != -1) glEnd
         
         //wireframe experiment
-        /*if(lines) for(f <- faces) {
+        /*if (lines) for (f <- faces) {
           glColor3d(0, 0, 0)
           glPrimitive(GL_LINE_STRIP) {
-            for((vi, vti, vni) <- f) {
+            for ((vi, vti, vni) <- f) {
               glVertex3d(vertices(vi).x, vertices(vi).y, vertices(vi).z)
             }
           }
@@ -344,7 +344,7 @@ final object Models {
       render3D {
         glCapability(GL_DEPTH_TEST, GL_LIGHTING, GL_BLEND) {
           glTheUsualBlendFunc
-          if(tex != -1) {
+          if (tex != -1) {
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, tex)
           } else {
@@ -401,7 +401,7 @@ final object Models {
       var initNodes = Vector.empty[Point]
       var nodes = Vector.empty[Point]
       var lines = Vector.empty[Line]
-		  var liminoidTexMap = Map.empty[Point, Int] withDefaultValue -1
+      var liminoidTexMap = Map.empty[Point, Int] withDefaultValue -1
       var danglingNodes = Vector.empty[Point]
       var phase = 0
       
@@ -418,7 +418,7 @@ final object Models {
             val strings = line.split(",")  
             val node = Point(strings)
             nodes :+= node 
-            if(strings.size > 2) {
+            if (strings.size > 2) {
               liminoidTexMap += node -> Texture(strings(3))
             }
           case 2 =>
@@ -432,8 +432,8 @@ final object Models {
                 direction = -1
               }
               def parse(str: String) = {
-                if(str(0) == 'i') initNodes(str.tail.toInt-1)
-                else if(str(0) == 'd') danglingNodes(str.tail.toInt-1)
+                if (str(0) == 'i') initNodes(str.tail.toInt-1)
+                else if (str(0) == 'd') danglingNodes(str.tail.toInt-1)
                 else nodes(str.toInt-1)
               }
               
@@ -453,7 +453,7 @@ final object Models {
                 throw e
             }
           case 4 => //TODO
-          case _ => println("WTF mate in loading network")
+          case p => println(s"Unknown phase in thread network: $p")
         }
       }
 
@@ -490,7 +490,7 @@ final object Models {
               DanglingNode)
           }
         
-        return new ThreadNetwork(initThreadNodes, threadNodes, danglingThreadNodes, lines, threadMap)
+      new ThreadNetwork(initThreadNodes, threadNodes, danglingThreadNodes, lines, threadMap)
     }
   }
 
@@ -505,19 +505,19 @@ final object Models {
     
     var fullyOver = false
 
-    def fullyVisible = 
+    def fullyVisible: Boolean = 
       nodes.forall(_.fullyVisible) &&
       danglingNodes.forall(_.fullyVisible)
     
-    def totallyVisibleNodes = 
+    def totallyVisibleNodes: Boolean = 
       nodes.forall(_.totallyVisible)
 
-    def totallyVisible = 
+    def totallyVisible: Boolean = 
       nodes.forall(_.totallyVisible) &&
       danglingNodes.forall(_.totallyVisible)
 
     def init(): Unit = {
-      for(node <- nodes) {
+      for (node <- nodes) {
         node.init()
       }
 
@@ -598,23 +598,23 @@ final object Models {
     var pulling: Boolean = false
     var scheduledPulling: Boolean = false
     
-    def visible = 
-      if(ins.isEmpty) 0 else ins.map{ thread => min(thread.backupvisible, 1d) }.max
+    def visible: Double = 
+      if (ins.isEmpty) 0d else ins.map{ thread => min(thread.backupvisible, 1d) }.max
       
     var ownvisible = 1d
     
     var exvisible = 0d
     val invisibleThreshold = 0.05
-    def wasInvisible = {
+    def wasInvisible: Boolean = {
       val out = (exvisible <= invisibleThreshold) && (visible > invisibleThreshold)
       exvisible = visible
       out
     }
     
-    def fullyVisible = 
+    def fullyVisible: Boolean = 
       ins.isEmpty || ins.maxBy{ thread => thread.backupvisible }.backupvisible >= 1d
 
-    def totallyVisible = 
+    def totallyVisible: Boolean = 
       ins.isEmpty || ins.minBy{ thread => thread.backupvisible }.backupvisible >= 1d
     
     def init(): Unit = {
@@ -624,11 +624,11 @@ final object Models {
     def process(implicit data: RenderProcessData): Unit = {
       if (fullyVisible) {
         if (!outsInitialized) {
-      	  println("Outs initialized")
+          println("Outs initialized")
           outsInitialized = true
-          for(out <- outs) out.init()
+          for (out <- outs) out.init()
         }
-        for(out <- outs) {
+        for (out <- outs) {
           out.process
         }
       }
@@ -638,9 +638,9 @@ final object Models {
           position.y = position.y*data.ratio + data.centery*data.ratio1m
         }
         if (abs(position.x - data.centerx) + abs(position.y - data.centery) < 200 && !pulled) {
-        	pulled = true
+          pulled = true
           ThreadNetwork.setPulling = true
-    		  ThreadNetwork.allNodes.foreach {
+          ThreadNetwork.allNodes.foreach {
             x => x.scheduledPulling = true
           }
         }
@@ -656,7 +656,7 @@ final object Models {
       if (abs(position.x - data.centerx) + abs(position.y - data.centery) < 20) {
         ownvisible -= 0.01
       }
-      //for(in <- ins) if(in.isInitialized) in.process
+      //for (in <- ins) if (in.isInitialized) in.process
     }
 
     def render(implicit data: RenderRenderData): Unit = {
@@ -671,19 +671,19 @@ final object Models {
           glPushMatrix
           glTranslated(data.camx, data.camy, 0)
           glScaled(data.camw/1920d, data.camh/1080d, 1)
-          for(in <- ins) in.render
+          for (in <- ins) in.render
           glPopMatrix
         }
       }
     }
     def renderNode(implicit data: RenderRenderData): Unit = {
-      val liminoidSizex = position.s*(if(pulled) ownvisible else if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
-      val liminoidSizey = position.s*(if(pulled) ownvisible else if(pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val liminoidSizex = position.s*(if (pulled) ownvisible else if (pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
+      val liminoidSizey = position.s*(if (pulled) ownvisible else if (pulling) 1 else (visible*0.8+0.2)) //+ (TableRandom.nextGaussianUnsafe/100d) * position.s
       val posx = position.x-liminoidSizex/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       val posy = position.y-liminoidSizey/2 + (TableRandom.nextGaussianUnsafe/50d) * position.s
       
       val coords = Coord(posx, posy, liminoidSizex, liminoidSizey) + (data.extraSize*10)
-      quad(coords, texture, false, false, if(pulled) ownvisible else if(pulling) 1 else visible*2,
+      quad(coords, texture, false, false, if (pulled) ownvisible else if (pulling) 1 else visible*2,
         preRender = {
           glPushMatrix
           glTranslated(data.camx, data.camy, 0)
@@ -697,15 +697,15 @@ final object Models {
 
   object Point {
     def apply(str: Array[String]): Point = {
-      if(str.size == 2)
+      if (str.size == 2)
         new Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety)
       else
         new Point(str(0).toDouble+Liminoid.threadNetworkOffsetx, str(1).toDouble+Liminoid.threadNetworkOffsety, str(2).toDouble) 
     }
   }  
   class Point(var x: Double, var y: Double, var s: Double = 1.0) {
-    s = s*30;
-    def toTuple() = (x, y)
+    s = s*30
+    def toTuple(): (Double, Double) = (x, y)
     //def toTuple() = (x, y, s)
   }
   object ThreadPoint {
@@ -726,9 +726,6 @@ final object Models {
     def isVisible(): Boolean = visible > ThreadPoint.visibilityThreshold
     def fullyVisible(): Boolean = visible >= 1d
     
-    def pause() = { paused = true }
-    def unPause() = { paused = false }
-    
     def init(): Unit = {
       visiblev = ThreadPoint.visibilityVelocity
       visible = ThreadPoint.visibilityThreshold + visiblev
@@ -746,7 +743,7 @@ final object Models {
         new Point(a(2).toDouble, a(3).toDouble))
   }
   class Line(val p1: Point, val p2: Point) {
-    def line = Vector(p1, p2)
+    def line: Vector[Point] = Vector(p1, p2)
   }
 
   object Thread {
@@ -764,9 +761,9 @@ final object Models {
           Vector.tabulate(segmentsInt){ i => 
             val (ratio1, ratio2) = getRatio(1 - i/segments)
             val out = 
-              if(i <= 0)
+              if (i <= 0)
                 new ThreadPoint(sx, sy)
-              else if(i >= segmentsInt-1)
+              else if (i >= segmentsInt-1)
                 new ThreadPoint(dx, dy)
               else
                 new ThreadPoint(
@@ -787,7 +784,7 @@ final object Models {
   class Thread(nodes: Vector[ThreadPoint]) {
     var currentLength = 1
     
-    def nodesLast = nodes.last//(nodes.size-2)
+    def nodesLast: ThreadPoint = nodes.last//(nodes.size-2)
     
     var fejd = 0.4
     
@@ -795,7 +792,7 @@ final object Models {
       if (currentLength < nodes.size || nodesLast.visible < 1.5) 0 
       else {
         fejd = fejd * 0.97 + 1*0.03
-        if(fejd > 0.95) fejd = 1
+        if (fejd > 0.95) fejd = 1
         fejd
       }
       
@@ -813,7 +810,7 @@ final object Models {
         val node = nodes(i)
         node.x = node.desiredx*(node.ratio) + node.x*(1 - node.ratio) + TableRandom.nextGaussianUnsafe/1.5d
         node.y = node.desiredy*(node.ratio) + node.y*(1 - node.ratio) + TableRandom.nextGaussianUnsafe/1.5d
-        if(i > 0) {
+        if (i > 0) {
           val prev = nodes(i-1)
           val dx = (node.desiredx-node.x)
           val dy = (node.desiredy-node.y)
@@ -823,34 +820,34 @@ final object Models {
         node.i += node.iv
         node.iv += node.ivv
         node.visible += node.visiblev
-        if(node.i > 0.9) node.ivv = -0.01
-        else if(node.i < 0.75) node.ivv = +0.01
+        if (node.i > 0.9) node.ivv = -0.01
+        else if (node.i < 0.75) node.ivv = +0.01
         
-        if(node.i < 0.6) node.i = 0.6
+        if (node.i < 0.6) node.i = 0.6
         
-        /*if(i < nodes.length) {
-          if(nodes(i-1) dist node > 5) {
+        /*if (i < nodes.length) {
+          if (nodes(i-1) dist node > 5) {
             //TODO: point it back or add nodes
           }
         }*/
         
         i += 1
-      } while(i < currentLength && !nodes(i).paused)
-      if(data.beat && i < nodes.length && (i >= currentLength || nodes(i).paused)) { 
-        if(nodes(i).paused) {
-          if(nodes(i-1).visible > 0.9) {
-            nodes(i).unPause
+      } while (i < currentLength && !nodes(i).paused)
+      if (data.beat && i < nodes.length && (i >= currentLength || nodes(i).paused)) { 
+        if (nodes(i).paused) {
+          if (nodes(i-1).visible > 0.9) {
+            nodes(i).paused = false
           }
         } else {
           // Init next node
           currentLength += 1
-          if(currentLength > nodes.length) currentLength = nodes.length
+          if (currentLength > nodes.length) currentLength = nodes.length
           nodes(i).init()
         }
       }
       // lame scaling pull
       /*if (data.pullMode) {
-        for(node <- nodes) {
+        for (node <- nodes) {
           node.x = node.x*data.ratio + data.centerx*data.ratio1m
           node.y = node.y*data.ratio + data.centery*data.ratio1m
           node.desiredx = node.desiredx*data.ratio + data.centerx*data.ratio1m
@@ -864,11 +861,11 @@ final object Models {
       glPrimitive(GL_LINE_STRIP) {
       //glPrimitive(GL_LINES) {// Dashed
         var i = 0
-        while(i < nodes.length && nodes(i).isVisible) {
-        	val node = nodes(i)
-          if(node.y < 0-120 || node.y > 1080+120) {
+        while (i < nodes.length && nodes(i).isVisible) {
+          val node = nodes(i)
+          if (node.y < 0-120 || node.y > 1080+120) {
             //nop
-          } else if(i > 0 && (node.visible < 1d || data.pullingThisThread)) {
+          } else if (i > 0 && (node.visible < 1d || data.pullingThisThread)) {
             val prevNode = nodes(i-1)
             if (data.pullingThisThread) {
               node.visible = node.visible * 0.9 
@@ -937,7 +934,7 @@ final object Models {
     //private[this] val ssize = TableRandom.nextDoubleUnsafe+0.45
     private[this] val ssize = TableRandom.nextDoubleUnsafe*0.6+0.8
 
-    def render() = {
+    def render(): Unit = {
       val rat = 2d//+testNum1/100d
       glColor3d(color.r*rat, color.g*rat, color.b*rat)
       glVertex2d(x,       y)
@@ -957,7 +954,7 @@ final object Models {
 
     private[this] val ssize = TableRandom.nextDoubleUnsafe*0.4+0.5
 
-    def render() = {
+    def render(): Unit = {
       glColor3d(color, color, color)
       val xx = x+ssize
       val yy = y+ssize
@@ -972,7 +969,10 @@ final object Models {
     def +(d: Double): Coord = Coord(x - d/2, y - d/2, w + d, h + d)
   }
 
-  def quad(coord: Coord, texture: Int = -1, flipx: Boolean = false, flipy: Boolean = false, alpha: Double = 1d, color: Color = grey1, blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
+  def quad(
+      coord: Coord, texture: Int = -1, 
+      flipx: Boolean = false, flipy: Boolean = false, 
+      alpha: Double = 1d, color: Color = grey1, blend: (Int, Int) = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA),
       preRender: => Unit = {},
       postRender: => Unit = {}): Unit = {
     
@@ -980,7 +980,7 @@ final object Models {
     glDisable(GL_LIGHTING)
     
     
-    if(blend != (-1, -1)) {
+    if (blend != ((-1, -1))) {
       glEnable(GL_BLEND)
       glBlendFunc(blend._1, blend._2)
     } else {
@@ -988,7 +988,7 @@ final object Models {
       glAlphaFunc(GL_GEQUAL, 0.9f)
     }
     
-    if(texture != -1) {
+    if (texture != -1) {
       glEnable(GL_TEXTURE_2D)
       glBindTexture(GL_TEXTURE_2D, texture)
     }
@@ -996,11 +996,11 @@ final object Models {
     
     glColor4d(color.r, color.g, color.b, alpha)
 
-    val (v0, v1) = if(flipy) (0f, 1f) else (1f, 0f)
-    val (h0, h1) = if(flipx) (0f, 1f) else (1f, 0f)
+    val (v0, v1) = if (flipy) (0f, 1f) else (1f, 0f)
+    val (h0, h1) = if (flipx) (0f, 1f) else (1f, 0f)
     
     render2D {
-    	preRender
+    preRender
       glPrimitive(GL_QUADS) {
         glTexCoord2f(h1, v0); glVertex2d(coord.x,         coord.y+coord.h)
         glTexCoord2f(h0, v0); glVertex2d(coord.x+coord.w, coord.y+coord.h)
@@ -1010,9 +1010,9 @@ final object Models {
       postRender
     }
 
-    if(texture != -1) glDisable(GL_TEXTURE_2D)
+    if (texture != -1) glDisable(GL_TEXTURE_2D)
 
-    if(blend != (-1, -1)) {
+    if (blend != ((-1, -1))) {
       glDisable(GL_BLEND)
     } else {
       glDisable(GL_ALPHA_TEST)

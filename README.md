@@ -9,7 +9,7 @@ and the following libraries: [LWJGL](http://lwjgl.org/) (graphics), [JLayer](htt
 
 For Ubuntu you need to install the Oculus Rift SDK (0.2.5 used here), and these packages: 
 
-    sudo apt-get install openjdk-7-jdk libopencv-dev arduino arduino-core
+    sudo apt-get install openjdk-7-jdk libopencv-dev arduino arduino-core v4l-utils
 
 You also need [sbt](http://www.scala-sbt.org/), then just `sbt run` from your terminal.
 

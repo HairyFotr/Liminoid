@@ -4,6 +4,10 @@
 /project/project
 *.class
 
+# eclipse
+.cache-main
+/bin/
+
 # various
 *~
 .dropbox

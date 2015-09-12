@@ -29,8 +29,8 @@ commonOffsety=23
 backN="@seqs@BackSpaceNew/"
 back0="@seqs@Aksioma0/"
 back0back="@seqs@"
-back1="@seqs@AksiomaSasa2/"
-back2="@seqs@AksiomaMatic2/"
+back1="@seqs@AksiomaSasa/"
+back2="@seqs@AksiomaMatic/"
 back3="@seqs@AksiomaMatic/"
 
 threadNetworkOffsetx=0
@@ -41,10 +41,12 @@ renderMode=stereo
 screenx=1280
 screeny=800
 
-frontCameraId=`./cameraId`UVC
+#frontCameraId=`./cameraId`UVC
+frontCameraId=0
 frontCameraX=1280
 frontCameraY=720
-backCameraId=`./cameraId`615
+#backCameraId=`./cameraId`615
+backCameraId=1
 backCameraX=1280
 backCameraY=720
 

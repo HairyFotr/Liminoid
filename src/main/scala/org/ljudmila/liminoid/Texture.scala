@@ -93,7 +93,7 @@ object Texture {
 
   def preload(files: Array[File], max: Int = -1): Unit = {
     try {
-      (if(max == -1) files else files.take(max))
+      (if (max == -1) files else files.take(max))
         .filterNot { file => cache.contains(file.toString) }
         .par.map { file => (file.toString, loadBuffer(file.toString)) }
         .seq.foreach { case (filename, buffer) => cache(filename) = makeTexture(buffer) }
@@ -104,13 +104,13 @@ object Texture {
   }
 
   def delete(a: String): Unit = {
-    if(cache contains a) {
+    if (cache contains a) {
       glDeleteTextures(cache(a))
       cache -= a
     }
   }
   def dumpCache(): Unit = {
-    for(item <- cache) {
+    for (item <- cache) {
       glDeleteTextures(item._2)
     }
     println("Dumped "+cache.size+" textures.")

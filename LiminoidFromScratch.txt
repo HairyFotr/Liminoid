@@ -2,8 +2,29 @@
 # http://cdimage.ubuntu.com/lubuntu/releases/14.04/release/lubuntu-14.04.3-desktop-amd64.iso
 
 @ Required packages
-sudo apt-get install openjdk-7-jdk libopencv-dev arduino arduino-core v4l-utils git
+sudo apt-get install openjdk-7-jdk libopencv-dev v4l-utils git
 wget https://dl.bintray.com/sbt/debian/sbt-0.13.9.deb && sudo dpkg -i sbt-0.13.9.deb
+
+# Java 8 is a bit faster...
+#> If you won't use java 8, change to -target:jvm-1.7 in build.sbt!
+sudo add-apt-repository ppa:webupd8team/java -y
+sudo apt-get update
+sudo apt-get install oracle-java8-installer
+sudo apt-get install oracle-java8-set-default
+
+# Install the fglrx-updates driver in:
+# dock menu -> Preferences -> Additional Drivers
+
+# [Optional] xorg-edgers drivers :)
+sudo apt-get install ppa-purge
+sudo apt-add-repository ppa:xorg-edgers/ppa
+sudo apt-get update
+sudo apt-get upgrade
+
+# [Optional] Arduino + PulseSensor
+# Pulse will be generated if you don't use this
+sudo apt-get install arduino arduino-core
+# TODO - software for PulseSensor
 
 @ Setting up Oculus Rift DK1 and display
 #> https://developer.oculus.com/downloads/pc/0.2.5/Oculus_SDK_for_Linux/

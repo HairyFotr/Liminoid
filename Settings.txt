@@ -27,8 +27,8 @@ commonOffsetx=21
 commonOffsety=23
 
 backN="@seqs@BackSpaceNew/"
-back0="@seqs@Aksioma0/"
-back0back="@seqs@"
+back0="@seqs@AksiomaMatic/"
+back0back="@seqs@AksiomaMatic/"
 back1="@seqs@AksiomaSasa/"
 back2="@seqs@AksiomaMatic/"
 back3="@seqs@AksiomaMatic/"
@@ -36,8 +36,8 @@ back3="@seqs@AksiomaMatic/"
 threadNetworkOffsetx=0
 threadNetworkOffsety=-70
 
-renderMode=stereo
 renderMode=mono
+renderMode=stereo
 screenx=1280
 screeny=800
 

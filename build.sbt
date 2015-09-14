@@ -28,7 +28,7 @@ javaOptions ++= Seq(
 
 scalacOptions ++= Seq(
   "-optimize", "-Yopt:l:classpath",
-  //"-target:jvm-1.7",
+  "-target:jvm-1.8",
   "-Yinline", "-Yclosure-elim")
 
 initialCommands := """

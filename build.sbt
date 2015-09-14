@@ -27,12 +27,14 @@ javaOptions ++= Seq(
   "-XX:MaxGCPauseMillis=17")
 
 scalacOptions ++= Seq(
-  "-optimize", "-Yopt:l:classpath", "-target:jvm-1.7",
+  "-optimize", "-Yopt:l:classpath",
+  //"-target:jvm-1.7",
   "-Yinline", "-Yclosure-elim")
 
 initialCommands := """
   import java.io.File
   import math._
+  import org.ljudmila._
   import org.ljudmila.liminoid._
   import Utils._
 """

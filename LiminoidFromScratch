@@ -1,0 +1,83 @@
+@ Install Lubuntu 14.04
+# http://cdimage.ubuntu.com/lubuntu/releases/14.04/release/lubuntu-14.04.3-desktop-amd64.iso
+
+@ Required packages
+sudo apt-get install openjdk-7-jdk libopencv-dev arduino arduino-core v4l-utils git
+wget https://dl.bintray.com/sbt/debian/sbt-0.13.9.deb && sudo dpkg -i sbt-0.13.9.deb
+
+@ Setting up Oculus Rift DK1 and display
+#> https://developer.oculus.com/downloads/pc/0.2.5/Oculus_SDK_for_Linux/
+#> extract the downloaded ovr_sdk_linux_0.2.5c.tar.gz
+cd OculusSDK/
+./ConfigurePermissionsAndPackages.sh 
+# An ugly hack since libudev version is different than it should be
+sudo ln -sf /lib/$(arch)-linux-gnu/libudev.so.1 /lib/$(arch)-linux-gnu/libudev.so.0
+
+# Oculus Rift DK1 supports 1280x800 resolution, your main display probably doesn't.
+# We used xrandr to set up partial mirroring from main display (LVDS1) to rift (HDMI1).
+xrandr --output LVDS1 --mode 1920x1080 --output HDMI1 --mode 1280x800 --same-as LVDS1
+# The display names and resolutions could be different - run xrandr to list displays and resolutions.
+
+# This should work now with the Oculus Rift DK1
+./OculusWorldDemo.sh
+
+# To make sure the Liminoid window  will be borderless and in the top left corner
+# Lubuntu 14.04 uses OpenBox, so go to ~/.config/openbox/lubuntu-rc.xml and add the application to the correct spot
+    <application class="Liminoid" name="Liminoid">
+      <position force="yes">
+        <x>0</x>
+        <y>0</y>
+      </position>
+      <decor>no</decor>
+    </application>
+# And then run this to reload OpenBox config
+openbox --reconfigure
+
+@ Getting Liminoid source code
+cd
+git clone https://github.com/HairyFotr/Liminoid
+cd Liminoid
+# This should now successfully compile
+# It wil take a few minutes to resolve and download libraries the first time
+sbt compile
+
+@ [Optional] Use Eclipse with Scala IDE to edit source code
+# http://scala-ide.org/
+# Use whatever is latest, below was the latest at the time
+cd
+wget http://downloads.typesafe.com/scalaide-pack/4.2.0-rc3-luna-211-20150911/scala-SDK-4.2.0-rc3-2.11-linux.gtk.x86_64.tar.gz
+#> extract and open Eclipse and import Liminoid project
+# Running is still done via sbt in the console, not in Eclipse
+
+@ The Settings.txt file format
+# The parser was written more or less by accident, here's some documentation :)
+
+# variable definition: someVariable=5
+# variable use: @someVariable@
+# computation: {1 + 1} ... some supported basic operations: +,-,*,/,mod
+# {sin(angle)}, {cos(angle)} ... TODO degrees or radians?
+# {rand(max)} ... random from -max to +max
+# {randp(max)} ... random from 0 to max
+# {choose(list,of,elements,...)} ... randomly choose one of the options
+# {select(i, list,of,elements,...)} ... select the element at index i
+# looping: %(5)
+# ...lines to repeat...
+# %
+# inside the loop you can use iterator @i@ which goes from 0 to the number of repeats,
+# and an angle iterator @iC@ which goes in equals steps from 0..2*Pi - useful for placing elements on a sine wave or a circle
+
+@ Getting Liminoid data
+cd
+mkdir LiminoiData
+cd LiminoiData
+#> Download and extract archives from http://liminoid.ljudmila.org/
+wget http://liminoid.ljudmila.org/Mandalas_black.zip http://liminoid.ljudmila.org/Mandalas_other.zip http://liminoid.ljudmila.org/Mandalas_white.zip http://liminoid.ljudmila.org/Objects.zip http://liminoid.ljudmila.org/Sounds.zip
+
+@ Generate the rest of Liminoid data
+# not all data is included, since some must be captured on the spot from the camera
+cd Liminoid
+sbt run
+#> when it's loaded press Z key to record ~22 seconds of content from the back camera
+# It will be saved into the folder defined in Settings as backN, you should then rename it and set it under back0, back1, ...
+
+@ A lot is hardcoded, but can be externalized upon request - You're awesome if you made it this far :)

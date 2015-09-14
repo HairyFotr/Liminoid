@@ -33,7 +33,7 @@ final object Liminoid {
   val dataFolder = settings("dataFolder")
   var startLiminoid = settings("autostart").equalsIgnoreCase("true")
 
-  var renderMode: RenderMode = RenderMode(settings("renderMode"))
+  var renderMode = RenderMode(settings("renderMode"))
 
   var isMainLoopRunning = false
   var renderTime = 0d

@@ -44,7 +44,14 @@ final object Sound {
           players += player
         }
 
-        player.play
+        println(s"Playing $sound -> ${soundMap(sound)}");
+        try {
+          player.play
+        } catch {
+          case e: Exception => println(s"Error on $sound -> ${soundMap(sound)}: ${e.getMessage}");
+
+        }
+        println(s"Finished $sound -> ${soundMap(sound)}");
 
         players.synchronized {
           players -= player

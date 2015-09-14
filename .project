@@ -1,20 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>Liminoid</name>
-	<comment></comment>
-	<projects>
-	</projects>
+	<comment>augmented and virtual experience of disintegrating subjectivity</comment>
 	<buildSpec>
-		<buildCommand>
-			<name>org.scala-ide.sdt.core.scalabuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
-		<buildCommand>
-			<name>org.scalastyle.scalastyleplugin.core.ScalastyleBuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
+		<buildCommand><name>org.scala-ide.sdt.core.scalabuilder</name></buildCommand>
+		<buildCommand><name>org.scalastyle.scalastyleplugin.core.ScalastyleBuilder</name></buildCommand>
 	</buildSpec>
 	<natures>
 		<nature>org.scala-ide.sdt.core.scalanature</nature>

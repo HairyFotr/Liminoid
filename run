@@ -10,4 +10,6 @@ while true; do
     #sudo swapon -a
 
     sbt run
+
+    sleep 1
 done

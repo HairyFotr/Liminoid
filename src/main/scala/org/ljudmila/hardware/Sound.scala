@@ -22,6 +22,7 @@ final object Sound {
       val (name, file) = line.splitAt(line.indexOf(' '))
       soundMap += name -> (folder + file.trim)
     }
+    println(soundMap)
 
     for ((_, file) <- soundMap) {
       val player = new Player(new BufferedInputStream(new FileInputStream(file)))
@@ -44,14 +45,12 @@ final object Sound {
           players += player
         }
 
-        println(s"Playing $sound -> ${soundMap(sound)}");
         try {
           player.play
         } catch {
           case e: Exception => println(s"Error on $sound -> ${soundMap(sound)}: ${e.getMessage}");
 
         }
-        println(s"Finished $sound -> ${soundMap(sound)}");
 
         players.synchronized {
           players -= player

@@ -5,7 +5,7 @@
 sudo apt-get install openjdk-7-jdk libopencv-dev v4l-utils git
 wget https://dl.bintray.com/sbt/debian/sbt-0.13.9.deb && sudo dpkg -i sbt-0.13.9.deb
 
-# Java 8 is a bit faster...
+# [Optional] Java 8 is a bit faster, and there were some sound issues on 7
 #> If you won't use java 8, change to -target:jvm-1.7 in build.sbt!
 sudo add-apt-repository ppa:webupd8team/java -y
 sudo apt-get update
@@ -24,7 +24,12 @@ sudo apt-get upgrade
 # [Optional] Arduino + PulseSensor
 # Pulse will be generated if you don't use this
 sudo apt-get install arduino arduino-core
-# TODO - software for PulseSensor
+
+# TODO - fork software for PulseSensor
+https://github.com/WorldFamousElectronics/PulseSensor_Amped_Arduino
+
+sudo usermod -a -G dialout liminoid
+#> log out or reboot
 
 @ Setting up Oculus Rift DK1 and display
 #> https://developer.oculus.com/downloads/pc/0.2.5/Oculus_SDK_for_Linux/
@@ -76,7 +81,7 @@ wget http://downloads.typesafe.com/scalaide-pack/4.2.0-rc3-luna-211-20150911/sca
 # variable definition: someVariable=5
 # variable use: @someVariable@
 # computation: {1 + 1} ... some supported basic operations: +,-,*,/,mod
-# {sin(angle)}, {cos(angle)} ... TODO degrees or radians?
+# {sin(angle)}, {cos(angle)} ... sine/cosine of angle in radians
 # {rand(max)} ... random from -max to +max
 # {randp(max)} ... random from 0 to max
 # {choose(list,of,elements,...)} ... randomly choose one of the options

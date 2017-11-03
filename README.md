@@ -17,4 +17,4 @@ You also need [sbt](http://www.scala-sbt.org/), then just `sbt run` from your te
 
 **Authors:** Saša Spačal, Matic Potočnik<br>
 **Production:** Ljudmila – Ljubljana Digital Media Lab<br>
-**Special thanks:** Tina Dolinšek, Ida Hiršenfelder, Igor Križanovskij
+**Special thanks:** Tina Dolinšek, Ida Hiršenfelder, Igor Križanovskij, Aileen Derieg, dr. Mirjan Švagelj, Paul Steed

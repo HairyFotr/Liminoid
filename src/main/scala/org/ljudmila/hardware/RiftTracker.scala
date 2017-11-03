@@ -12,24 +12,21 @@ object RiftTracker {
     initialized = initialized && (try { out = Option(f); true } catch { case _: Throwable => false })
     out
   }
-  
+
   withInit { OculusRift.LoadLibrary(new File(System.getProperty("java.io.tmpdir"))); }
 
-  private[this] val oculusRift = withInit {
-    val rift = new OculusRift
-    rift.init
-    rift
-  } getOrElse null
-  
-  
-  def poll(): Rotation = withInit {
-    oculusRift.poll()
-    
-    Rotation(
-      oculusRift.getYawDegrees_LH(),
-      oculusRift.getPitchDegrees_LH(),
-      oculusRift.getRollDegrees_LH())
-  } getOrElse rotation0
-  
-  def destroy(): Unit = withInit { oculusRift.destroy }
+  private[this] val oculusRift =
+    withInit {
+      val rift = new OculusRift
+      rift.init
+      rift
+    }.orNull
+
+  def poll(): Rotation =
+    withInit {
+      oculusRift.poll()
+      Rotation(oculusRift.getYawDegrees_LH, oculusRift.getPitchDegrees_LH, oculusRift.getRollDegrees_LH)
+    }.getOrElse(rotation0)
+
+  def destroy(): Unit = withInit { oculusRift.destroy() }
 }

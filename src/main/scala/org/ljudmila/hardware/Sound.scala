@@ -8,6 +8,9 @@ import scala.collection.mutable
 
 final object Sound {
   private var muted = false
+  private val soundMap = mutable.HashMap.empty[String, String]
+  private var players = Set.empty[Player]
+
   def mute(): Unit = synchronized {
     stopAll()
     muted = true
@@ -15,8 +18,7 @@ final object Sound {
   def unmute(): Unit = synchronized {
     muted = false
   }
-  val soundMap = mutable.HashMap.empty[String, String]
-  
+
   def init(folder: String): Unit = synchronized {
     for (line <- getFile(folder + "list.txt")) {
       val (name, file) = line.splitAt(line.indexOf(' '))
@@ -29,8 +31,7 @@ final object Sound {
       player.close()
     }
   }
-  
-  var players = Set.empty[Player]
+
   def stopAll(): Unit = players.synchronized {
     players.foreach(_.close)
     players = Set.empty
@@ -40,18 +41,12 @@ final object Sound {
     if (!muted) {
        if (players.size <= 12) thread {
         val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
-        players.synchronized {
-          players += player
-        }
-
-        player.play
-
-        players.synchronized {
-          players -= player
-          player.close
-        }
+        players.synchronized { players += player }
+        player.play()
+        players.synchronized { players -= player }
+        player.close()
       } else {
-        println("Too much sounds, dropping: "+sound)
+        println("Too many sounds, dropping: " + sound)
       }
     }
   }

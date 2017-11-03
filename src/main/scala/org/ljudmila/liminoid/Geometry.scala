@@ -8,16 +8,17 @@ final object Vec3 {
 }
 final class Vec3(var x: Float, var y: Float, var z: Float) {
   def this() = this(0f, 0f, 0f)
-  
+
   private def setPoints(v: Vec3): Unit = { x=v.x; y=v.y; z=v.z; }
   private def setPoints(x: Float, y: Float, z: Float): Unit = { this.x=x; this.y=y; this.z=z; }
   //private def setPoints(p: Array[Float]): Unit = setPoints(p(0), p(1), p(2))
-  
-  def copy(): Vec3 = Vec3(x, y, z)
+
+  def copy: Vec3 = Vec3(x, y, z)
   private def each(f: Float => Float): Unit = { x = f(x); y = f(y); z = f(z); }
-  private def map(f: Float => Float): Vec3 = { val out = this.copy; out.each(f); out }
-  def applyVector(v: Vec3, multi: Float = 1): Unit = setPoints(this + (v * multi))
-  
+  private def map(f: Float => Float): Vec3 = Vec3(f(x), f(y), f(z))
+  def applyVector(v: Vec3): Unit = setPoints(this + v)
+  def applyVector(v: Vec3, multi: Float): Unit = setPoints(this + (v * multi))
+
   def unary_- : Vec3       = Vec3(-x, -y, -z)
   def +(v: Vec3): Vec3     = Vec3(x+v.x, y+v.y, z+v.z)
   def -(v: Vec3): Vec3     = Vec3(x-v.x, y-v.y, z-v.z)
@@ -33,15 +34,16 @@ final class Vec3(var x: Float, var y: Float, var z: Float) {
   def dot(v: Vec3): Float  = x*v.x + y*v.y + z*v.z
 
   // maybe this needs to be normalized too
-  def angle(v: Vec3): Float = (180f/Pi * acos((this dot v)/v.length)).toFloat
+  // 57.29577951308232 = 180/Pi
+  def angle(v: Vec3): Float = (57.29577951308232 * acos((this dot v)/v.length)).toFloat
 
   def length: Float = sqrt(this dot this).toFloat
   def ==(v: Vec3): Boolean = x == v.x && y == v.y && z == v.z
-  def !=(v: Vec3): Boolean = !(this == v)
-  
+  def !=(v: Vec3): Boolean = !this.==(v)
+
   def maxCoords(v: Vec3): Vec3 = Vec3(max(v.x, x), max(v.y, y), max(v.z, z))
   def minCoords(v: Vec3): Vec3 = Vec3(min(v.x, x), min(v.y, y), min(v.z, z))
-  
+
   // clamp values to some value(e.g. world size)
   private def clamp(p: Float, clamp: Float): Float = if (clamp != 0 && abs(p) > clamp) clamp * p.signum else p
   def clamp(c: Float): Unit = this.each(clamp(_, c))
@@ -53,7 +55,7 @@ final class Vec3(var x: Float, var y: Float, var z: Float) {
 final class BoundingBox(vec: Vec3) {
     var min = vec.copy
     var max = vec.copy
-    
+
     def this(v1: Vec3, v2: Vec3) = {
         this(v1.copy)
         this += v2
@@ -62,26 +64,27 @@ final class BoundingBox(vec: Vec3) {
         this(points(0).copy)
         for (i <- 1 until points.length) this += points(i)
     }
-    
-    def boxCollide(b: BoundingBox, offset: Vec3 = Vec3()): Boolean = { // offset = tolerance
-        ((min.x+offset.x <= b.max.x) && (max.x+offset.x >= b.min.x) &&
-         (min.y+offset.y <= b.max.y) && (max.y+offset.y >= b.min.y) &&
-         (min.z+offset.z <= b.max.z) && (max.z+offset.z >= b.min.z))
-    }
-    def pointCollide(v: Vec3, offset: Vec3 = Vec3()): Boolean = {
-        ((min.x+offset.x <= v.x) && (max.x+offset.x >= v.x) &&
-         (min.y+offset.y <= v.y) && (max.y+offset.y >= v.y) &&
-         (min.z+offset.z <= v.z) && (max.z+offset.z >= v.z))
-    }
-    def boxCollideDepth(b: BoundingBox, offset: Vec3 = Vec3()): Float = {
+
+    // offset = tolerance
+    def boxCollide(b: BoundingBox, offset: Vec3 = Vec3()): Boolean = (
+      (min.x+offset.x <= b.max.x) && (max.x+offset.x >= b.min.x) &&
+      (min.y+offset.y <= b.max.y) && (max.y+offset.y >= b.min.y) &&
+      (min.z+offset.z <= b.max.z) && (max.z+offset.z >= b.min.z)
+    )
+    def pointCollide(v: Vec3, offset: Vec3 = Vec3()): Boolean = (
+      (min.x+offset.x <= v.x) && (max.x+offset.x >= v.x) &&
+      (min.y+offset.y <= v.y) && (max.y+offset.y >= v.y) &&
+      (min.z+offset.z <= v.z) && (max.z+offset.z >= v.z)
+    )
+    def boxCollideDepth(b: BoundingBox, offset: Vec3 = Vec3()): Float = (
       (if (min.x+offset.x <= b.max.x) abs(b.max.x - min.x+offset.x) else 0) +
       (if (max.x+offset.x >= b.min.x) abs(max.x+offset.x - b.min.x) else 0) +
       (if (min.y+offset.y <= b.max.y) abs(b.max.y - min.y+offset.y) else 0) +
       (if (max.y+offset.y >= b.min.y) abs(max.y+offset.y - b.min.y) else 0) +
       (if (min.z+offset.z <= b.max.z) abs(b.max.z - min.z+offset.z) else 0) +
       (if (max.z+offset.z >= b.min.z) abs(max.z+offset.z - b.min.z) else 0)
-    }
-    
+    )
+
     def +=(v: Vec3): Unit = {
         this.min = min.minCoords(v)
         this.max = max.maxCoords(v)
@@ -101,6 +104,6 @@ final class BoundingBox(vec: Vec3) {
         box.max += v
         box
     }
-    
+
     def copy: BoundingBox = new BoundingBox(min.copy, max.copy)
 }

@@ -11,7 +11,7 @@ import org.ljudmila.Utils.{ now, since }
 object PulseSensor {
   import jssc.SerialPort._
 
-  var port: SerialPort = null
+  var port: SerialPort = _
   var init_ = false
   def init(): Unit = {
     if (!init_) try {
@@ -37,7 +37,7 @@ object PulseSensor {
           val sReg = "S([0-9]+)"
           val bReg = "B([0-9]+)"
           val qReg = "Q([0-9]+)"
-          data.split("\n").foreach {
+          data.split('\n').foreach {
             case sReg(n) => lastS = n.toInt
             case sReg(n) => lastB = n.toInt
             case sReg(n) => lastQ = n.toInt
@@ -61,7 +61,7 @@ object PulseSensor {
     if (fake) {
       if (since(fakeTimer) > 900) {
         fakeTimer = now
-        
+
         true
       } else {
         false
@@ -71,7 +71,7 @@ object PulseSensor {
 
       var out = beat
       beat = false
-      
+
       // Ignore alien heartbeats (sorry aliens)
       if (prevBeatAlien) {
         prevBeatAlien = false
@@ -98,7 +98,7 @@ object PulseSensor {
 
   class SerialPortReader extends SerialPortEventListener {
     override def serialEvent(event: SerialPortEvent): Unit = {
-      if (event.isRXCHAR()) { // If data is available
+      if (event.isRXCHAR) { // If data is available
         val data = port.readString()
         if (data contains "B") synchronized { beat = true }
       }

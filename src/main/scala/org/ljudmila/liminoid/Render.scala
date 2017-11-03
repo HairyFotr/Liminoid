@@ -31,11 +31,16 @@ final object GLadDOnS {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
   }
   def glMatrix(func: => Unit): Unit = {
-    glPushMatrix
+    glPushMatrix()
     func
-    glPopMatrix
+    glPopMatrix()
   }
-  def glCapability(caps: Int*)(func: => Unit): Unit = {
+  def glCapability(cap: Int)(func: => Unit): Unit = {
+    glEnable(cap)
+    func
+    glDisable(cap)
+  }
+  def glCapabilities(caps: Int*)(func: => Unit): Unit = {
     for (cap <- caps) glEnable(cap)
     func
     for (cap <- caps) glDisable(cap)
@@ -43,13 +48,13 @@ final object GLadDOnS {
   def glPrimitive(primitive: Int)(func: => Unit): Unit = {
     glBegin(primitive)
     func
-    glEnd
+    glEnd()
   }
   def glDisplayList(toRender: => Unit): Int = {
     val displayList = glGenLists(1)
     glNewList(displayList, GL_COMPILE)
     toRender
-    glEndList
+    glEndList()
 
     displayList
   }
@@ -60,17 +65,17 @@ final object GLadDOnS {
       val sphere = new Sphere
       sphere.setNormals(GLU.GLU_SMOOTH)
       sphere.setTextureFlag(false)
-      
+
       sphere
     }
     lazy val texturedSphere = {
       val sphere = new Sphere
       sphere.setNormals(GLU.GLU_SMOOTH)
       sphere.setTextureFlag(true)
-      
+
       sphere
     }
-    
+
     lazy val sphere = new Sphere
     lazy val cylinder = new Cylinder
     lazy val disk = new Disk
@@ -80,7 +85,7 @@ final object GLadDOnS {
 
 final object Render {
   import GLadDOnS._
-  
+
   lazy val cam = {
     val cam = new Camera
     cam.setViewPort(0,0, winWidth,winHeight)
@@ -88,7 +93,7 @@ final object Render {
     cam.setPerspective(50, winWidth/winHeight.toFloat, 0.25f, 700f)
     cam.setPosition(0, 0, 0)
     cam.lookAt(Vec3(0, 0, 200))
-    
+
     cam
   }
 
@@ -115,23 +120,23 @@ final object Render {
         }
     }
   }
-  
+
   lazy val cam2D = {
     val cam2D = new Camera
     cam2D.setViewPort(0,0, winWidth,winHeight)
     cam2D.setOrtho(0,winHeight,winWidth,0, 1f,-1f)
-    
+
     cam2D
   }
   def render2D(toRender: => Unit): Unit = {
     renderMode match {
       case Mono =>
-        cam2D.render
+        cam2D.render()
         toRender
       case Stereo =>
-        cam2D.render
+        cam2D.render()
         glCapability(GL_SCISSOR_TEST) {
-          val eyeOffset = (winWidth/4+eyeCorrection)
+          val eyeOffset = winWidth/4+eyeCorrection
           glScissor(0,0, winWidth/2,winHeight)
           glTranslatef(-eyeOffset, 0, 0)
           toRender
@@ -142,7 +147,7 @@ final object Render {
           glTranslatef(-eyeOffset, 0, 0)
         }
     }
-  }  
+  }
 
   sealed trait OldModel {
     var pos = Vec3()
@@ -151,14 +156,14 @@ final object Render {
     def scale: Vec3 = scal
     def scale_=(v: Vec3): Unit = { scal = v }
     var visible = true
-  
+
     def setPosition(x: Float, y: Float, z: Float): Unit = { pos = Vec3(x, y, z) }
     def setRotation(x: Float, y: Float, z: Float): Unit = { rot = Vec3(x, y, z) }
     def setScale(x: Float, y: Float, z: Float): Unit = { scale = Vec3(x, y, z) }
     def setPosition(v: Vec3): Unit = { pos = v.copy }
     def setRotation(v: Vec3): Unit = { rot = v.copy }
     def setScale(v: Vec3): Unit = { scale = v.copy }
-    
+
     def doTranslate(): Unit = {
       glTranslatef(pos.x, pos.y, pos.z)
     }
@@ -170,18 +175,18 @@ final object Render {
     def doScale(): Unit = {
       glScalef(scale.x, scale.y, scale.z)
     }
-  
+
     def doTransforms(): Unit = {
       doTranslate()
       doRotate()
       doScale()
     }
-  
+
     def render(): Unit
-  
+
     override def toString: String = "p:("+pos.toString+"), " + "r:("+rot.toString+"), " + "s:("+scale.toString+")"
   }
-  
+
   final class Camera extends OldModel {
     // default projection
     var perspective = false
@@ -192,12 +197,12 @@ final object Render {
     var vector = Vec3()
     var angle = Vec3()
     var viewPort = (0, 0, 0, 0)
-  
+
     def setViewPort(x: Int, y: Int, xx: Int, yy: Int): Unit = {
       glViewport(x,y, xx,yy)
       viewPort = (x,y, xx,yy)
     }
-  
+
     // set a perspective projection
     def setPerspective(fv: Float, ar: Float, n: Float, f: Float): Unit = {
       perspective = true
@@ -207,7 +212,7 @@ final object Render {
       far = f
       projectionChanged = true
     }
-    
+
     // set an ortographic projection
     def setOrtho(mx: Double, my: Double, Mx: Double, My: Double, n: Float, f: Float): Unit = {
       perspective = false
@@ -219,11 +224,11 @@ final object Render {
       far = f
       projectionChanged = true
     }
-    
+
     var lookAtV = Vec3()
     def lookAt(v: Vec3): Unit = lookAtV = v.copy
     def lookAt(m: OldModel): Unit = lookAtV = m.pos.copy
-      
+
     override def render(): Unit = {
       // setup projection matrix stack
       //if (projectionChanged) {
@@ -240,7 +245,7 @@ final object Render {
           glOrtho(minX,maxX, minY,maxY, near,far)
         }
       //}
-  
+
       // model view stack
       glMatrixMode(GL_MODELVIEW)
       glLoadIdentity()

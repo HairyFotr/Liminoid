@@ -19,20 +19,21 @@ sealed trait Sequence[T] {
 
   def preload(): Unit
   def get(): T
-  def apply(): T =
-    (if (active) {
+  def apply(): T = (
+    if (active) {
       val out = get()
       moveCursor()
       out
     } else {
       get()
-    })
+    }
+  )
 
   def delete(d: String): Unit
-  
+
   def lastFrame: Int
 
-  def reset(): Unit = rewind
+  def reset(): Unit = rewind()
   def rewind(): Unit = {
     cursor = 0
     direction = 1
@@ -55,7 +56,7 @@ sealed trait Sequence[T] {
         } else {
           cursor = math.min(diff, lastFrame)
         }
-        
+
         if (stopAtEnd) {
           cursor = lastFrame
           active = false
@@ -71,7 +72,7 @@ sealed trait Sequence[T] {
         } else {
           cursor = math.max(lastFrame + cursor, 0)
         }
-        
+
         if (stopAtEnd) {
           cursor = 0
           active = false
@@ -93,13 +94,12 @@ abstract class FolderSource[T](path: String, ext: String) extends Source[T] with
   val files =
     (new File(path))
       .listFiles
-      .filter { _.isFile }
-      .filter { _.toString endsWith ext }
-      
-  val frames = files.map { _.toString }.sortBy { x => x.replaceAll("^.*/[^0-9]*", "").dropRight(4).toInt }
-  
-  val lastFrame = frames.size - 1
-  
+      .filter(file => file.isFile && file.toString.endsWith(ext))
+
+  val frames = files.map(_.toString).sortBy(_.dropRight(4).replaceFirst("^.*/[^0-9]*", "").toInt)
+
+  val lastFrame = frames.length - 1
+
 }
 abstract class FolderSource2[T, U](path: String, ext: String) extends FolderSource[T](path: String, ext: String) with Source2[T, U] with Sequence[T]
 abstract class CameraSource(cam: Camera) extends Source2[Int, Int]
@@ -124,10 +124,10 @@ case class TexSequence(
     }
     out
   }
-  override def preload(): Unit = { Texture.preload(files) }
-  def preload(i: Int): Unit = { Texture.preload(files, i) }
-  override def delete(d: String): Unit = { Texture.delete(d) }
-  def clear(): Unit = { for (f <- frames) delete(f) }
+  override def preload(): Unit = Texture.preload(files)
+  def preload(i: Int): Unit = Texture.preload(files, i)
+  override def delete(d: String): Unit = Texture.delete(d)
+  def clear(): Unit = for (f <- frames) delete(f)
 }
 case class OBJSequence(
     val path: String,
@@ -142,9 +142,9 @@ case class OBJSequence(
     var stopAtEnd: Boolean = false,
     val ext: String = ".obj") extends FolderSource[Model](path, ext) {
 
-  val models: Array[Model] = frames.map { name => OBJModel.load(name).toModel(transform = transform, color = color, coreTransform = coreTransform) }
+  val models: Array[Model] = frames.map(name => OBJModel.load(name).toModel(transform = transform, color = color, coreTransform = coreTransform))
   override def get(): Model = models(cursor)
-  override def preload(): Unit = { OBJModel.preload(files) }
-  def preload(i: Int): Unit = { OBJModel.preload(files, i) }
+  override def preload(): Unit = OBJModel.preload(files)
+  def preload(i: Int): Unit = OBJModel.preload(files, i)
   override def delete(d: String): Unit = { /*foo*/ }
 }

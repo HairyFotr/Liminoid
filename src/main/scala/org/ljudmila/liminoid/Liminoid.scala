@@ -5,7 +5,6 @@ import org.lwjgl.input.{ Keyboard, Mouse }
 import collection.mutable
 import collection.parallel.mutable.ParArray
 import java.nio._
-import scala.actors.Futures._
 import scala.util.Random._
 import math._
 import org.ljudmila.Utils
@@ -33,7 +32,7 @@ final object Liminoid {
   val dataFolder = settings("dataFolder")
   var startLiminoid = settings("autostart").equalsIgnoreCase("true")
 
-  var renderMode: RenderMode = RenderMode(settings("renderMode"))
+  var renderMode = RenderMode(settings("renderMode"))
 
   var isMainLoopRunning = false
   var renderTime = 0d
@@ -49,7 +48,7 @@ final object Liminoid {
     Sound.init(settings("snds"))
 
     mainLoop()
-    
+
     // Cleanup
     Sound.stopAll()
     RiftTracker.destroy()
@@ -57,7 +56,7 @@ final object Liminoid {
     Display.destroy()
   }
 
-  var (winWidth, winHeight) = (settings("screenx").toInt, settings("screeny").toInt)
+  val (winWidth, winHeight) = (settings("screenx").toInt, settings("screeny").toInt)
   val (forceWidth, forceHeight) = (settings("screenx").toInt, settings("screeny").toInt)
   def initDisplay(): Unit = {
     Display.setTitle(project)
@@ -68,7 +67,7 @@ final object Liminoid {
         .filter(mode => /*mode.isFullscreenCapable &&*/ mode.getWidth == forceWidth && mode.getHeight == forceHeight)
         .maxBy(_.getBitsPerPixel)*/
     val bestMode = new DisplayMode(1280, 800)
-    
+
     Display.setVSyncEnabled(true)
     Display.setFullscreen(true)
     Display.setDisplayModeAndFullscreen(bestMode)
@@ -76,11 +75,11 @@ final object Liminoid {
     Display.setFullscreen(true)
     //winWidth = bestMode.getWidth
     //winHeight = bestMode.getHeight
-    
+
     println("Display: "+bestMode.getWidth+"x"+bestMode.getHeight+"@"+bestMode.getFrequency+"Hz, "+bestMode.getBitsPerPixel+"bit")
-    
+
     Display.create()
-    // TODO try antialiasing/multisampling/...:
+    //TODO: try antialiasing/multisampling/...:
     //Display.create(new PixelFormat(24, 8, 16, 8, 8))
     //Display.create(new PixelFormat(8, 0, 0, 8))
 
@@ -100,7 +99,7 @@ final object Liminoid {
     // FPS counter
     var frameCounter = 0
     val second = 1000000000L // ns -> s
-    val FPSseconds = 1
+    val FPSseconds = 2
     var FPStimer = currentTime
     frameTime = currentTime
 
@@ -124,11 +123,11 @@ final object Liminoid {
           shader.renderToScreen()
           Display.update() // update window contents and process input messages
       }
-      
+
       frameCounter += 1
 
       if (currentTime-FPStimer > second*FPSseconds) {
-        val FPS = frameCounter/FPSseconds.toFloat
+        val FPS = frameCounter/FPSseconds
 
         println("FPS: "+FPS)
         println("sinceStart: "+since(phaseTimer))
@@ -151,7 +150,7 @@ final object Liminoid {
       frameTime = currentTime
     }
   }
-  
+
   /**
   * Initial setup of projection of the scene onto screen, lights etc.
   */
@@ -161,7 +160,7 @@ final object Liminoid {
     glEnable(GL_DEPTH_TEST) // enable depth buffer (off by default)
     //glEnable(GL_CULL_FACE)  // enable culling of back sides of polygons
     //glCullFace(GL_BACK)
-    
+
     // smooth shading - Gouraud
     glShadeModel(GL_SMOOTH)
     //glShadeModel(GL_FLAT)
@@ -171,12 +170,12 @@ final object Liminoid {
     glEnable(GL_POINT_SMOOTH)
     glEnable(GL_LINE_SMOOTH)
     //glEnable(GL_POLYGON_SMOOTH)
-    
+
     setupLights()
-    
+
     glViewport(0,0, winWidth,winHeight) // mapping from normalized to window coordinates
   }
-  
+
   def setupLights(): Unit = {
     // lights
     glEnable(GL_LIGHTING)
@@ -205,27 +204,27 @@ final object Liminoid {
     glMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, floatBuffer(0.9f+mod3, 0.9f+mod3, 0.9f+mod3, 0f))
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
   }
-  
+
   /**
   * Resets the view of current frame
   */
   def resetView(): Unit = {
-    // TODO clear color and depth buffer?
+    //TODO: clear color and depth buffer?
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
   }
-  
+
   /**
   * Renders current frame
   */
 
   lazy val liminoidSplash = Texture(settings("liminoidSplash"))
   lazy val liminoidSplashLoading = Texture(settings("liminoidSplashLoading"))
-  
+
   /// Liminoid phases ///
-  val phases = 
+  val phases =
     mutable.ListMap(
       "Limbo" -> -1,
       "Setup" -> 0,
@@ -247,7 +246,7 @@ final object Liminoid {
 
   var currentPhase = Setup // Current phase
   var phaseChanged = true
-  
+
   def gotoPhase(i: Int): Unit = {
     currentPhase = i
     phaseChanged = true
@@ -262,7 +261,7 @@ final object Liminoid {
     currentPhase -= 1
     phaseChanged = true
   }
-  def initPhase(initFunc: => Unit): Unit = 
+  def initPhase(initFunc: => Unit): Unit =
     if (phaseChanged) {
       phaseTimer = now
       phaseChanged = false
@@ -274,7 +273,7 @@ final object Liminoid {
   // f = desired oscillator frequency
   // w = 2 pi f / Fs
   // phi = initial phase
-  // y = ouput array containing the oscillator signal
+  // y = output array containing the oscillator signal
   // def oscillator(i: Double) = sin((2*Pi*f)*i + phi)
   def oscillator(i: Double = Utils.now*0.002, phi: Double): Double = sin(i + phi)
   var osc1 = 0d
@@ -293,17 +292,17 @@ final object Liminoid {
   // Cameras
   //val cams = Array(hardware.Camera(camId = 0, 1920, 1080), hardware.Camera(camId = 1, 1920, 1080), hardware.Camera(camId = 2, 1280, 720), hardware.Camera(camId = 3, 1280, 720))
   //val stereoCameras = cams.takeRight(2).reverse
-  
+
   //val backCamera = hardware.Camera(camId = 1, 1920, 1080) //cams(0)
   //val frontCamera = hardware.Camera(camId = 0, 1280, 720) //960?
   //val flipFrontCamera = true
-  
+
   //val backCamera = hardware.Camera(camId = 0, 1280, 960) //cams(0)
   //val frontCamera = hardware.Camera(camId = 1, 1920, 1080)
-  
+
   val frontCamera = hardware.Camera(camId = settings("frontCameraId").takeRight(1).toInt, settings("frontCameraX").toInt, settings("frontCameraY").toInt)
   val backCamera  = hardware.Camera(camId = settings("backCameraId").takeRight(1).toInt, settings("backCameraX").toInt, settings("backCameraY").toInt)
-  
+
   val flipFrontCamera = true//false
 
   val eyeCorrection = -64 // Eye shift for 2D rift view
@@ -320,10 +319,10 @@ final object Liminoid {
   val radioBasePosVecZ = -0.11 * 1.4 // 2min8s -> 1min30s (85x + 43x*1.75 = ...)
   val radioBasePosVec = Vec(0, 0, radioBasePosVecZ) // basic z movement vector
   val startPos = vecz(wallZ+15) // starting point for radiolarians
-  def basicRot(): Vec = Vec.randomGaussian(1d/3d)
-  
+  def basicRot: Vec = Vec.randomGaussian(1d/3d)
+
   // The rock inside radiolarians
-  lazy val core = 
+  lazy val core =
     OBJModel.load(settings("coreModel")).toModel(color = grey(0.05))
 
   // The radiolarian that opens up
@@ -339,7 +338,7 @@ final object Liminoid {
       transformVector = Transform(pos = radioBasePosVec, rot = vec0))
 
   // Some rocks just floating around
-  lazy val _whiteRocks = 
+  lazy val _whiteRocks =
     OBJModels(
         settings("rocks1"),
         Transform(pos = startPos),
@@ -348,8 +347,8 @@ final object Liminoid {
     //    settings("rocks2"),
     //    Transform(pos = startPos),
     //    Transform(pos = radioBasePosVec, rot = basicRot)) ++
-  lazy val _rocks = 
-    (OBJModels(
+  lazy val _rocks = (
+    OBJModels(
         settings("rocks3"),
         Transform(pos = startPos),
         Transform(pos = radioBasePosVec, rot = basicRot)) ++
@@ -364,17 +363,18 @@ final object Liminoid {
     OBJModels(
         settings("rocks45"),
         Transform(pos = startPos),
-        Transform(pos = radioBasePosVec, rot = basicRot)))
-  var filteredRocks: Array[Model] = null
-        
+        Transform(pos = radioBasePosVec, rot = basicRot))
+  )
+  var filteredRocks: Array[Model] = _
+
   /// Mandalas phase objects ///
   val startFrameNum = 2162 // filenames for mandalas start with this
-  var blackMandala = 
+  var blackMandala =
     TexSequence(
       settings("blackMandala"),
       delay = 24.FPS,
       selfDestruct = true)
-  var whiteMandala = 
+  var whiteMandala =
     TexSequence(
       settings("whiteMandala"),
       delay = 24.FPS * 0.8,
@@ -389,27 +389,27 @@ final object Liminoid {
 
   // Schizoid phase objects
   var wallTex = -1
-  var back0Seq = 
+  val back0Seq =
     TexSequence(
       settings("back0"),
-      delay = 1000/15d,
+      delay = 1000 / 15d,
       stopAtEnd = false,
       bounce = true,
-      snap = Texture.getImage(settings("back0back")+"1.png"))
-  var back1Seq = 
+      snap = Texture.getImage(settings("back0back") + "1.png"))
+  val back1Seq =
     TexSequence(
       settings("back1"),
-      delay = 1000/15d,
+      delay = 1000 / 15d,
       stopAtEnd = false,
       bounce = true,
-      snap = Texture.getImage(settings("back1")+"1.png"))
-  var back2Seq = 
+      snap = Texture.getImage(settings("back1") + "1.png"))
+  val back2Seq =
     TexSequence(
       settings("back2"),
-      delay = 1000/15d,
+      delay = 1000 / 15d,
       stopAtEnd = false,
       bounce = true,
-      snap = Texture.getImage(settings("back2")+"1.png"))
+      snap = Texture.getImage(settings("back2") + "1.png"))
   //var backCamSnapTex = backCamera.getTextureIDWait
   var noisePixels = Vector.empty[NoisePixel]
   var backPixels = Vector.empty[Pixel]
@@ -423,11 +423,11 @@ final object Liminoid {
   var bpCenterx, bpCentery = 0d
 
   var networkStarted = false
-  
+
   var rockfly = false
-  
+
   var csize = 0.2d
-  
+
   var shouldFreezeview = false
   def viewFrozen: Boolean = freezeView >= 0.01
   var freezeView = 0d
@@ -440,7 +440,7 @@ final object Liminoid {
 
   def threadNetworkOffsetx: Double = settings("threadNetworkOffsetx").toDouble + commonOffsetx
   def threadNetworkOffsety: Double = settings("threadNetworkOffsety").toDouble + commonOffsety
-  
+
   var debugPoly = false
   val (pts, polygon, bound, pixelbox, pixelboxpoly) = {
         val b = """
@@ -459,11 +459,11 @@ final object Liminoid {
 """.trim
 
         type AWTPoint = java.awt.Point
-        
+
         def watx(a: Double) = a*1280/1920d + settings("noiseWallOffsetx").toDouble
         def waty(a: Double) = a*720/1080d + settings("noiseWallOffsety").toDouble
-        
-        val pts = b.trim.split("\n").foldLeft(List[java.awt.Point]()){ (acc, n) => 
+
+        val pts = b.trim.split('\n').foldLeft(List[java.awt.Point]()){ (acc, n) =>
           val spl = n.split(" *, *")
           //glTranslated(camx+testNum1, camy+testNum2, 0)
           //glScaled(camw/camresx, camh/camresy, 1)
@@ -473,9 +473,9 @@ final object Liminoid {
           //val y = ((yy+camy)*camh/1080d).toInt
           //val x = ((xx*camw/1920d+camx)).toInt
           //val y = ((yy*camh/1080d+camy)).toInt
-          (new java.awt.Point((xx+threadNetworkOffsetx).toInt, (yy+threadNetworkOffsety).toInt)) :: acc 
+          (new java.awt.Point((xx+threadNetworkOffsetx).toInt, (yy+threadNetworkOffsety).toInt)) :: acc
         }
-        
+
         object Point {
           def convexHull(_points: Seq[AWTPoint]): Seq[AWTPoint] = {
             if (_points.isEmpty) return _points
@@ -486,7 +486,7 @@ final object Liminoid {
             lower.remove(0)
             upper ++: lower
           }
-          
+
           private def halfHull(points: Seq[AWTPoint]) = {
             val upper = new mutable.ListBuffer[AWTPoint]()
             for (p <- points) {
@@ -497,7 +497,7 @@ final object Liminoid {
             }
             upper
           }
-          
+
           private def leftTurn(p1: AWTPoint, p2: AWTPoint, p3: AWTPoint) = {
             val slope = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)
             val collinear = math.abs(slope) <= 1e-9
@@ -505,7 +505,7 @@ final object Liminoid {
             collinear || leftTurn
           }
         }
-        
+
         val p = new java.awt.Polygon()
         val hull = Point.convexHull(pts)
         for (pt <- hull) p.addPoint(pt.x, pt.y)
@@ -514,52 +514,52 @@ final object Liminoid {
         val px2 = (watx(1250) + threadNetworkOffsetx).toInt
         val py1 = (waty(550) + threadNetworkOffsety).toInt
         val py2 = (waty(850) + threadNetworkOffsety).toInt
-        
+
         val pxx1 = (watx(950) + threadNetworkOffsetx).toInt
         val pxx2 = (watx(1150) + threadNetworkOffsetx).toInt
         val pyy1 = (waty(450) + threadNetworkOffsety).toInt
-        
-        val boxpts =  List(
-                new java.awt.Point(px1, py1),
-                new java.awt.Point(px2, py1), 
-                new java.awt.Point(px2, py2),
-                new java.awt.Point(px1, py2),
 
-                new java.awt.Point(pxx1, pyy1), 
-                new java.awt.Point(pxx2, pyy1) 
+        val boxpts =  List(
+          new java.awt.Point(px1, py1),
+          new java.awt.Point(px2, py1),
+          new java.awt.Point(px2, py2),
+          new java.awt.Point(px1, py2),
+
+          new java.awt.Point(pxx1, pyy1),
+          new java.awt.Point(pxx2, pyy1)
         )
         val hullbox = Point.convexHull(boxpts)
         val p2 = new java.awt.Polygon()
         for (pt <- hullbox) p2.addPoint(pt.x, pt.y)
 
-        def rectangleToPolygon(rect: java.awt.Rectangle) = {
-            var result = new java.awt.Polygon()
-            result.addPoint(rect.x, rect.y)
-            result.addPoint(rect.x + rect.width, rect.y)
-            result.addPoint(rect.x + rect.width, rect.y + rect.height)
-            result.addPoint(rect.x, rect.y + rect.height)
-            result
-        }
+        /*def rectangleToPolygon(rect: java.awt.Rectangle) = {
+          val result = new java.awt.Polygon()
+          result.addPoint(rect.x, rect.y)
+          result.addPoint(rect.x + rect.width, rect.y)
+          result.addPoint(rect.x + rect.width, rect.y + rect.height)
+          result.addPoint(rect.x, rect.y + rect.height)
+          result
+        }*/
 
         (hull, p, p.getBounds, hullbox, p2)
   }
-  
-  
+
+
   var noiseFrames = 0
   var wallTimer = 0
   var ballSize = 70d
   var spreadBall = false
   var spreadBallComplete = false
-  
+
   var rockOut = false
   var tupRockEnabled = false
   var tupRock = 0
   def tupRockDisabled: Boolean = tupRock > 10
-  
-  
-  
+
+
+
   var bpAreDying = false
-  
+
   lazy val threadNetwork = ThreadNetwork(settings("threadNetwork"))
 
   // have a small bump for movement
@@ -569,7 +569,7 @@ final object Liminoid {
   // Oculus rift head tracking
   var rotation, prevRotation = rotation0
   var rotation3d, prevRotation3d = rotation0
-  
+
   var prevIzStene = false
   var prevTresenje = false
   var prevRadioVector = false
@@ -579,12 +579,13 @@ final object Liminoid {
   def drawFrontCam(): Unit = {
     val img = frontCamera.getTextureID
     val camScale = -1030 /*+ testNum5*/ + 427 + 145
+    val camScaleH = camScale/2
     val camhCorrect = 650 /*+ testNum4*/ - 229 - 149
     val (camw, camh) = (winWidth, (winWidth*(9d/16d))+camhCorrect)
     val (camx, camy) = (winWidth/2-camw/2, -camhCorrect/2)
-    quad(Coord(camx,camy, camw,camh)+camScale, img, flipy = flipFrontCamera, flipx = true)    
+    quad(Coord(camx-camScaleH,camy-camScaleH, camw+camScale,camh+camScale), img, flipy = flipFrontCamera, flipx = true)
   }
-  
+
   var schizoidPhase = 1
 
   /*val backBlend = (GL_ONE, GL_ONE)
@@ -595,21 +596,21 @@ final object Liminoid {
     quad(winCoord, color = backBlendColor, alpha = alpha, blend = backBlend)
     GL14.glBlendEquation(GL14.GL_FUNC_ADD)
   }*/
-  
+
   /// of the dissintegration
-  var middlemomment = false
-  
-  
+  var middlemoment = false
+
+
   var tuptupcounter = 0
   var tuptupcounted = false
   var tuptupenabled = false
 
-  var softHeart = 0d
+  var softHeart1 = 0d
   var softHeart2 = 0d
-  var triggerPull = false
+  var triggerPull1 = false
   var triggerPull2 = false
   var pulltime = 0
-  def sincePull(i: Int): Boolean = since(pulltime) > i.seconds()
+  def sincePull(i: Int): Boolean = since(pulltime) > i.seconds
 
   var frames = 0L
   def renderFrame(): Unit = {
@@ -621,15 +622,14 @@ final object Liminoid {
       PulseSensor.fake = true
       PulseSensor.init_ = true
     }
-    var beat = PulseSensor.takeBeat
+    val beat = PulseSensor.takeBeat
     val heart = if (beat) 1d else 0d
-    softHeart = (heart + softHeart)*0.8
-    softHeart2 = (softHeart + softHeart2)*0.7
-    
+    softHeart1 = (heart + softHeart1)*0.8
+    softHeart2 = (softHeart1 + softHeart2)*0.7
 
-    osc1 = oscillator(phi = 0*Pi/4)
-    osc2 = oscillator(phi = 1*Pi/4)
-    osc3 = oscillator(phi = 2*Pi/4)
+    osc1 = oscillator(phi = 0)
+    osc2 = oscillator(phi = Pi/4)
+    osc3 = oscillator(phi = Pi/2)
     osc4 = oscillator(phi = 3*Pi/4)
 
     if (fade1 < 1) fade1 += fadeSpeed1 else fade1 = 1
@@ -647,7 +647,7 @@ final object Liminoid {
       freezeView += 0.0004 * renderTime
       if (freezeView > 1) freezeView = 1
     }
-    
+
     // Get head rotation 2d, 3d
     val (rotx, roty) = (
       if (shouldFreezeview) {
@@ -657,45 +657,46 @@ final object Liminoid {
         val rotDelta = (rot - prevRotation) * (1-ratio)
         rotation = rotation + rotDelta*/
         rotation = rotation toCenter 0.2f
-        
+
         //prevRotation = (rot * (1-ratio)) + (prevRotation * ratio)
-        
+
         //prevRotation = (rot * (1-ratio)) + (prevRotation * ratio)
 
         (-rotation.yaw*10, -rotation.pitch*10)
       } else {
         if (prevRotation == rotation0) {
           prevRotation = RiftTracker.poll
-          
+
           (0f, 0f)
         } else {
           val rot = RiftTracker.poll
-          val rotDelta = (rot - prevRotation)
-          
+          val rotDelta = rot - prevRotation
+
           //println(rot)
-          //if (frames%2 == 0) {
+          //if (framesf%2 == 0) {
           //  println(rot)
           //}
           rotation = rotation + rotDelta
           prevRotation = rot//prevRotation.avgW(rot, 0.9f)
-          
+
           (-rotation.yaw*10, -rotation.pitch*10)
         }
-      })
-      
-      // ---
-      if (prevRotation3d == rotation0) {
-        prevRotation3d = RiftTracker.poll
-      } else {
-        val rot = RiftTracker.poll
-        val rotDelta = (rot - prevRotation3d)
-        
-        rotation3d = rotation3d + rotDelta
-        // probaby fail at 180..-180 mark
-        val ratio = 0.92f
-        prevRotation3d = (rot * (1-ratio)) + (prevRotation3d * ratio)
       }
+    )
 
+
+    // ---
+    if (prevRotation3d == rotation0) {
+      prevRotation3d = RiftTracker.poll
+    } else {
+      val rot = RiftTracker.poll
+      val rotDelta = rot - prevRotation3d
+
+      rotation3d = rotation3d + rotDelta
+      // probaby fail at 180..-180 mark
+      val ratio = 0.92f
+      prevRotation3d = (rot * (1-ratio)) + (prevRotation3d * ratio)
+    }
 
 
     currentPhase match {
@@ -716,11 +717,11 @@ final object Liminoid {
           val (camx, camy) = (winWidth/2-camw/2, -camhCorrect/2)
           quad(Coord(camx,camy, camw,camh)+camScale, img, flipy = flipFrontCamera, flipx = true)
         }*/
-        
+
         //quad(Coord(winWidth/2-40/2,winHeight/2-650/2, 40,650), alpha = 1-testNum2*0.1)
 
         //startLiminoid = true
-        var startingPhase = phases(settings("startingPhase"))
+        val startingPhase = phases(settings("startingPhase"))
         //startingPhase = Mandalas
         //startingPhase = Schizoid
         //gotoPhase(Threads)
@@ -728,7 +729,7 @@ final object Liminoid {
         // Triggers lazy load or preload of some resources
         val loadTime = Utils.time(
           frames match {
-            case 1 => 
+            case 1 =>
             case 2 => if (startingPhase <= Radiolarians || startingPhase == FlyingRock) radiolarian
             case 3 => if (startingPhase <= Radiolarians || startingPhase == FlyingRock) {
               _whiteRocks
@@ -745,7 +746,7 @@ final object Liminoid {
                   lower.remove(0)
                   upper ++: lower
                 }
-                
+
                 private def halfHull(points: Seq[P]) = {
                   val upper = new mutable.ListBuffer[P]()
                   for (p <- points) {
@@ -756,7 +757,7 @@ final object Liminoid {
                   }
                   upper
                 }
-                
+
                 private def leftTurn(p1: P, p2: P, p3: P) = {
                   val slope = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x)
                   val collinear = math.abs(slope) <= 1e-9
@@ -764,35 +765,40 @@ final object Liminoid {
                   collinear || leftTurn
                 }
               }
-              
-              val poly = new java.awt.Polygon()
+
               val xxx = 40
+              val pxpx = Vec(xxx, xxx, 0)
+              val mxmx = Vec(-xxx, -xxx, 0)
+              val pxmx = Vec(xxx, -xxx, 0)
+              val mxpx = Vec(-xxx, xxx, 0)
+
               val hull = Point.convexHull(
-                  ((_whiteRocks.map { x => x.transform.pos }) ++
-                  (_whiteRocks.map { x => x.transform.pos + Vec(xxx, xxx, 0)}) ++
-                  (_whiteRocks.map { x => x.transform.pos + Vec(-xxx, -xxx, 0)}) ++
-                  (_whiteRocks.map { x => x.transform.pos + Vec(xxx, -xxx, 0)}) ++
-                  (_whiteRocks.map { x => x.transform.pos + Vec(-xxx, xxx, 0)}))
+                _whiteRocks.map(x => x.transform.pos) ++
+                _whiteRocks.map(x => x.transform.pos + pxpx) ++
+                _whiteRocks.map(x => x.transform.pos + mxmx) ++
+                _whiteRocks.map(x => x.transform.pos + pxmx) ++
+                _whiteRocks.map(x => x.transform.pos + mxpx)
               )
+              val poly = new java.awt.Polygon()
               for (pt <- hull) poly.addPoint(pt.x.toInt, pt.y.toInt)
-              
+
               filteredRocks = _whiteRocks ++ _rocks.filterNot { rock =>
                 poly.contains(rock.transform.pos.x, rock.transform.pos.y)
               }
             }
-            case 4 => 
+            case 4 =>
             case 5 => if (startingPhase <= Mandalas) blackMandala.preload(300)
             case 6 => if (startingPhase <= Mandalas) blackHeartMandala
             case 7 => if (startingPhase <= Mandalas) blackHeartDustMandala
             case 8 => if (startingPhase <= Mandalas) whiteHeartMandala
             case 9 => if (startingPhase <= Mandalas) whiteMandala.preload(200)
-            case 10 => if (startingPhase <= Schizoid) { 
+            case 10 => if (startingPhase <= Schizoid) {
             }
-            case _ => if (startLiminoid) gotoPhase(startingPhase) else sleep(25)
+            case _ => if (startLiminoid) gotoPhase(startingPhase) else sleep(20)
           })
-        
+
         if (frames <= 11) println("Time" + frames + ": " + loadTime)
-        
+
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -802,7 +808,7 @@ final object Liminoid {
 
         drawFrontCam()
 
-      
+
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -811,7 +817,7 @@ final object Liminoid {
           Sound.play("intro")
           for (i <- 1 to 10) frontCamera.getTextureIDWait()
         }
-        
+
         /// Parts of the Radiolarians phase
         val izSteneStart     = 17.seconds//17.seconds
         val tresenjeStart    = 35.seconds
@@ -821,28 +827,28 @@ final object Liminoid {
 
         // Crawl from wall
         val izStene = since(phaseTimer) > izSteneStart
-        val firstIzStene = (!prevIzStene && izStene)
+        val firstIzStene = !prevIzStene && izStene
 
         // Start shaking elements
         val tresenje = since(phaseTimer) > tresenjeStart
-        val firstTresenje = (!prevTresenje && tresenje)
+        val firstTresenje = !prevTresenje && tresenje
 
         // Pull radiolarian towards view
         val radioVector = since(phaseTimer) > radioVectorStart
-        val firstRadioVector = (!prevRadioVector && radioVector)
+        val firstRadioVector = !prevRadioVector && radioVector
 
         // Activate radiolarian shell open animation
         val radioOpen = since(phaseTimer) > radioOpenStart
-        val firstRadioOpen = (!prevRadioOpen && radioOpen)
+        val firstRadioOpen = !prevRadioOpen && radioOpen
 
         if (firstRadioOpen) radiolarian.active = true
-        val radioHalfOpen = radioOpen && radiolarian.cursor > radiolarian.frames.size/2
+        val radioHalfOpen = radioOpen && radiolarian.cursor > radiolarian.frames.length/2
 
         // Start of radiolarians phase
         val end = since(phaseTimer) > endStart
-        val firstEnd = (!prevEnd && end)
+        val firstEnd = !prevEnd && end
 
-        if ((radiolarian.transform.pos distance vec0) < 1 
+        if ((radiolarian.transform.pos distance vec0) < 1
         || (radiolarian.transform.pos.z < -1)) {
           gotoPhase(Mandalas)
         }
@@ -856,19 +862,19 @@ final object Liminoid {
         val posVec = vec0
           //if (testNum1 == 0 && testNum2 == 0 && testNum3 == 0) vec0 else
           //Vec(testNum1*5, testNum2*5, testNum3*5)
-        
+
         radiolarian.transform.pos = radiolarian.transform.pos + posVec
 
         // Render Camera
         Render.cam.lookAt(Vec3(0, 0, 500))
-        Render.cam.render
+        Render.cam.render()
         val rotationCalibrationp = 4 + (((testNum1-35+30)*10)-11-28*10+700)/100f
         val rotationCalibrationy = 4 + (((testNum2-35+30)*10)-11-13*10+700)/100f
         val rotationCalibrationr = 4 + (((testNum3-35+91+10)*10)-11*10+700)/100f
 
-        Render.cam.rot = 
+        Render.cam.rot =
           Vec3(
-            -rotation3d.pitch/rotationCalibrationp, 
+            -rotation3d.pitch/rotationCalibrationp,
             +rotation3d.yaw/rotationCalibrationy,
             +rotation3d.roll/rotationCalibrationr)
 
@@ -878,8 +884,8 @@ final object Liminoid {
 
         if (izStene) {
           // Draw invisible wall
-          glCapability(GL_DEPTH_TEST, GL_BLEND) {
-            glTheUsualBlendFunc
+          glCapabilities(GL_DEPTH_TEST, GL_BLEND) {
+            glTheUsualBlendFunc()
             glColor4f(1, 1, 1, 0)
             render3D {
               glPrimitive(GL_QUADS) {
@@ -917,14 +923,14 @@ final object Liminoid {
           if (firstRadioVector) {
             radiolarian.transformVector.pos = radiolarian.transformVector.pos.withZ(radioBasePosVecZ*1.75)
           }
-          
+
           if (firstRadioOpen) {
             fade1 = 0
           }
-          
+
           radiolarian.transform.size = {
             val scale = 1.7
-            
+
             (if (radioOpen) {
               (radiolarianSize * (scale * (1 - fade1))) + vec((scale + 1/oscDiv) * fade1)
             } else {
@@ -935,12 +941,12 @@ final object Liminoid {
 
           val shaked: Transform = if (radioOpen) radiolarian.transform else shake(radiolarian())
           radiolarian().render(transform = shaked) // duplication below
-          
+
           // Make core go black after radiolarian opening
           if (radioHalfOpen) core.color -= 0.0002
-          
+
           core.render(transform = shaked.copy(size = radiolarian.transform.size * radiolarian.coreTransform.pos.x))
-          
+
           // Draw rocks
           glMatrix {
             for (rock <- filteredRocks) {
@@ -948,7 +954,7 @@ final object Liminoid {
               if (radioVector) {
                 rock.transformVector.pos = rock.transformVector.pos.withZ(rock.transformVector.pos.z*0.85)
               }
-  
+
               rock.render(transform = shake(rock))
             } ////////////////////////////////////////////// duplication
           }
@@ -976,7 +982,7 @@ final object Liminoid {
         val div = 1.75d
         val heartBeating = softHeart2*9
         val (w, h) =
-            (640*0.85 + (if (blackMandala.active) -150 else heartBeating), 
+            (640*0.85 + (if (blackMandala.active) -150 else heartBeating),
              800*0.85 + (if (blackMandala.active) -150 else heartBeating))
         val posx = winWidth/2-w/2d + rotx/div
         val posy = winHeight/2-h/2d + roty/div //don't forget the duplication below...
@@ -1002,7 +1008,7 @@ final object Liminoid {
           if (beat) {
             Sound.play(if (blackMandala.active) "heartbeep" else "heartbeat")
           }
-          
+
           if (blackMandala.active) {
             if (since(startDustHeart) > 10.seconds) {
               val (ww, hh) = (w*0.8, h*0.8)
@@ -1010,8 +1016,8 @@ final object Liminoid {
               val posy = winHeight/2-hh/2d + roty/div
               quad(Coord(posx,posy, ww,hh), blackHeartMandala, alpha = softHeart2*0.6)
             }
-            
-            quad(Coord(posx,posy, w,h), blackHeartDustMandala, alpha = softHeart)
+
+            quad(Coord(posx,posy, w,h), blackHeartDustMandala, alpha = softHeart1)
           }
         }
 
@@ -1038,11 +1044,11 @@ final object Liminoid {
           fade22 = 1
           diffStarted = false
           diffDone = false
-          
-          Texture.dumpCache
+
+          Texture.dumpCache()
           blackMandala = null
           whiteMandala = null
-          
+
           backPixels = Vector.empty
           noisePixels = Vector.empty
           backPixelDrop = true
@@ -1054,50 +1060,52 @@ final object Liminoid {
           for (i <- 1 to 7) backCamera.getTextureIDWait
           Sound.play("introcingl")
           Sound.play("razpaddron")
-          
+
           System.gc()
+          System.runFinalization()
           System.gc()
+          System.runFinalization()
         }
-        
+
         glClear3d(0.175, 0.15, 0.15)
         if (fade12 < 0.9) {
           phaseTimer = now
         }
-        
+
         val schEnd = 6
         val break1 = 15
         //val schEnd = 6-4
         //val break1 = 1
         val break2 = break1 + 8 + 5
         val break3 = break2 + 2 + 5
-        if (schizoidPhase >= schEnd) { 
+        if (schizoidPhase >= schEnd) {
           schizoidPhase = schEnd
           //phaseTimer = now
         }
-        
+
         val rotlimitx = (-415, 415)
         val rotlimity = (-92, -62)
-        val rotxl = 
+        val rotxl =
           if (rotx < rotlimitx._1) rotlimitx._1
           else if (rotx > rotlimitx._2) rotlimitx._2
           else rotx
-        val rotyl = 
+        val rotyl =
           if (roty < rotlimity._1) rotlimity._1
           else if (roty > rotlimity._2) rotlimity._2
           else roty//*/
-        
+
         val f = 1400d -600 + 7*20 + (-14/*+50*/)*20
         val (camresx, camresy) = (backCamera.width, backCamera.height)
         val camaspect = camresx/camresy.toDouble
         val (camw, camh) = (f*camaspect, f+testNum3+100) //(winHeight*4/3d, winHeight)
         val (camx, camy) = (rotxl*0.7-camw/7+  211, rotyl*0.7-camh/7 + 166)
-        
+
         val back0 @ (back0Frame, back0Snap) = (back0Seq, back0Seq.snap)//(backCamera.getTextureID(), null)//(back0Seq(), back0Seq.snap)
         val backC @ (backCFrame, backCSnap) = (null, null)//if (noiseWall) back0 else (backCamera.getTextureID(), null)
         //val backC @ (backCFrame, backCSnap) = (back2Seq, back2Seq.snap)//if (noiseWall) back0 else (backCamera.getTextureID(), null)
         val back1 @ (back1Frame, back1Snap) = (back1Seq, back1Seq.snap)//backC//(back1Seq(), back1Seq.snap)
         val back2 @ (back2Frame, back2Snap) = (back2Seq, back2Seq.snap)//backC//(back2Seq(), back2Seq.snap)
-        
+
         val _phasesSnap =
           Array(
             backCSnap, backCSnap,
@@ -1118,9 +1126,9 @@ final object Liminoid {
             snap
           }
         }
-        
+
         lazy val camTex = backCamera.getTextureID()
-        
+
         val phasesSeq =
           Array(
             backCFrame, backCFrame,
@@ -1131,53 +1139,53 @@ final object Liminoid {
             back0Frame, back2Frame)
         val phases =
           phasesSeq.map( p => if (p == null) camTex else p())
-        
+
         quad(Coord(camx,camy, camw,camh), phases(schizoidPhase), flipx = false)
         if (fade22 < 1) {
           quad(Coord(camx,camy, camw,camh), phases(schizoidPhase-1), flipx = false, alpha = 1-fade22)
         }
-        
+
         def resetStuff(): Unit = {
           phaseTimer = now
           backPixelDrop = true
           finished = false
-          
+
           diffDone = false
           diffStarted = false
         }
 
         def sincen(i: Int) = since(phaseTimer) >= i.seconds
         def sinceWall(i: Int) = since(wallTimer) >= i.seconds
-        
+
         if (sincen(break1) && backPixelDrop && !finished) {
           if (!diffStarted) thread {
             diffDone = false
             diffStarted = true
-            //phasesSeq.foreach { x => if (x != null) x.rewind() }
+            //phasesSeq.foreach(x => if (x != null) x.rewind())
             bpAreDying = false
             backPixels = backCamera.getDiffBlob(phasesSnap(schizoidPhase+1), phasesSnap(schizoidPhase), settings("threshold").toInt, 1280, 720, pixelboxpoly)
-            
+
             //backPixels = backPixels.sortBy(bp => abs(bp.x - bpCenterx)).dropRight((backPixels.size*0.1).toInt)
             //backPixels = backPixels.sortBy(bp => abs(bp.y - bpCentery)).dropRight((backPixels.size*0.1).toInt)
             //backPixels = backPixels.filter(bp => polygon.contains(bp.x, bp.y))
-            
+
             val (bpcenterx, bpcentery) = {
               var x, y = 0d
               for (bp <- backPixels) {
                 x += bp.x
                 y += bp.y
               }
-              
+
               (x/backPixels.size, y/backPixels.size)
             }
-            
+
             for (bp <- backPixels) {
               bp.transformVector = Vec(
                   (bp.x - bpcenterx)/20d + TableRandom.nextGaussianUnsafe/0.5d,
                   (bp.y - bpcentery)/20d + TableRandom.nextGaussianUnsafe/0.5d,
                   0)
             }
-            
+
             if (!noiseWall && schizoidPhase >= schEnd-1) {
               //Sound.stopAll()
               //Sound.play("ziddron")
@@ -1188,7 +1196,7 @@ final object Liminoid {
               Sound.play("razpadheart1")
               Sound.play("razpad3")
             }
-            middlemomment = false
+            middlemoment = false
             diffDone = true
           } else if (diffDone) {
             diffStarted = false
@@ -1207,7 +1215,7 @@ final object Liminoid {
 
               try {
                 //bp.newColor = Color.BGR(phasesSnap(schizoidPhase+2)((bp.sx + bp.sy*1280).toInt))
-              } catch { 
+              } catch {
                 case t: Throwable =>
               }
             }
@@ -1216,7 +1224,7 @@ final object Liminoid {
         }  else if (sincen(break2) && backPixelMerge) {
           backPixelMerge = false
           backPixelMerged = true
-          middlemomment = true
+          middlemoment = true
           // somehow sneak pixles here
           /*backPixels.
           backPixels ++= Array.tabulate(1000) { i =>
@@ -1238,15 +1246,15 @@ final object Liminoid {
             else
               bp.isDead = true*/
           //}
-        } else if (sincen(break3) && !noiseWall && backPixelMerged) {  
+        } else if (sincen(break3) && !noiseWall && backPixelMerged) {
           fade22 = 0.1
-          phasesSeq.foreach { x => if (x != null) x.rewind() }
+          phasesSeq.foreach(x => if (x != null) x.rewind())
           schizoidPhase += 1
           backPixelMerged = false
         } else if (sincen(break3) && !noiseWall && fade22 >= 0.95) {
           //Sound.play("razpadheart2")
           bpAreDying = true
-          
+
           resetStuff()
         }
         if (!noiseWall) {
@@ -1276,50 +1284,50 @@ final object Liminoid {
           }
         }
 
-        val threadNetworkfullyVisible = triggerPull || threadNetwork.fullyVisible
-        
-        //val npix = if (triggerPull) 123456+nextInt(1234) else 100000
-        if (noiseWall && !triggerPull && noisePixels.size < 111111+nextInt(1111)) {
+        val threadNetworkfullyVisible = triggerPull1 || threadNetwork.fullyVisible
+
+        //val npix = if (triggerPull1) 123456+nextInt(1234) else 100000
+        if (noiseWall && !triggerPull1 && noisePixels.size < 111111+nextInt(1111)) {
         //if (noiseFrames > 0) {
           noiseFrames += 1
-          
+
           val noiseLimit = 2133
           if (noiseFrames > noiseLimit) noiseFrames = noiseLimit
           val n = (noiseFrames*6+nextInt(noiseFrames*2))/2
-          noisePixels ++= Array.tabulate(n) { i =>
+          noisePixels ++= Array.fill(n)(
             makePix(
                bound.getX+TableRandom.nextDoubleUnsafe*bound.getWidth,
                bound.getY+TableRandom.nextDoubleUnsafe*bound.getHeight, 170/255d)
-          }
+          )
           if (backPixels.nonEmpty) {
-            noisePixels ++= Array.tabulate(n) { i =>
+            noisePixels ++= Array.fill(n) {
               val bp = backPixels(nextInt(backPixels.size))
               bp.isDying = true
               makePix(bp.x, bp.y, 170)
             }
           }
         }
-        
+
         val (bpcenterx, bpcentery) = (640-13+9 + testNum1, 360+19+7-5 + testNum2)
-        val contain = (frames%2 == 0)
+        val contain = frames%2 == 0
         if (backPixels.nonEmpty) {
-          val noisePixOverLod = noisePixels.size > 50000 
-          val posRatio = if (triggerPull) 0.85 else 0.982 
+          val noisePixOverLod = noisePixels.size > 50000
+          val posRatio = if (triggerPull1) 0.85 else 0.982
           val posRatio1m = 1 - posRatio
           val colorRatio = posRatio
           val colorRatio1m = 1 - colorRatio
-          if (!triggerPull || (triggerPull && frames%4 == 0)) {
+          if (!triggerPull1 || (triggerPull1 && frames%4 == 0)) {
             backPixels = backPixels.filterNot { bp =>
               val rand = TableRandom.nextDoubleUnsafe < 0.35
               if ((bp.isDying || (noisePixOverLod && rand && nextBoolean && nextBoolean)) && rand) {
                 bp.isDead = true
               } else {
-                if (schizoidPhase < schEnd && middlemomment || triggerPull) {
+                if (schizoidPhase < schEnd && middlemoment || triggerPull1) {
                   bp.x = bp.x * posRatio + bp.sx*posRatio1m
                   bp.y = bp.y * posRatio + bp.sy*posRatio1m
                 }
                 bp.transformVector **= 0.97
-                //if (!middlemomment) {
+                //if (!middlemoment) {
                   bp.transformVector ++= Vec.randomGaussianUnsafe(0.02)
                 //}
                 bp.x += bp.transformVector.x
@@ -1337,7 +1345,7 @@ final object Liminoid {
                     bp.isFlipped = true
                   }
                 }
-                if (middlemomment && bp.color != bp.newColor) {
+                if (middlemoment && bp.color != bp.newColor) {
                   bp.color.r = bp.color.r * colorRatio + bp.newColor.r * colorRatio1m
                   bp.color.g = bp.color.g * colorRatio + bp.newColor.g * colorRatio1m
                   bp.color.b = bp.color.b * colorRatio + bp.newColor.b * colorRatio1m
@@ -1346,12 +1354,12 @@ final object Liminoid {
               if (bpAreDying && rand && nextBoolean && nextBoolean && nextBoolean) {
                 bp.isDying = true
               }
-              
+
               bp.isDead
             }
           }
 
-          
+
           glDisable(GL_BLEND)
           render2D {
             glMatrix {
@@ -1369,18 +1377,18 @@ final object Liminoid {
             }
           }
         }
-        
-        tuptupcounted = (tuptupcounter > 2)
-        
+
+        tuptupcounted = tuptupcounter > 2
+
         if (noisePixels.nonEmpty) {
-          val posRatio = if (spreadBall) 0.94 else if (triggerPull) 0.97 else 0.99 
+          val posRatio = if (spreadBall) 0.94 else if (triggerPull1) 0.97 else 0.99
           val posRatio1m = 1 - posRatio
           val colorRatio = posRatio
           val colorRatio1m = 1 - colorRatio
-          if (!triggerPull || (triggerPull && frames%4 == 0)) {
+          if (!triggerPull1 || (triggerPull1 && frames%4 == 0)) {
             noisePixels = noisePixels.filter { bp =>
               val rand = TableRandom.nextDoubleUnsafe < 0.35
-              if (schizoidPhase < schEnd || triggerPull) {
+              if (schizoidPhase < schEnd || triggerPull1) {
                 bp.x = bp.x * posRatio + bp.sx*posRatio1m
                 bp.y = bp.y * posRatio + bp.sy*posRatio1m
               }
@@ -1394,15 +1402,15 @@ final object Liminoid {
                   /*if (tuptupcounter > 10) {
                     ballSize += 1
                   }*/
-                  bp.sx = bpcenterx + TableRandom.nextGaussianUnsafe*(77+ballSize) 
+                  bp.sx = bpcenterx + TableRandom.nextGaussianUnsafe*(77+ballSize)
                   bp.sy = bpcentery + TableRandom.nextGaussianUnsafe*(77+ballSize)
                   if (spreadBall) {
                     ballSize = ballSize * 0.92
                   }
                 }
-                
+
                 //if (tuptupcounter > 10) rand || nextBoolean || nextBoolean
-                //else 
+                //else
                 if (spreadBall) {
                   rand || nextBoolean || nextBoolean || nextBoolean
                 } else {
@@ -1414,7 +1422,7 @@ final object Liminoid {
             }
           }
 
-          
+
           glDisable(GL_BLEND)
           render2D {
             glMatrix {
@@ -1436,8 +1444,8 @@ final object Liminoid {
           glDisable(GL_TEXTURE_2D)
           quad(coord2000, alpha = 1-fade12)
         }
-        
-        
+
+
         if (tuptupcounted) {
           spreadBall = true
         }
@@ -1445,10 +1453,10 @@ final object Liminoid {
           spreadBallComplete = true
         }
         rockfly = spreadBallComplete
-        
+
         val wallZ = 100-10
         // Draw invisible wall
-        /*glCapability(GL_DEPTH_TEST, GL_BLEND) {
+        /*glCapabilities(GL_DEPTH_TEST, GL_BLEND) {
           glTheUsualBlendFunc
           glColor4f(1, 1, 1, 0)
           render3D {
@@ -1473,29 +1481,29 @@ final object Liminoid {
               bpcenterx-9, bpcentery-7,
               if (sinceWall(wallTiem+3) || testNum6 != 0) 0.965 else 1)
           implicit val rrd = new RenderRenderData(
-              camx+networkOffsetx.toInt, camy+networkOffsety.toInt, 
+              camx+networkOffsetx.toInt, camy+networkOffsety.toInt,
               camw, camh,
               0/*if (tuptupcounted) 1.1 else if (tuptupenabled) softHeart2 else 0*/)
           threadNetwork.process
           threadNetwork.render
         }
-        
+
         if (threadNetworkfullyVisible || testNum5 != 0) {
           val xxxx = 5-29+26+ (4-3-1 + testNum5)/10f
           val yyyy = -8+3-2 + (-6+10+44-7+3+23 + testNum6)/10f
           val hhhh = 15/1000d
-          val rrrr = 0.1f + (80)/1000f
+          val rrrr = 0.1f + 80/1000f
           val ssss = 199/1000d + -0.3
-          val vvx = (testNum5*0 -2)/1000f
-          val vvy = (testNum6*0)/1000f
+          val vvx1 = (testNum5*0 -2)/1000f
+          val vvy1 = (testNum6*0)/1000f
           val vvx2 = (testNum5*0 + 2)/1000f
           val vvy2 = (testNum6*0 + 7)/1000f
           core.transform.size = Vec(csize, csize, csize)
           core.color = grey(0.80+(-23-8+testNum4)/100f)
-          if (!triggerPull) {
-            triggerPull = true
+          if (!triggerPull1) {
+            triggerPull1 = true
             pulltime = now
-            
+
             // Init last 3d rock
             core.transform.pos = Vec(xxxx, yyyy, 100)
             //core.transformVector.pos = Vec(0, hhhh, ssss)
@@ -1530,7 +1538,7 @@ final object Liminoid {
               if (tupRockDisabled && tupRockEnabled) {
                 tupRockEnabled = false
               }
-              
+
               if (tuptupcounted && spreadBallComplete) {
                 csize = if (tupRockDisabled) csize*0.91 + 0.6*0.09 else if (tupRockEnabled) 0.5+0.1*softHeart2 else csize*0.98 + 0.5*0.02
                 if (!rockOut) {
@@ -1540,10 +1548,10 @@ final object Liminoid {
                 backPixels = Vector.empty
                 Render.cam.pos = Vec3(0, 0, 0)
                 Render.cam.lookAt(Vec3(xxxx, yyyy, 500))
-                Render.cam.render
+                Render.cam.render()
                 // view is frozen
                 Render.cam.rot = Vec3(0,0,0)
-                
+
                 //core.transform.pos += Vec(testNum6,testNum3,0)
                 testSum = testNum5+testNum6
                 if (testSum != exTestSum) {
@@ -1556,21 +1564,21 @@ final object Liminoid {
                 }
                 exTestSum = testSum
                 if (tupRockEnabled) {
-                  val t = new Models.MutableTransform(
+                  val t = Models.MutableTransform(
                       pos = vec0,
                       rot = vec0,
                       size = core.transformVector.size)
                   core.transform += t ** renderTime
                 } else if (!tupRockDisabled) {
-                  val t = new Models.MutableTransform(
-                      pos = Vec(vvx, vvy, core.transformVector.pos.z),
+                  val t = Models.MutableTransform(
+                      pos = Vec(vvx1, vvy1, core.transformVector.pos.z),
                       rot = vec0,
                       size = core.transformVector.size)
                   core.transform += t ** renderTime
                 } else {
                   core.transform += core.transformVector ** renderTime
                 }
-                
+
                 core.render(transform = core.transform)
               }
             }
@@ -1582,12 +1590,12 @@ final object Liminoid {
       case _ =>
     }
   }
-  
+
   var flash = 0
   var sinceDown = now
   var isShutDown = false
-  
-  
+
+
   def processInput(): Unit = {
     import Keyboard._
     import Mouse._
@@ -1605,29 +1613,30 @@ final object Liminoid {
     if (isKeyDown(KEY_J)) testNum5 += 1
     if (isKeyDown(KEY_K)) testNum6 -= 1
     if (isKeyDown(KEY_L)) testNum6 += 1
-    
+
     if (isKeyDown(KEY_F)) {
       shouldFreezeview = true
     }
     if (isKeyDown(KEY_G)) {
       shouldFreezeview = false
     }
-    
+
     if (!startLiminoid && (isKeyDown(KEY_RETURN) || isButtonDown(0))) {
       println("Liminoid started!")
       startLiminoid = true
+      return
     }
-    
+
     if (isButtonDown(0) && isButtonDown(1)) {
       if (!isShutDown) {
         isShutDown = true
         sinceDown = now
       } else {
-        if (since(sinceDown) > 4.seconds()) {
+        if (since(sinceDown) > 4.seconds) {
           isMainLoopRunning = false
         }
       }
-        
+
     }
 
     if (isKeyDown(KEY_Q)) rotation = rotation + Rotation(+1, 0,  0)
@@ -1636,7 +1645,7 @@ final object Liminoid {
     if (isKeyDown(KEY_W)) rotation = rotation + Rotation(0, -1,  0)
     if (isKeyDown(KEY_D)) rotation = rotation + Rotation(0,  0, +1)
     if (isKeyDown(KEY_A)) rotation = rotation + Rotation(0,  0, -1)
-    if (isKeyDown(KEY_0) || isButtonDown(1)) { 
+    if (isKeyDown(KEY_0) || isButtonDown(1)) {
       rotation = rotation0
       rotation3d = rotation0
       Render.cam.pos = Vec3(0, 0, 0)
@@ -1646,16 +1655,16 @@ final object Liminoid {
     if (isKeyDown(KEY_DOWN))  Render.cam.pos.z -= 1
     if (isKeyDown(KEY_LEFT))  Render.cam.pos.y -= 1
     if (isKeyDown(KEY_RIGHT)) Render.cam.pos.y += 1
-    
+
     if (isKeyDown(KEY_B)) {
       for (i <- 1 to 1000) {
-        makePix(winWidth/3, winHeight/3)
+        makePix(winWidth/3, winHeight/3, 1)
       }
     }
-    
 
-    if (isKeyDown(KEY_NEXT)) nextPhase
-    if (isKeyDown(KEY_PRIOR)) previousPhase
+
+    if (isKeyDown(KEY_NEXT)) nextPhase()
+    if (isKeyDown(KEY_PRIOR)) previousPhase()
     if (isKeyDown(KEY_HOME)) gotoPhase(Radiolarians)
     if (isKeyDown(KEY_END)) gotoPhase(PhaseTerminator)
     //if (isKeyDown(KEY_P)) { pause = !pause; sleep(200) }
@@ -1683,7 +1692,7 @@ final object Liminoid {
       Sound.play("razpadheart1")
       // Takes about 5 frames to set exposure, let's wait 20...
       for (i <- 1 to 20) backCamera.getTextureIDWait
-      val t = 22.seconds()
+      val t = 22.seconds
       new java.io.File(settings("backN")).mkdir()
       //for (i <- 1 to n) {
       val time = now
@@ -1707,8 +1716,9 @@ final object Liminoid {
       Sound.play("razpadheart1")
       println("Back done...")
     }
-    if (isKeyDown(KEY_C)) { 
-      renderMode = (if (renderMode == Mono) Stereo else Mono); sleep(200) 
+    if (isKeyDown(KEY_C)) {
+      renderMode = if (renderMode == Mono) Stereo else Mono
+      sleep(200)
     }
     if (isKeyDown(KEY_M)) {
       Sound.mute()
@@ -1718,11 +1728,11 @@ final object Liminoid {
       isMainLoopRunning = false
     }
   }
-  
-  def makePix(sx: Double, sy: Double, max: Double = 1): NoisePixel = {
-    new NoisePixel(sx, sy, 
+
+  def makePix(sx: Double, sy: Double, max: Double): NoisePixel = (
+    new NoisePixel(sx, sy,
         Vec(TableRandom.nextGaussianUnsafe*2, TableRandom.nextGaussianUnsafe*2, 0),
         color = TableRandom.nextDoubleUnsafe*max)
-  }
-  
+  )
+
 }

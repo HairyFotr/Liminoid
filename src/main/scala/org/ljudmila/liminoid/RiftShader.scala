@@ -1,15 +1,12 @@
 package org.ljudmila.liminoid
 
-import org.lwjgl.opengl.GL11._
-import org.lwjgl.opengl.GL20._
-import org.lwjgl.opengl.GL30._
-
-import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
 import org.lwjgl.BufferUtils
-import org.lwjgl.LWJGLException
-import org.lwjgl.input.Keyboard
+
+import org.lwjgl.opengl.GL11._
+import org.lwjgl.opengl.GL20._
+import org.lwjgl.opengl.GL30._
 import org.lwjgl.opengl._
 
 import GLadDOnS._
@@ -18,15 +15,15 @@ import GLadDOnS._
 final class RiftShader(screenWidth: Int, screenHeight: Int) {
   val Left  = -1
   val Right = +1
-  
+
   val vertexShader =
     """
     |void main() {
-    |   gl_TexCoord[0] = gl_MultiTexCoord0;
-    |   gl_Position = gl_Vertex;
+    |  gl_TexCoord[0] = gl_MultiTexCoord0;
+    |  gl_Position = gl_Vertex;
     |}
     """.stripMargin
-  
+
   val fragmentShader =
     """
     |uniform sampler2D tex;
@@ -37,24 +34,24 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     |uniform vec4 HmdWarpParam;
     |
     |vec2 HmdWarp(vec2 texIn) {
-    |   vec2 theta = (texIn - LensCenter) * ScaleIn;
-    |   float rSq = theta.x * theta.x + theta.y * theta.y;
-    |   vec2 theta1 = theta * (HmdWarpParam.x + HmdWarpParam.y * rSq + HmdWarpParam.z * rSq * rSq + HmdWarpParam.w * rSq * rSq * rSq);
-    |   return LensCenter + Scale * theta1;
+    |  vec2 theta = (texIn - LensCenter) * ScaleIn;
+    |  float rSq = theta.x * theta.x + theta.y * theta.y;
+    |  vec2 theta1 = theta * (HmdWarpParam.x + HmdWarpParam.y * rSq + HmdWarpParam.z * rSq * rSq + HmdWarpParam.w * rSq * rSq * rSq);
+    |  return LensCenter + Scale * theta1;
     |}
     |
     |void main() {
-    |   vec2 tc = HmdWarp(gl_TexCoord[0].xy);
-    |   if (any(notEqual(clamp(tc, ScreenCenter-vec2(0.25, 0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
-    |       gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    |   else
-    |       gl_FragColor = texture2D(tex, tc);
+    |  vec2 tc = HmdWarp(gl_TexCoord[0].xy);
+    |  if (any(notEqual(clamp(tc, ScreenCenter-vec2(0.25, 0.5), ScreenCenter+vec2(0.25, 0.5)) - tc, vec2(0.0, 0.0))))
+    |    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    |  else
+    |    gl_FragColor = texture2D(tex, tc);
     |}
     """.stripMargin
 
   val (shader, vertShader, fragShader) = initShaders()
   val (colorTextureID, framebufferID, depthRenderBufferID) = initFBO()
-  
+
   val LensCenterLocation = glGetUniformLocation(shader, "LensCenter")
   val ScreenCenterLocation = glGetUniformLocation(shader, "ScreenCenter")
   val ScaleLocation = glGetUniformLocation(shader, "Scale")
@@ -91,14 +88,14 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     glBindTexture(GL_TEXTURE_2D, 0)
     glBindFramebuffer(GL_FRAMEBUFFER, framebufferID)
   }
-  
+
   def endOffScreenRenderPass(): Unit = {
     // nop
   }
-  
+
   def renderToScreen(): Unit = {
     glUseProgram(shader)
-    
+
     glEnable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -114,31 +111,31 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
     glUseProgram(0)
     glEnable(GL_DEPTH_TEST)
   }
-  
+
   val K0 = 1.0f
   val K1 = 0.22f
   val K2 = 0.24f
   val K3 = 0.0f
-  
+
   def renderDistortedEye(eye: Int, x: Float, y: Float, w: Float, h: Float): Unit = {
     val aspectRatio = w/h
     val scaleFactor = 1.0f
     val eyeHoleScale = 1.75f
-    
+
     this.validate()
-    
+
     val DistortionXCenterOffset = eye match {
       case Left  => +0.25f
       case Right => -0.25f
     }
-    
+
     glUniform2f(LensCenterLocation, x + (w + DistortionXCenterOffset * 0.5f)*0.5f, y + h*0.5f)
     glUniform2f(ScreenCenterLocation, x + w*0.5f, y + h*0.5f)
     glUniform2f(ScaleLocation, w*0.5f * scaleFactor, h*0.5f * scaleFactor * aspectRatio)
     glUniform2f(ScaleInLocation, (eyeHoleScale/w), (eyeHoleScale/h) / aspectRatio)
 
     glUniform4f(HmdWarpParamLocation, K0, K1, K2, K3)
-    
+
     glPrimitive(GL_TRIANGLE_STRIP) {
       eye match {
         case Left =>
@@ -154,7 +151,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
       }
     }
   }
-  
+
   def initShaders(): (Int, Int, Int) = {
     val shader = glCreateProgram()
 
@@ -202,7 +199,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
         return 0
       }
     }
-    
+
     vertShader
   }
 
@@ -216,7 +213,7 @@ final class RiftShader(screenWidth: Int, screenHeight: Int) {
         return 0
       }
     }
-    
+
     fragShader
   }
 

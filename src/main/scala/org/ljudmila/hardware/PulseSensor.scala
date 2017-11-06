@@ -7,100 +7,96 @@ import jssc.SerialPort.MASK_RXCHAR
 import jssc.SerialPort.PARITY_NONE
 import jssc.SerialPort.STOPBITS_1
 import org.ljudmila.Utils.{ now, since }
+import org.ljudmila.SettingsReader
 
 object PulseSensor {
   import jssc.SerialPort._
+
+  /*def main(args: Array[String]): Unit = {
+    try {
+      PulseSensor.init()
+      import Sound._
+      val settings = SettingsReader.load("Settings.txt")
+      Sound.init(settings("snds"))
+      if (!PulseSensor.init_) {
+        println("Using fake pulse")
+        PulseSensor.fake = true
+        PulseSensor.init_ = true
+      }
+      while (true) {
+        val a = PulseSensor.takeBeat();
+        if (a) {
+          Sound.play("heartbeep")
+          println("beep")
+        }
+        Thread.sleep(10+util.Random.nextInt(20))
+        //print((if (PulseSensor.takeBeat()) "ooOOOOoo" else "--------") + "\r")
+      }
+      
+    } finally {
+      PulseSensor.close()
+    }
+  }*/
 
   var port: SerialPort = _
   var init_ = false
   def init(): Unit = {
     if (!init_) try {
-      port = new SerialPort("/dev/ttyACM0")
+      try {
+        port = new SerialPort("/dev/ttyACM0")
+      } catch {
+        case e: Exception =>
+          try {
+            port = new SerialPort("/dev/ttyACM1")
+          } catch {
+            case e: Exception => throw e;
+          }
+      }
       port.openPort
       port.setParams(BAUDRATE_115200, DATABITS_8, STOPBITS_1, PARITY_NONE)
       port.addEventListener(new SerialPortReader, MASK_RXCHAR)
       init_ = true
     } catch {
       case e: Exception =>
+         e.printStackTrace()
+         fake = true
     }
   }
 
   def close(): Unit = if (init_) port.closePort
 
-  /* //Untested code!
-  var lastS, lastB, lastQ = 0
-  class SerialPortReader extends SerialPortEventListener {
-    override def serialEvent(event: SerialPortEvent) {
-      if (event.isRXCHAR()) { // If data is available
-        val data = port.readString()
-        if (data.endsWith("\n")) synchronized {
-          val sReg = "S([0-9]+)"
-          val bReg = "B([0-9]+)"
-          val qReg = "Q([0-9]+)"
-          data.split('\n').foreach {
-            case sReg(n) => lastS = n.toInt
-            case sReg(n) => lastB = n.toInt
-            case sReg(n) => lastQ = n.toInt
-          }
-        }
-      }
-    }
-  }*/
-
   var beat = false
-
-  var prevBeat = now-1000
-  var avgBeat = 1000d // rolling average beat
-  var prevBeatAlien = false // was last beat alien
-
-  // just beat it... just beat it
-  var fakeTimer = 0
+  var skipBeat = false
+  var beatTimer = 0
   var fake = false
+  val xxx = 1 // synch placeholder
 
   def takeBeat(): Boolean =
     if (fake) {
-      if (since(fakeTimer) > 900) {
-        fakeTimer = now
-
+      if (since(beatTimer) > 750) {
+        beatTimer = now
+        
         true
       } else {
         false
       }
     } else synchronized {
-      val sinceLastBeat = since(prevBeat)
-
-      var out = beat
-      beat = false
-
-      // Ignore alien heartbeats (sorry aliens)
-      if (prevBeatAlien) {
-        prevBeatAlien = false
+      if (beat) {
+        beat = false
+        true
       } else {
-        avgBeat = avgBeat*0.99 + sinceLastBeat*0.01
-        if (avgBeat < 400) avgBeat = 400
-        if (avgBeat < 1300) avgBeat = 1300
+        false
       }
-
-      if (sinceLastBeat < avgBeat*0.65) {
-        out = false
-        prevBeatAlien = true
-      } else if (sinceLastBeat > avgBeat * 2) {
-        out = true
-        prevBeatAlien = true
-      }
-
-      if (out) prevBeat = now
-
-      //println((out, lastBeatAlien, avgBeat))
-
-      out
     }
 
+  val reg = "[|]([0-9.]+)[|]".r
   class SerialPortReader extends SerialPortEventListener {
     override def serialEvent(event: SerialPortEvent): Unit = {
-      if (event.isRXCHAR) { // If data is available
+      if (event.isRXCHAR()) {// If data is available
         val data = port.readString()
-        if (data contains "B") synchronized { beat = true }
+        if (!reg.findAllIn(data.trim()).isEmpty) synchronized {
+          beat = true;
+        }
       }
     }
   }

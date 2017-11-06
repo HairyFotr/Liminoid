@@ -42,7 +42,11 @@ final object Sound {
        if (players.size <= 12) thread {
         val player = new Player(new BufferedInputStream(new FileInputStream(soundMap(sound))))
         players.synchronized { players += player }
-        player.play()
+        try {
+          player.play
+        } catch {
+          case e: Exception => println(s"Error on $sound -> ${soundMap(sound)}: ${e.getMessage}");
+        }
         players.synchronized { players -= player }
         player.close()
       } else {

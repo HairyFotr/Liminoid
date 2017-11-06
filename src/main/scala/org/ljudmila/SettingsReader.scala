@@ -11,7 +11,7 @@ final object SettingsReader {
   type SettingsMap = mutable.AnyRefMap[String, String]
   
   val replaceReg = "@([a-zA-Z0-9]+)@".r
-  val runReg = "`(.*)`([a-zA-Z0-9]+)".r
+  val runReg = "`(.*)`([a-zA-Z0-9._ +%\"]+)".r
   val loopReg = "(?s)[%][(]([0-9]+|[a-zA-Z, ]+)[)](.+?)[%]".r
   val infixReg = "[{]([-+]?[0-9.E-]+) *([-+*/]|mod) *([-+]?[0-9.E-]+)[}]".r
   val infixFuncMap = Map[String, (String, String) => String](

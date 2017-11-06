@@ -1,0 +1,8 @@
+#!/bin/bash
+
+mkdir -p doc/shots
+cd doc/shots
+
+while true; do
+  scrot -d 10
+done;

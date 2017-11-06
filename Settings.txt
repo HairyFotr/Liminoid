@@ -4,13 +4,17 @@ objs = "@dataFolder@obj/"
 seqs = "@dataFolder@seq/"
 snds = "@dataFolder@snd/"
 
+autostart="true"
 autostart="false"
+
+hour=`date`+%H
+hour=19
 
 noiseseq="@seqs@noise/"
 
 startingPhase=FlyingRock
-startingPhase=Threads
 startingPhase=Mandalas
+startingPhase=Threads
 startingPhase=Schizoid
 startingPhase=Radiolarians
 
@@ -18,21 +22,34 @@ noiseWallOffsetx=-94
 noiseWallOffsety=3
 
 #this is the true threadnetwork offset, the other one is an impostor
-networkOffsetx=-12
-networkOffsety=18
+networkOffsetx={-12 + 51}
+networkOffsety={18 - 7}
 networkOffsetw=0
 networkOffseth=0
 
 commonOffsetx=21
 commonOffsety=23
 
-backN="@seqs@BackSpaceNew/"
-back0="@seqs@Aksioma0/"
-back0back="@seqs@"
-back1="@seqs@AksiomaSasa/"
-back2="@seqs@AksiomaMatic/"
-back3="@seqs@AksiomaMatic/"
+backN="@seqs@BackSpaceNew"
+#back0="@seqs@AksiomaMatic/"
+#back0back="@seqs@AksiomaMatic/"
+#back1="@seqs@AksiomaSasa/"
+#back2="@seqs@AksiomaMatic/"
+#back3="@seqs@AksiomaMatic/"
 
+back0="@seqs@BackSpaceNew649/"
+back0back="@seqs@BackSpaceNew649/"
+back1="@seqs@BackSpaceNew650/"
+back2="@seqs@BackSpaceNew651/"
+back3="@seqs@BackSpaceNew649/"
+
+Nback0="@seqs@aaaa15125/"
+Nback0back="@seqs@aaaa15125/"
+Nback1="@seqs@BackSpaceNew668/"
+Nback2="@seqs@BackSpaceNew669/"
+Nback3="@seqs@aaaa15125/"
+
+#The other threadnetwork is the true one.. this one is for particle poly
 threadNetworkOffsetx=0
 threadNetworkOffsety=-70
 
@@ -41,19 +58,43 @@ renderMode=stereo
 screenx=1280
 screeny=800
 
-#frontCameraId=`./cameraId`UVC
-frontCameraId=0
-frontCameraX=1280
-frontCameraY=720
-#backCameraId=`./cameraId`615
-backCameraId=1
+backCameraId=`./cameraId`Integrated
+backCameraId=`./cameraId`HD Webcam C615
 backCameraX=1280
 backCameraY=720
 
-threshold=60
+frontCameraId=`./cameraId`Integrated
+frontCameraId=`./cameraId`UVC Camera
+frontCameraX=1280
+frontCameraY=720
+
+threshold=70
 
 liminoidSplash = "@imgs@liminoid.png"
 liminoidSplashLoading = "@imgs@liminoidLoading.png"
+
+debugPoly="false"
+chairPolygon="""
+752, 960
+747, 800
+748, 680
+740, 780
+790, 580
+876, 490
+940, 430
+1020, 400
+1080, 390
+1150, 375
+1250, 395
+1337, 425
+1420, 490
+1450, 520
+1470, 580
+1500, 649
+1520, 700
+1535, 780
+1514, 985
+"""
 
 wallz = 700
 
@@ -206,6 +247,7 @@ blackHeartDustMandala = "@seqs@Srcni_utrip_CO_II/Srcni_utrip_CO_II_01287.png"
 whiteMandala = "@seqs@optipng_Sekvenca_mandala_belo_ozadje"
 whiteHeartMandala = "@seqs@Srcni_utrip_BO/Srcni_utrip_BO_05848.png"
 
+rockimgs = "@dataFolder@img/RocksN/"
 rockimgs = "@dataFolder@img/RocksDD/"
 threadNetwork="""
 # initial nodes
@@ -231,33 +273,33 @@ threadNetwork="""
 
 -
 # visible nodes
-300, 750, 1.0, "@rockimgs@rock1.png"
-223, 423, 1.0, "@rockimgs@rock2.png"
-520, 550, 1.0, "@rockimgs@rock3.png"
+240, 750, 1.0, "@rockimgs@rock1.png"
+173, 423, 1.0, "@rockimgs@rock2.png"
+425, 550, 1.0, "@rockimgs@rock3.png"
 
-990, 160, 1.0, "@rockimgs@rock4.png"
-1175, 940, 1.0, "@rockimgs@rock5.png"
-1584, 330, 1.0, "@rockimgs@rock6.png"
-1500, 810, 1.0, "@rockimgs@rock7.png"
-1332, 265, 1.0, "@rockimgs@rock8.png"
+990, 155, 1.0, "@rockimgs@rock4.png"
+1330, 995, 1.0, "@rockimgs@rock5.png"
+1624, 330, 1.0, "@rockimgs@rock6.png"
+1540, 810, 1.0, "@rockimgs@rock7.png"
+1372, 265, 1.0, "@rockimgs@rock8.png"
 
-482, 183, 1.0, "@rockimgs@rock9.png"
-515, 730, 1.0, "@rockimgs@rock10.png"
-647, 924, 1.0, "@rockimgs@rock11.png"
-627, 187, 1.0, "@rockimgs@rock12.png"
+452, 183, 1.0, "@rockimgs@rock9.png"
+386, 731, 1.0, "@rockimgs@rock10.png"
+452, 972, 1.0, "@rockimgs@rock11.png"
+627, 182, 1.0, "@rockimgs@rock12.png"
 
-1311, 600, 1.0, "@rockimgs@rock13.png"
-1288, 757, 1.0, "@rockimgs@rock14.png"
-1477, 220, 1.0, "@rockimgs@rock15.png"
-1666, 785, 1.0, "@rockimgs@rock16.png"
-1566, 955, 1.0, "@rockimgs@rock17.png"
-1566, 565, 1.0, "@rockimgs@rock18.png"
-810, 254, 1.0, "@rockimgs@rock19.png"
-1217, 375, 1.0, "@rockimgs@rock20.png"
-647, 337, 1.0, "@rockimgs@rock21.png"
+1390, 595, 1.0, "@rockimgs@rock13.png"
+1405, 757, 1.0, "@rockimgs@rock14.png"
+1517, 220, 1.0, "@rockimgs@rock15.png"
+1706, 785, 1.0, "@rockimgs@rock16.png"
+1606, 955, 1.0, "@rockimgs@rock17.png"
+1606, 565, 1.0, "@rockimgs@rock18.png"
+810, 233, 1.0, "@rockimgs@rock19.png"
+1269, 371, 1.0, "@rockimgs@rock20.png"
+613, 310, 1.0, "@rockimgs@rock21.png"
 #729, 400, 1.0, "@rockimgs@rock21.png"
-258, 276, 1.0, "@rockimgs@rock22.png"
-1033, 264, 1.0, "@rockimgs@rock23.png"
+198, 276, 1.0, "@rockimgs@rock22.png"
+1033, 236, 1.0, "@rockimgs@rock23.png"
 
 -
 # dangling nodes
@@ -269,17 +311,17 @@ threadNetwork="""
 #677, 580
 #1277, 792
 #1245, 900
-# THE dangling node
-915, 555
-915, 555
-915, 555
-915, 555
-915, 555
-915, 555
-915, 555
-915, 555
-915, 555
-915, 555
+# THE dangling node - the center
+897, 555
+897, 555
+897, 555
+897, 555
+897, 555
+897, 555
+897, 555
+897, 555
+897, 555
+897, 555
 -
 23 -> d1
 10 -> d2

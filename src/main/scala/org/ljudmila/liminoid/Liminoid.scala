@@ -92,12 +92,12 @@ final object Liminoid {
   /**
    * Game loop: renders and processes input events
    */
+  var frameCounter = 0
   def mainLoop(): Unit = {
     setupView()  // setup camera and lights
     val shader = new RiftShader(winWidth, winHeight)
 
     // FPS counter
-    var frameCounter = 0
     val second = 1000000000L // ns -> s
     val FPSseconds = 2
     var FPStimer = currentTime
@@ -285,7 +285,7 @@ final object Liminoid {
   var (fade1, fadeSpeed1) = (1d, 0.002)
   var (fade12, fadeSpeed12) = (1d, 0.01)
   var (fade2, fadeSpeed2) = (1d, 0.04)
-  var (fade22, fadeSpeed22) = (1d, 0.005)
+  var (fade22, fadeSpeed22) = (1d, 0.0095)
   var (fadeFlash, fadeSpeedFlash) = (1d, 0.06)
   var (fadeSlow, fadeSpeedSlow) = (1d, 0.001)
 
@@ -387,29 +387,33 @@ final object Liminoid {
   lazy val whiteHeartMandala     = Texture(settings("whiteHeartMandala"))
   var zoom = 0d
 
+  //TODO: hour should be set just before starting, not before
+  def nightOrDay(key: String): String = 
+    if (settings("hour").toInt > 18) settings("N" + key) else settings(key)
+  
   // Schizoid phase objects
   var wallTex = -1
   val back0Seq =
     TexSequence(
-      settings("back0"),
-      delay = 1000 / 15d,
+      nightOrDay("back0"),
+      delay = 1000 / 28d,
       stopAtEnd = false,
       bounce = true,
-      snap = Texture.getImage(settings("back0back") + "1.png"))
+      snap = Texture.getImage(nightOrDay("back0back") + "1.png"))
   val back1Seq =
     TexSequence(
-      settings("back1"),
-      delay = 1000 / 15d,
-      stopAtEnd = false,
-      bounce = true,
-      snap = Texture.getImage(settings("back1") + "1.png"))
+      nightOrDay("back1"),
+      delay = 1000 / 30d,
+      stopAtEnd = true,
+      bounce = false,
+      snap = Texture.getImage(nightOrDay("back1") + "1.png"))
   val back2Seq =
     TexSequence(
-      settings("back2"),
-      delay = 1000 / 15d,
-      stopAtEnd = false,
-      bounce = true,
-      snap = Texture.getImage(settings("back2") + "1.png"))
+      nightOrDay("back2"),
+      delay = 1000 / 23d,
+      stopAtEnd = true,
+      bounce = false,
+      snap = Texture.getImage(nightOrDay("back2") + "1.png"))
   //var backCamSnapTex = backCamera.getTextureIDWait
   var noisePixels = Vector.empty[NoisePixel]
   var backPixels = Vector.empty[Pixel]
@@ -435,35 +439,23 @@ final object Liminoid {
   def commonOffsetx: Double = settings("commonOffsetx").toDouble// + testNum1
   def commonOffsety: Double = settings("commonOffsety").toDouble// + testNum2
 
-  def networkOffsetx: Double = settings("networkOffsetx").toDouble + commonOffsetx
-  def networkOffsety: Double = settings("networkOffsety").toDouble + commonOffsety
+  def networkOffsetx: Double = settings("networkOffsetx").toDouble + commonOffsetx// + testNum1
+  def networkOffsety: Double = settings("networkOffsety").toDouble + commonOffsety// + testNum2
 
+  // For particle poly actually...
   def threadNetworkOffsetx: Double = settings("threadNetworkOffsetx").toDouble + commonOffsetx
   def threadNetworkOffsety: Double = settings("threadNetworkOffsety").toDouble + commonOffsety
 
-  var debugPoly = false
+  var debugPoly = settings("debugPoly").toBoolean
   val (pts, polygon, bound, pixelbox, pixelboxpoly) = {
-        val b = """
-939, 410
-859, 450
-760, 580
-740, 700
-747, 843
-1040, 385
-1120, 395
-1190, 410
-1290, 480
-1340, 549
-1380, 685
-1365, 862
-""".trim
+        val b = settings("chairPolygon").trim
 
         type AWTPoint = java.awt.Point
 
         def watx(a: Double) = a*1280/1920d + settings("noiseWallOffsetx").toDouble
         def waty(a: Double) = a*720/1080d + settings("noiseWallOffsety").toDouble
 
-        val pts = b.trim.split('\n').foldLeft(List[java.awt.Point]()){ (acc, n) =>
+        val pts = b.trim.split("\n").foldLeft(List[java.awt.Point]()){ (acc, n) =>
           val spl = n.split(" *, *")
           //glTranslated(camx+testNum1, camy+testNum2, 0)
           //glScaled(camw/camresx, camh/camresy, 1)
@@ -511,12 +503,12 @@ final object Liminoid {
         for (pt <- hull) p.addPoint(pt.x, pt.y)
 
         val px1 = (watx(850) + threadNetworkOffsetx).toInt
-        val px2 = (watx(1250) + threadNetworkOffsetx).toInt
+        val px2 = (watx(1450) + threadNetworkOffsetx).toInt
         val py1 = (waty(550) + threadNetworkOffsety).toInt
-        val py2 = (waty(850) + threadNetworkOffsety).toInt
+        val py2 = (waty(970) + threadNetworkOffsety).toInt
 
         val pxx1 = (watx(950) + threadNetworkOffsetx).toInt
-        val pxx2 = (watx(1150) + threadNetworkOffsetx).toInt
+        val pxx2 = (watx(1350) + threadNetworkOffsetx).toInt
         val pyy1 = (waty(450) + threadNetworkOffsety).toInt
 
         val boxpts =  List(
@@ -704,6 +696,9 @@ final object Liminoid {
       /////////////////////////////////////////////////////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       case Setup => ///////////////////////////////////////////////////////////////////////////////
+        initPhase {
+          //Sound.play("mandalas")
+        }
         glClear1d(0)
 
         quad(Coord(winWidth/2-940/2,winHeight/2-550/2, 940,550), if (frames <= 10 && !startLiminoid) liminoidSplashLoading else liminoidSplash)
@@ -794,7 +789,7 @@ final object Liminoid {
             case 9 => if (startingPhase <= Mandalas) whiteMandala.preload(200)
             case 10 => if (startingPhase <= Schizoid) {
             }
-            case _ => if (startLiminoid) gotoPhase(startingPhase) else sleep(20)
+            case _ => if (startLiminoid) gotoPhase(startingPhase) else sleep(25)
           })
 
         if (frames <= 11) println("Time" + frames + ": " + loadTime)
@@ -1073,31 +1068,47 @@ final object Liminoid {
         }
 
         val schEnd = 6
-        val break1 = 15
         //val schEnd = 6-4
         //val break1 = 1
-        val break2 = break1 + 8 + 5
-        val break3 = break2 + 2 + 5
-        if (schizoidPhase >= schEnd) {
+        // Axioma
+        //val break1 = 15
+        //val break2 = break1 + 8 + 5
+        //val break3 = break2 + 2 + 5
+        // Device_Art
+        val break1 = 27
+        val break2 = break1 + 7 + 5
+        val break3 = break2 + 1 + 5
+        // Debug
+        //val break1 = 1
+        //val break2 = break1 + 1
+        //val break3 = break2 + 1
+
+        if (schizoidPhase >= schEnd) { 
           schizoidPhase = schEnd
           //phaseTimer = now
         }
+        
+        //println(roty)
+        
 
-        val rotlimitx = (-415, 415)
-        val rotlimity = (-92, -62)
+        //val rotlimitx = (-415, 415)
+        //val rotlimity = (-92, -62)
+        val rotlimitx = (-415+testNum2*0+124+100, 415+testNum1*0-100)
+        val rotlimity = (190+testNum4*0-180, -190+testNum3*0+130)
         val rotxl =
           if (rotx < rotlimitx._1) rotlimitx._1
           else if (rotx > rotlimitx._2) rotlimitx._2
           else rotx
         val rotyl =
-          if (roty < rotlimity._1) rotlimity._1
-          else if (roty > rotlimity._2) rotlimity._2
-          else roty//*/
+          if (roty > rotlimity._1) rotlimity._1
+          else if (roty < rotlimity._2) rotlimity._2
+          else roty///*/
 
         val f = 1400d -600 + 7*20 + (-14/*+50*/)*20
         val (camresx, camresy) = (backCamera.width, backCamera.height)
         val camaspect = camresx/camresy.toDouble
-        val (camw, camh) = (f*camaspect, f+testNum3+100) //(winHeight*4/3d, winHeight)
+        //val (camw, camh) = (f*camaspect, f+testNum3+100) //(winHeight*4/3d, winHeight)
+        val (camw, camh) = (f*camaspect+testNum4*0-188, f+testNum3*0+100-38) //(winHeight*4/3d, winHeight)
         val (camx, camy) = (rotxl*0.7-camw/7+  211, rotyl*0.7-camh/7 + 166)
 
         val back0 @ (back0Frame, back0Snap) = (back0Seq, back0Seq.snap)//(backCamera.getTextureID(), null)//(back0Seq(), back0Seq.snap)
@@ -1106,14 +1117,15 @@ final object Liminoid {
         val back1 @ (back1Frame, back1Snap) = (back1Seq, back1Seq.snap)//backC//(back1Seq(), back1Seq.snap)
         val back2 @ (back2Frame, back2Snap) = (back2Seq, back2Seq.snap)//backC//(back2Seq(), back2Seq.snap)
 
-        val _phasesSnap =
-          Array(
-            backCSnap, backCSnap,
-            back0Snap, back1Snap,
-            back0Snap, back2Snap,
-            back0Snap, back1Snap,
-            back0Snap, back2Snap,
-            back0Snap, backCSnap)
+        val _phasesSnap = Array(
+      //back0Snap, back1Snap, // For offline calibration instead of camera
+      backCSnap, backCSnap,
+      back0Snap, back1Snap,
+      back0Snap, back2Snap,
+      back0Snap, back1Snap,
+      back0Snap, back2Snap,
+      back0Snap, backCSnap
+        )
         var _camSnap: Array[Int] = null
         def phasesSnap(i: Int): Array[Int] = {
           val snap = _phasesSnap(i)
@@ -1129,20 +1141,32 @@ final object Liminoid {
 
         lazy val camTex = backCamera.getTextureID()
 
-        val phasesSeq =
-          Array(
-            backCFrame, backCFrame,
-            back0Frame, back1Frame,
-            back0Frame, back2Frame,
-            back0Frame, backCFrame,
-            back0Frame, back1Frame,
-            back0Frame, back2Frame)
-        val phases =
-          phasesSeq.map( p => if (p == null) camTex else p())
-
-        quad(Coord(camx,camy, camw,camh), phases(schizoidPhase), flipx = false)
+        val phasesSeq = Array(
+          //back0Frame, back1Frame, // For offline calibration instead of camera
+          backCFrame, backCFrame,
+          back0Frame, back1Frame,
+          back0Frame, back2Frame,
+          back0Frame, backCFrame,
+          back0Frame, back1Frame,
+          back0Frame, back2Frame
+        )
+        //val phasesFrame = phasesSeq.map( p => if (p == null) camTex else p())
+        var kk = 0
+        val phasesFrame =
+          phasesSeq.map{ p => 
+            val out = 
+              if (kk == schizoidPhase || kk == schizoidPhase-1) {
+                if (p == null) camTex else p()
+              } else {
+                camTex
+              }
+            kk += 1
+            out
+        }
+        
+        quad(Coord(camx,camy, camw,camh), phasesFrame(schizoidPhase), flipx = false)
         if (fade22 < 1) {
-          quad(Coord(camx,camy, camw,camh), phases(schizoidPhase-1), flipx = false, alpha = 1-fade22)
+          quad(Coord(camx,camy, camw,camh), phasesFrame(schizoidPhase-1), flipx = false, alpha = 1-fade22)
         }
 
         def resetStuff(): Unit = {
@@ -1157,7 +1181,10 @@ final object Liminoid {
         def sincen(i: Int) = since(phaseTimer) >= i.seconds
         def sinceWall(i: Int) = since(wallTimer) >= i.seconds
 
-        if (sincen(break1) && backPixelDrop && !finished) {
+        // Don't do anything, just show cam
+        val isCamCalibration = false
+
+        if (!isCamCalibration && sincen(break1) && backPixelDrop && !finished) {
           if (!diffStarted) thread {
             diffDone = false
             diffStarted = true
@@ -1209,19 +1236,19 @@ final object Liminoid {
               val esx = bp.sx
               val esy = bp.sy
               bp.sx += bp.transformVector.x*6d*(TableRandom.nextDouble*0.6+0.5) + TableRandom.nextGaussianUnsafe/0.6d
-              if (bp.sx > 1280) bp.sx = esx
               bp.sy += bp.transformVector.y*6d*(TableRandom.nextDouble*0.6+0.5) + TableRandom.nextGaussianUnsafe/0.6d
-              if (bp.sy > 720) bp.sy = esy
+              if (bp.sx > 1280) bp.sx = esx
+              if (bp.sy > 720)  bp.sy = esy
 
-              try {
-                //bp.newColor = Color.BGR(phasesSnap(schizoidPhase+2)((bp.sx + bp.sy*1280).toInt))
+              /*try {
+                bp.newColor = Color.BGR(phasesSnap(schizoidPhase+2)((bp.sx + bp.sy*1280).toInt))
               } catch {
                 case t: Throwable =>
-              }
+              }*/
             }
             schizoidPhase += 1
           }
-        }  else if (sincen(break2) && backPixelMerge) {
+        } else if (!isCamCalibration && sincen(break2) && backPixelMerge) {
           backPixelMerge = false
           backPixelMerged = true
           middlemoment = true
@@ -1231,7 +1258,7 @@ final object Liminoid {
             val bp = backPixels(nextInt(backPixels.size))
             new Pixel)
           }*/
-        } else if (sincen(break1+2) && !noiseWall && schizoidPhase >= schEnd) {
+        } else if (!isCamCalibration && sincen(break1+2) && !noiseWall && schizoidPhase >= schEnd) {
           schizoidPhase += 1
           noiseWall = true
           //backPixels = Vector.empty
@@ -1246,12 +1273,12 @@ final object Liminoid {
             else
               bp.isDead = true*/
           //}
-        } else if (sincen(break3) && !noiseWall && backPixelMerged) {
+        } else if (!isCamCalibration && sincen(break3) && !noiseWall && backPixelMerged) {
           fade22 = 0.1
           phasesSeq.foreach(x => if (x != null) x.rewind())
           schizoidPhase += 1
           backPixelMerged = false
-        } else if (sincen(break3) && !noiseWall && fade22 >= 0.95) {
+        } else if (!isCamCalibration && sincen(break3) && !noiseWall && fade22 >= 0.45 && fade22 < 0.95) {          //Sound.play("razpadheart2")
           //Sound.play("razpadheart2")
           bpAreDying = true
 
@@ -1291,7 +1318,7 @@ final object Liminoid {
         //if (noiseFrames > 0) {
           noiseFrames += 1
 
-          val noiseLimit = 2133
+          val noiseLimit = 2333 //2133
           if (noiseFrames > noiseLimit) noiseFrames = noiseLimit
           val n = (noiseFrames*6+nextInt(noiseFrames*2))/2
           noisePixels ++= Array.fill(n)(
@@ -1308,7 +1335,9 @@ final object Liminoid {
           }
         }
 
-        val (bpcenterx, bpcentery) = (640-13+9 + testNum1, 360+19+7-5 + testNum2)
+        // Thread noisewall center
+        //val (bpcenterx, bpcentery) = (640-13+9 + testNum1, 360+19+7-5 + testNum2)
+        val (bpcenterx, bpcentery) = (640-13+9+51, 360+19+7-5) //(640-13+9 + testNum1, 360+19+7-5 + testNum2)
         val contain = frames%2 == 0
         if (backPixels.nonEmpty) {
           val noisePixOverLod = noisePixels.size > 50000
@@ -1449,7 +1478,8 @@ final object Liminoid {
         if (tuptupcounted) {
           spreadBall = true
         }
-        if (noisePixels.size < 21 && spreadBall) {
+        //if (noisePixels.size < 21 && spreadBall) {
+        if (noisePixels.size < 2000 && spreadBall) {
           spreadBallComplete = true
         }
         rockfly = spreadBallComplete
@@ -1489,7 +1519,7 @@ final object Liminoid {
         }
 
         if (threadNetworkfullyVisible || testNum5 != 0) {
-          val xxxx = 5-29+26+ (4-3-1 + testNum5)/10f
+          /*val xxxx = 5-29+26+ (4-3-1 + testNum5)/10f
           val yyyy = -8+3-2 + (-6+10+44-7+3+23 + testNum6)/10f
           val hhhh = 15/1000d
           val rrrr = 0.1f + 80/1000f
@@ -1497,12 +1527,22 @@ final object Liminoid {
           val vvx1 = (testNum5*0 -2)/1000f
           val vvy1 = (testNum6*0)/1000f
           val vvx2 = (testNum5*0 + 2)/1000f
-          val vvy2 = (testNum6*0 + 7)/1000f
+          val vvy2 = (testNum6*0 + 7)/1000f*/
+          val xxxx = 5-29+26+ (4-3-1-28+126-169+104 + testNum1*0)/10f
+          val yyyy = -8+3-2 + (-6+10+44-7+3+23+15-13-42 + testNum2*0)/10f
+          val hhhh = 15/1000d
+          val rrrr = 0.1f + (80)/1000f
+          val ssss = 199/1000d + -0.3
+          val vvx1 = (testNum5*0 -2 + 10 + (testNum1*0-110)/10f)/1000f
+          val vvy1 = (testNum6*0 + 4 + (testNum2*0)/10f)/1000f
+          val vvx2 = (testNum5*0 /*+ (-363/10f)*/ + testNum3*0 + 2)/1000f
+          val vvy2 = (testNum6*0  /*+(-594/10f)*/ + testNum4*0 + 7)/1000f
           core.transform.size = Vec(csize, csize, csize)
-          core.color = grey(0.80+(-23-8+testNum4)/100f)
+          //core.color = grey(0.80+(-23-8+testNum4)/100f)
+          core.color = grey(0.80+(-23-8+testNum4*0)/100f)
           if (!triggerPull1) {
             triggerPull1 = true
-            pulltime = now
+            //pulltime = now
 
             // Init last 3d rock
             core.transform.pos = Vec(xxxx, yyyy, 100)
@@ -1564,18 +1604,21 @@ final object Liminoid {
                 }
                 exTestSum = testSum
                 if (tupRockEnabled) {
+                  if (frameCounter == 0) println("fly1")
                   val t = Models.MutableTransform(
                       pos = vec0,
                       rot = vec0,
                       size = core.transformVector.size)
                   core.transform += t ** renderTime
                 } else if (!tupRockDisabled) {
+                  if (frameCounter == 0) println("fly2")
                   val t = Models.MutableTransform(
                       pos = Vec(vvx1, vvy1, core.transformVector.pos.z),
                       rot = vec0,
                       size = core.transformVector.size)
                   core.transform += t ** renderTime
                 } else {
+                  if (frameCounter == 0) println("fly3")
                   core.transform += core.transformVector ** renderTime
                 }
 
@@ -1594,11 +1637,14 @@ final object Liminoid {
   var flash = 0
   var sinceDown = now
   var isShutDown = false
+  var dirDir = util.Random.nextInt(1000)+100
 
 
   def processInput(): Unit = {
     import Keyboard._
     import Mouse._
+    val BUTTON_LEFT = 0
+    val BUTTON_RIGHT = 1
 
     //if (isKeyDown(KEY_X)) Sound.play("jump")
     if (isKeyDown(KEY_1)) testNum1 -= 1
@@ -1620,23 +1666,55 @@ final object Liminoid {
     if (isKeyDown(KEY_G)) {
       shouldFreezeview = false
     }
+    
+    val recordMode = false
 
-    if (!startLiminoid && (isKeyDown(KEY_RETURN) || isButtonDown(0))) {
+    if (isKeyDown(KEY_Z) || (recordMode && isButtonDown(BUTTON_LEFT) && isButtonDown(BUTTON_RIGHT))) {
+      println("Making new Back...")
+      Sound.play("razpadheart1")
+      // Takes about 5 frames to set exposure, let's wait
+      for (i <- 1 to 25) backCamera.getTextureIDWait
+      val t = 30.seconds
+      new java.io.File(settings("backN")+dirDir).mkdir()
+      //for (i <- 1 to n) {
+      val time = now
+      var i = 1
+      while (since(time) < t) {
+        backCamera.saveImage(settings("backN")+dirDir+"/" + i + ".png")
+        i += 1
+      }
+      backPixels = Vector.empty
+      phaseTimer = now
+      //backCamSnap = Texture.getImage(dataFolder + "seq/NewBackSpace/1.png")
+      back0Seq.rewind()
+      back1Seq.rewind()
+      backPixelDrop = true
+      backPixelMerge = false
+      backPixelMerged = true
+      finished = false
+      diffStarted = false
+      diffDone = false
+      schizoidPhase = 1
+      Sound.play("razpadheart1")
+      println("Back done...")
+      dirDir += 1
+      return;
+    }
+    if (!startLiminoid && (isKeyDown(KEY_RETURN) || isButtonDown(BUTTON_LEFT))) {
       println("Liminoid started!")
       startLiminoid = true
       return
     }
 
-    if (isButtonDown(0) && isButtonDown(1)) {
+    if (isButtonDown(BUTTON_LEFT) && isButtonDown(BUTTON_RIGHT)) {
       if (!isShutDown) {
         isShutDown = true
         sinceDown = now
       } else {
-        if (since(sinceDown) > 4.seconds) {
+        if (since(sinceDown) > 3.seconds) {
           isMainLoopRunning = false
         }
       }
-
     }
 
     if (isKeyDown(KEY_Q)) rotation = rotation + Rotation(+1, 0,  0)
@@ -1645,7 +1723,7 @@ final object Liminoid {
     if (isKeyDown(KEY_W)) rotation = rotation + Rotation(0, -1,  0)
     if (isKeyDown(KEY_D)) rotation = rotation + Rotation(0,  0, +1)
     if (isKeyDown(KEY_A)) rotation = rotation + Rotation(0,  0, -1)
-    if (isKeyDown(KEY_0) || isButtonDown(1)) {
+    if (isKeyDown(KEY_0) || isButtonDown(BUTTON_RIGHT)) {
       rotation = rotation0
       rotation3d = rotation0
       Render.cam.pos = Vec3(0, 0, 0)
@@ -1661,8 +1739,12 @@ final object Liminoid {
         makePix(winWidth/3, winHeight/3, 1)
       }
     }
-
-
+    
+    if (isKeyDown(KEY_T)) {
+      debugPoly = !debugPoly
+      sleep(200)
+    }
+    
     if (isKeyDown(KEY_NEXT)) nextPhase()
     if (isKeyDown(KEY_PRIOR)) previousPhase()
     if (isKeyDown(KEY_HOME)) gotoPhase(Radiolarians)
@@ -1672,7 +1754,7 @@ final object Liminoid {
 
     if (isKeyDown(KEY_X)) {
       // Takes about 5 frames to set exposure, let's wait...
-      for (i <- 1 to 10) backCamera.getTextureIDWait
+      for (i <- 1 to 20) backCamera.getTextureIDWait
       //backCamera.saveImage(dataFolder + "img/Image.png")
       backPixels = Vector.empty
       phaseTimer = now
@@ -1718,7 +1800,7 @@ final object Liminoid {
     }
     if (isKeyDown(KEY_C)) {
       renderMode = if (renderMode == Mono) Stereo else Mono
-      sleep(200)
+      sleep(300)
     }
     if (isKeyDown(KEY_M)) {
       Sound.mute()

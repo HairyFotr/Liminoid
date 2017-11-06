@@ -31,6 +31,7 @@ scalacOptions += "-opt:l:inline"
 initialCommands := """
   import java.io.File
   import math._
+  import org.ljudmila._
   import org.ljudmila.liminoid._
   import Utils._
 """
